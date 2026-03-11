@@ -73,13 +73,25 @@ For each input argument, state:
 - Behavior when missing values are present
 - Known degenerate cases (e.g., perfect collinearity)
 
-### Step 5 — Fill the algorithm-spec template
+### Step 5 — Challenge gate
+
+Before filling the spec template, explicitly check:
+
+- Is every symbol in the algorithm defined and unambiguous?
+- Does the source material actually support all identification assumptions the request implies?
+- Are there any steps where interpretation would require inventing math not in the source?
+
+If any check fails, raise a **HOLD**: state the specific ambiguity and stop. Do not produce a spec for a problem you cannot fully specify. Wait for user clarification.
+
+If all checks pass, proceed and note explicitly: "Spec is complete — no ambiguities identified."
+
+### Step 6 — Fill the algorithm-spec template
 
 Use `templates/algorithm-spec.md`. Fill every section. Leave no section blank; write "N/A" if genuinely not applicable.
 
 Save the completed spec to `specs/<method-name>.md` within the RClaw workspace (create the directory if needed), or return it inline if the user prefers.
 
-### Step 6 — Hand off to builder
+### Step 7 — Hand off to builder
 
 Summarize in one paragraph what builder needs to implement. Reference the spec file path.
 
