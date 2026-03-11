@@ -99,6 +99,10 @@ Flag any example that would fail. Do not write examples that cannot currently ru
 - For vignettes: write or edit `vignettes/<name>.Rmd`
 - For standalone tutorials: write to `tutorials/<function>-tutorial.md` within the RClaw workspace
 
+**Roxygen2 version mismatch:** If the installed roxygen2 version is older than the version declared in `DESCRIPTION` (field `RoxygenNote`), `devtools::document()` will refuse to run. In this case, edit **both** the `R/<file>.R` source (for future correctness) **and** the `man/<file>.Rd` file directly (so the change takes effect now). Note this in the summary so the user knows to run `devtools::document()` after upgrading roxygen2.
+
+**`tutorial/` vs `vignettes/`:** A Quarto book or multi-chapter tutorial living in a non-standard top-level directory (e.g., `tutorial/`, `docs/`) is NOT the same as R package vignettes in `vignettes/`. Proper R package vignettes require individual `.Rmd` files with `%\VignetteEngine` and `%\VignetteIndexEntry` headers, placed in `vignettes/`, and declared in `DESCRIPTION`. A Quarto book cannot be dropped into `vignettes/` without restructuring. Add the tutorial directory to `.Rbuildignore` to keep it out of the build tarball.
+
 ---
 
 ## Quality Checks
