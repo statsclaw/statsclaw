@@ -8,9 +8,10 @@ RClaw is an agentic workspace for developing, maintaining, and documenting stati
 
 At the start of every session:
 
-1. Read `CONTEXT.md` to identify the active R package and current task.
-2. If `CONTEXT.md` is empty or missing a package path, ask the user to fill it in before proceeding.
-3. Hold the package path and task in mind for all subsequent operations.
+1. Read `CONTEXT.md` to find the `Active:` field, which points to a file under `packages/`.
+2. Read that package file to load the package path, description, known issues, and current task.
+3. If `CONTEXT.md` points to `_template.md` or the package file is unfilled, ask the user to set up their package context before proceeding.
+4. Hold the package path and task in mind for all subsequent operations.
 
 ---
 
@@ -83,15 +84,21 @@ Repeat until the package passes `devtools::check()` cleanly.
 ```text
 RClaw/
 ├── CLAUDE.md              — this file
-├── CONTEXT.md             — active package + task (user fills)
+├── CONTEXT.md             — points to the active package file
+├── packages/
+│   ├── _template.md       — copy this to add a new package
+│   ├── fect.md            — per-package context (path, tasks, issues)
+│   └── ...
 ├── skills/
 │   ├── scout/SKILL.md
 │   ├── theorist/SKILL.md
 │   ├── builder/SKILL.md
 │   ├── auditor/SKILL.md
 │   └── scribe/SKILL.md
-└── templates/
-    ├── algorithm-spec.md
-    ├── diagnostic-report.md
-    └── tutorial-template.md
+├── templates/
+│   ├── algorithm-spec.md
+│   ├── diagnostic-report.md
+│   └── tutorial-template.md
+├── specs/                 — algorithm specs produced by theorist
+└── reports/               — diagnostic reports produced by auditor
 ```
