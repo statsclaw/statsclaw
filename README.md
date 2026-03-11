@@ -37,8 +37,14 @@ If **auditor** finds failures, they are routed back: code bugs go to **builder**
 ## Getting Started
 
 1. Clone or open this repo as a Claude Code workspace.
-2. Fill in `CONTEXT.md` with your R package path and current task.
-3. Describe what you need. Examples:
+2. Copy `packages/_template.md` to `packages/<your-package>.md` and fill it in.
+3. Update `CONTEXT.md` to point to your package file:
+
+   ```yaml
+   Active: packages/<your-package>.md
+   ```
+
+4. Describe what you need. Examples:
 
 ```
 "Map the fect package and show all exported functions."
@@ -57,7 +63,10 @@ If **auditor** finds failures, they are routed back: code bugs go to **builder**
 ```text
 RClaw/
 ├── CLAUDE.md                   — orchestrator: session startup, routing, workflow rules
-├── CONTEXT.md                  — active package path + task (fill each session)
+├── CONTEXT.md                  — points to the active package file
+├── packages/
+│   ├── _template.md            — copy this to add a new package
+│   └── <package>.md            — per-package context: path, tasks, issues
 ├── skills/
 │   ├── scout/SKILL.md          — repository mapping
 │   ├── theorist/SKILL.md       — mathematical specification
