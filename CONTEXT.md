@@ -3,7 +3,7 @@
 Set `Active` to the package you are working on. RClaw reads this at session startup.
 
 ```yaml
-Active: packages/_template.md
+Active: packages/fdid.md
 ```
 
 > Copy `packages/_template.md` to `packages/<your-package>.md`, fill it in, then update the line above.

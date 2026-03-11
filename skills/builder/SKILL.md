@@ -92,6 +92,16 @@ Before finishing, verify:
 - [ ] No `library()` or `require()` calls inside functions (use `::` instead)
 - [ ] No `print()` or `cat()` in production code (use `message()` for user-facing notes)
 
+## When Adding a testthat Suite
+
+When creating `tests/testthat/` for the first time:
+
+1. Create `tests/testthat.R` (the driver: `library(testthat); library(<pkg>); test_check("<pkg>")`).
+2. Create `tests/testthat/test-<topic>.R` files.
+3. Add `testthat (>= 3.0.0)` to `Suggests` in `DESCRIPTION` — without this, `devtools::check()` raises a WARNING for undeclared dependency.
+4. Add any non-standard top-level directories (e.g., `tutorial/`, `docs/`) to `.Rbuildignore` — without this, `devtools::check()` raises a NOTE and possibly long-path errors from build artifacts inside them.
+5. Re-run `devtools::check()` after setup to confirm 0 errors, 0 warnings.
+
 ---
 
 ## Output Format
