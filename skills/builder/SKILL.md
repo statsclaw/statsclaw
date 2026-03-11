@@ -45,7 +45,18 @@ Use scout's output if available, or use Glob and Grep directly:
 
 Do not assume; read the actual files.
 
-### Step 3 — Implement
+### Step 3 — Challenge gate
+
+Before writing any code, explicitly check:
+
+- Does the spec unambiguously define what to implement? If not, raise a **HOLD** and ask theorist to clarify.
+- Does the requested change conflict with existing package API, naming conventions, or calling patterns in the codebase? If so, raise a **HOLD** and describe the conflict.
+- Would implementing as specified silently break any downstream function or change existing behavior in an undocumented way? If so, raise a **HOLD** and list the affected functions.
+- Does the implementation require a judgment call not covered by the spec (e.g., choosing a default tolerance, a matrix decomposition method, or a tie-breaking rule) that could affect results? If so, raise a **HOLD** and state the choice explicitly for user sign-off before proceeding.
+
+If all checks pass, proceed. Note any minor choices made (e.g., tolerance values) in the change summary.
+
+### Step 4 — Implement
 
 Write or edit the function(s) according to the spec and package conventions.
 
@@ -66,11 +77,28 @@ Write or edit the function(s) according to the spec and package conventions.
 - Use named constants instead of magic numbers (`tol <- 1e-8`, not `1e-8` inline)
 - For iterative algorithms, implement a maximum-iteration safeguard and emit a `warning()` on non-convergence
 
-### Step 4 — Do not touch unrelated code
+### Step 5 — Do not touch unrelated code
 
 Only modify the files and functions required by the current task. If an adjacent function needs a fix but is out of scope, note it but do not change it.
 
-### Step 5 — Summary of changes
+### Step 6 — Post-change mandatory handoff checks
+
+After any non-trivial change (new function, refactor, API modification), the following must be verified before handing off to auditor. Do not skip these even if the change "looks clean":
+
+**For all changes:**
+- [ ] `devtools::test()` — all tests pass (0 FAIL)
+- [ ] `devtools::check(args = '--as-cran')` — 0 errors, 0 warnings. The only acceptable note is "unable to verify current time" (network issue, not a package problem).
+
+**After any structural refactor (splitting files, promoting closures, renaming functions):**
+- [ ] Confirm `R CMD check --as-cran` passes — refactors that move code to new top-level functions can introduce "no visible binding" NOTEs that were previously hidden inside closures. Fix with `varname <- NULL` before `aes()` calls or `utils::globalVariables()`.
+- [ ] If the package has a `tutorial/` Quarto book, re-render it: `quarto render tutorial/`. A refactor does not change the public API, but it can break code chunk output if internal state was accidentally altered.
+
+**After any public API change (`panelview()` signature, argument names, defaults):**
+- [ ] Update `man/*.Rd` via `devtools::document()`
+- [ ] Update `tutorial/` examples if they use the changed argument
+- [ ] Re-render the Quarto book
+
+### Step 7 — Summary of changes
 
 Return a concise diff summary:
 
