@@ -81,7 +81,75 @@ For vignettes:
 - Explain the method in plain language before showing code
 - Show realistic data and realistic results
 
-### Step 4 — Verify all examples
+#### For Quarto books (multi-chapter tutorials):
+
+Place the book in `tutorial/` at the package root (never in `vignettes/`). Add `^tutorial$` to `.Rbuildignore`.
+
+**Structure:**
+```
+tutorial/
+├── _quarto.yml       — book metadata, chapter list, format/theme
+├── index.qmd         — welcome page: what the package does, chapter overview, contributors, bug report
+├── 01-<topic>.Rmd    — chapter 1 (H1 = `# Title {#sec-name}`)
+├── 02-<topic>.Rmd    — chapter 2
+├── ...
+└── references.qmd    — `# References {.unnumbered}` + `{#refs}` div (only if bib exists)
+```
+
+**`_quarto.yml` template:**
+```yaml
+project:
+  type: book
+book:
+  title: "<pkg> -- User Tutorial"
+  sidebar:
+    style: docked
+    background: light
+  chapters:
+    - index.qmd
+    - 01-<topic>.Rmd
+    - references.qmd   # omit if no bib
+delete_merged_file: true
+bibliography: references.bib  # omit if no citations
+format:
+  html:
+    theme: cosmo
+    df-print: paged
+    code-fold: false
+    code-tools: true
+    code-link: true
+knitr:
+  opts_chunk:
+    collapse: true
+    comment: "#>"
+```
+
+**Chapter file conventions:**
+- First line: `# Chapter Title {#sec-name}` — this becomes the sidebar entry
+- Setup chunk immediately after: `knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE)`
+- Do NOT use `cache = TRUE` in chunk options (Quarto has its own freeze mechanism)
+- Cross-reference sections with `[Chapter @sec-name]` in `index.qmd`
+
+**Splitting a monolithic vignette into chapters:**
+- Identify the top-level `##` sections — each becomes a chapter
+- Move shared setup (library loads, data loads) to each chapter's setup chunk
+- Remove vignette YAML header (`%\VignetteEngine`, `%\VignetteIndexEntry`) entirely
+- The Rmd chapter files use `---` YAML only if needed for chapter-level title overrides (usually not needed; H1 header is sufficient)
+
+**Rendering:**
+- Quarto binary on macOS: `/Applications/RStudio.app/Contents/Resources/app/quarto/bin/quarto`
+- Run from the tutorial directory: `cd ~/GitHub/<pkg>/tutorial && quarto render`
+- Output goes to `_book/` inside the tutorial directory
+
+### Step 4 — Spec consistency check
+
+If an algorithm spec exists at `specs/<method-name>.md`:
+
+- Read it.
+- Check that `@param` descriptions, `@return` structure, and any `@details` math match the spec.
+- If a documented argument, return value, or formula contradicts the spec, raise a **HOLD**: state the contradiction and do not publish the documentation until it is resolved.
+
+### Step 5 — Verify all examples
 
 For every `@examples` block or code chunk written:
 
@@ -92,7 +160,7 @@ For every `@examples` block or code chunk written:
 
 Flag any example that would fail. Do not write examples that cannot currently run.
 
-### Step 5 — Return or save output
+### Step 6 — Return or save output
 
 - For roxygen2 edits: edit the `R/<file>.R` source directly; note that `devtools::document()` must be run to regenerate `.Rd` files
 - For direct `.Rd` edits: edit `man/<file>.Rd` directly
