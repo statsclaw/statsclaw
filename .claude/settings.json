@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash($QUARTO render:*)",
+      "Bash(R:*)",
+      "Bash(Rscript:*)",
+      "Bash(npm:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Bash(mkdir:*)",
+      "Bash(rm:*)",
+      "Bash(wc -l ~/GitHub/panelView/R/*.R)",
+      "Bash(Rscript -e \"packageVersion\\(''roxygen2''\\)\")",
+      "Bash(grep -n \"^    return\\\\|^        return\\\\|invisible\\\\|p$\" ~/GitHub/panelView/R/panelView.R)",
+      "Bash(Rscript -e \"devtools::test\\(\\)\")",
+      "Bash(Rscript --vanilla -e \"devtools::check\\(quiet=FALSE\\)\")",
+      "Bash(Rscript --vanilla -e \"devtools::check\\(quiet=TRUE\\)\")",
+      "Bash(Rscript -e \"devtools::check\\(\\)\")",
+      "Bash(/Applications/RStudio.app/Contents/Resources/app/quarto/bin/quarto render:*)"
+    ],
+    "additionalDirectories": [
+      "/Users/xyq/GitHub/fdid/tutorial",
+      "/Users/xyq/GitHub/panelView"
+    ]
+  }
+}

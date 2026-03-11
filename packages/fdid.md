@@ -134,7 +134,10 @@ Completed:
   - [x] Proofread tutorial/ Rmd files (typos, grammar, code bug in 03-visualization.Rmd)
   - [x] Rename "fdid - User tutorial" → tutorial/ (and .Rproj)
   - [x] Delete Table1.dta, demonstration.Rmd, test.R, test2.R
-  - [x] Add tests/testthat/ suite (54 tests; all 6 methods + structure + plotting)
+  - [x] Add tests/testthat/ suite (54 thorough tests; all 6 methods + structure + plotting)
+  - [x] CRAN test runtime fix: add skip_on_cran() to all 15 mortality-based tests; add
+        lean CRAN block (synthetic 40-unit × 3-period data, did + ols1 only, ~1.8s elapsed,
+        CPU/elapsed ≈ 1). Full local run: 71 assertions pass, 0 fail.
   - [x] Fix bug in summary.R (bare tr_period → object$tr_period)
   - [x] Add \examples{} to fdid.Rd, plot.fdid.Rd, summary.fdid.Rd (and R source)
   - [x] Add testthat to Suggests in DESCRIPTION
@@ -146,6 +149,7 @@ Completed:
 Still needed:
   - [ ] Run R CMD check --as-cran
   - [ ] If CRAN: create vignettes/ with a proper single-file intro Rmd
+  - [ ] Resubmit to CRAN (fixed test runtime NOTE)
 ```
 
 ---
@@ -166,4 +170,13 @@ Task: Run R CMD check --as-cran; if passing, submit to CRAN (add vignettes/ firs
 - Tutorial renamed (tutorial/), proofread, rendered clean (Quarto 1.8.25).
 - Stale files deleted; examples added to 3 Rd files; summary.R scoping bug fixed.
 - v1.0.0 committed and pushed. CRAN submission next.
+
+2026-03-11: CRAN returned NOTE — testthat runtime too long (92s elapsed, CPU/elapsed=5.8).
+- Root cause: mortality dataset is 11973×16; ebal/ipw/aipw trigger multi-threaded BLAS.
+- Fix: restructured test-fdid.R into two blocks:
+    CRAN block (no skip): synthetic 40-unit × 3-period data, did + ols1 only, ~1.8s, CPU/elapsed≈1.
+    Internal block: all 15 original test_that() blocks wrapped with skip_on_cran().
+- CRAN simulation: 17 assertions, 0 fail, 0 skip, 1.8s.
+- Local run: 71 assertions, 0 fail, 0 skip.
+- Pattern to remember: skip_on_cran() + lean synthetic data for CRAN; keep thorough tests locally.
 ```
