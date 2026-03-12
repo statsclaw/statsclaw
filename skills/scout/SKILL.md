@@ -1,21 +1,20 @@
-# Skill: scout — Repository Agent
+# Skill: scout — Project Mapping Agent
 
-Scout maps an R package's structure: what it exports, how its functions depend on each other, and which files would be touched by a proposed change.
+Scout maps a project's structure, exported surface, dependencies, tooling, and likely blast radius for a request. It normally runs after `triage`.
 
 ---
 
 ## Triggers
 
-Invoke scout when the user asks:
+Invoke `scout` when the user asks:
 
 - "Map the package"
-- "What functions are affected by this change?"
+- "What files are affected?"
 - "What does this package export?"
-- "List dependencies between functions"
-- "Which files would I need to touch to modify X?"
-- "Show me the package structure"
+- "What is the dependency structure?"
+- "What functions would this change touch?"
 
-Also invoke scout at the start of any full-method workflow to establish the landscape before theorist and builder operate.
+Also invoke `scout` at the start of any non-trivial workflow unless the relevant file map is already known and current.
 
 ---
 
@@ -27,102 +26,81 @@ Bash, Read, Glob, Grep
 
 ## Workflow
 
-### Step 1 — Read CONTEXT.md
+### Step 1 — Read runtime context
 
-Read `CONTEXT.md` to get the package path. If the path is missing, stop and ask the user.
+Read:
 
-### Step 2 — Read DESCRIPTION and NAMESPACE
+- `.statsclaw/CONTEXT.md`
+- active project context under `.statsclaw/packages/`
+- active request under `.statsclaw/runs/<request-id>/request.md` if present
 
-```r
-# Read these files from the package root:
-# DESCRIPTION  — package name, version, dependencies, imports
-# NAMESPACE    — exports, imports, S3/S4 methods
-```
+Determine the active project profile from the project context.
+
+If the package path is missing, stop and ask the user.
+
+### Step 2 — Read project metadata
+
+From the target project root, read profile-specific repo markers.
+
+Examples:
+
+- R: `DESCRIPTION`, `NAMESPACE`
+- Python: `pyproject.toml`, `setup.cfg`, `pytest.ini`
+- TypeScript: `package.json`, `tsconfig.json`
+- Stata: `.do`, `.ado`, `.mata`, `stata.toc`, `pkg.pkg`
 
 Extract:
 
-- Package name and version
-- Imports and Suggests
-- All `export()`, `exportMethods()`, `S3method()` entries from NAMESPACE
+- project name and version if available
+- package manager or tooling
+- declared dependencies
+- exported modules, commands, or public surface where applicable
 
-### Step 3 — Glob all source files
+### Step 3 — Build the file inventory
 
-```r
-# Glob these patterns relative to the package root:
-R/*.R
-src/*.c
-src/*.cpp
-src/*.f
-tests/testthat/test-*.R
-man/*.Rd
-vignettes/*.Rmd
-vignettes/*.R
+Inspect relevant source and support files:
+
+- source directories (`R/`, `src/`, `app/`, `lib/`, `package/`, etc.)
+- test directories
+- docs directories
+- tutorial, examples, notebook, or demo directories
+- build and packaging files
+
+### Step 4 — Build the impact map
+
+Identify:
+
+- exported functions, modules, endpoints, commands, or public APIs
+- key internal helpers or components
+- callers and callees of the target code path when applicable
+- files likely affected by the request
+- public surfaces at risk: docs, tests, examples, tutorials, demos, notebooks, types, schemas
+
+### Step 5 — Save the impact report
+
+Use `templates/stage-report.md` and save to:
+
+```text
+.statsclaw/runs/<request-id>/impact.md
 ```
 
-### Step 4 — Build function inventory
+Update run status to:
 
-For each `R/*.R` file:
-
-- Extract all function definitions: `^[a-zA-Z._][a-zA-Z0-9._]* <- function`
-- Classify as exported or internal (cross-reference NAMESPACE)
-
-### Step 5 — Build dependency map
-
-For each function, scan function bodies to detect calls to other package functions.
-Map: `caller → [called_functions]`.
-
-If a specific change is proposed, identify the transitive closure of affected functions.
-
-### Step 6 — Output structured summary
-
-Return the report in the Output Format below.
-
----
-
-## Output Format
-
-```markdown
-## Package: [name] [version]
-
-### Exported Functions
-- `function_a()` — [R/file.R, line N]
-- `function_b()` — [R/file.R, line N]
-
-### Internal Functions
-- `.helper_x()` — [R/file.R, line N]
-
-### Dependencies (Imports)
-- pkg1 (>= x.y)
-- pkg2
-
-### Function Dependency Map
-- `function_a()` calls: `.helper_x()`, `pkg1::foo()`
-- `function_b()` calls: `function_a()`
-
-### Files Affected by Change to [target]
-- R/[file.R]
-- man/[file.Rd]
-- tests/testthat/test-[file.R]
-```
+- `Current State: SCOPED`
+- `Current Owner: theorist` or `builder`
 
 ---
 
 ## Quality Checks
 
-- Do not guess function locations; verify by reading the file.
-- If NAMESPACE is absent, note it and infer exports from `@export` roxygen tags in `R/*.R`.
-- Flag unexported functions that appear in `man/` (documentation inconsistency).
-- Flag functions in NAMESPACE that do not exist in `R/` (broken export).
+- Do not guess function locations; verify them
+- Respect the active project profile when choosing what metadata to inspect
+- Flag broken exports or undocumented public interfaces
+- Flag profile-relevant docs or build surfaces where follow-up work is likely required
 
 ---
 
-## Example
+## Output Format
 
-**User:** "Map the fect package at ~/GitHub/fect"
-
-**Scout:**
-
-1. Reads `CONTEXT.md` or uses the path provided inline.
-2. Reads `DESCRIPTION` and `NAMESPACE`.
-3. Globs `R/*.R`, `man/*.Rd`, `tests/testthat/`.
-4. Returns a structured summary: exported functions, internals, dependency map, file list.
+- `.statsclaw/runs/<request-id>/impact.md`
+- concise summary of blast radius and the recommended next agent

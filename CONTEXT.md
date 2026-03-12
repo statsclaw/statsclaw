@@ -1,9 +1,15 @@
-# RClaw — Active Context
+# StatsClaw — Compatibility Context
 
-Set `Active` to the package you are working on. RClaw reads this at session startup.
+This file is a compatibility pointer for environments that expect a repo-root `CONTEXT.md`.
+
+StatsClaw runtime state lives under `.statsclaw/`, not in the versioned framework repository.
 
 ```yaml
-Active: packages/panelview.md
+Active: .statsclaw/CONTEXT.md
 ```
 
-> Copy `packages/_template.md` to `packages/<your-package>.md`, fill it in, then update the line above.
+Next steps:
+
+1. Open StatsClaw in Claude Code
+2. Tell Claude the target project path and your request
+3. StatsClaw will auto-create `.statsclaw/` as needed

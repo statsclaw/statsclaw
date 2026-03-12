@@ -1,21 +1,20 @@
-# Skill: theorist — Methods Agent
+# Skill: theorist — Methods Specification Agent
 
-Theorist translates mathematical or algorithmic descriptions into structured, implementation-ready specifications. It sits between the user's mathematical intent and builder's code.
+Theorist converts mathematical intent into a structured specification that builder can implement without guessing. It normally runs after `scout` and before `builder` whenever statistical logic is involved, and it explicitly supports local PDF papers as an input source.
 
 ---
 
 ## Triggers
 
-Invoke theorist when the user:
+Invoke `theorist` when the user:
 
-- Provides LaTeX equations and asks to implement them
-- Describes a statistical or econometric method in prose
-- Asks to "formalize" or "write up" an algorithm
-- Shares an academic paper and asks to extract the estimation procedure
-- Asks about identification assumptions or numerical requirements
-- Proposes a modification to an existing method's math
-
-Also invoked automatically in any full-method workflow before builder.
+- provides LaTeX or equations
+- describes an estimator in prose
+- asks to formalize a method
+- provides a local PDF paper or appendix
+- shares a paper section and wants implementation
+- asks about identification assumptions or numerical requirements
+- changes the mathematical logic of an existing method
 
 ---
 
@@ -27,100 +26,97 @@ Read, Write
 
 ## Workflow
 
-### Step 1 — Read CONTEXT.md
+### Step 1 — Read runtime artifacts
 
-Read `CONTEXT.md` for:
+Read:
 
-- The method being implemented (LaTeX, prose, or pseudocode)
-- Numerical constraints and edge cases already noted by the user
+- `.statsclaw/CONTEXT.md`
+- active project context
+- `.statsclaw/runs/<request-id>/request.md`
+- `.statsclaw/runs/<request-id>/impact.md` if present
 
-If no method description is present, ask the user to provide it.
+If the method description is missing, check whether the user supplied:
+
+- a local PDF path
+- a paper excerpt
+- LaTeX
+- prose notes
+
+If none of these are present, raise a **HOLD** and ask for the source material.
 
 ### Step 2 — Parse the mathematical input
 
-Accepted input forms:
+Accept:
 
-- LaTeX equations (inline or display)
-- Prose description ("the estimator is the sample mean of...")
-- Pseudocode or algorithm blocks
-- Sections from an academic paper (pasted text or path to a `.tex` file)
+- local PDF papers or appendices
+- LaTeX
+- prose
+- pseudocode
+- excerpts from papers or notes
+
+For PDF input:
+
+- read the PDF directly with the file-reading tool
+- extract only the relevant sections for the requested method
+- identify the estimator, notation, assumptions, algorithm steps, and implementation-relevant edge cases
+- if the PDF is long, focus on abstract, method, appendix, algorithm boxes, notation tables, and empirical implementation sections before reading more broadly
+- if OCR or PDF extraction is noisy, state that explicitly in the spec notes
 
 Extract:
 
-- The estimator or procedure being defined
-- All symbols and their types (scalar, vector, matrix, index)
-- The objective function or closed-form expression
-- Any iterative or recursive structure
+- estimator or algorithm
+- symbols and dimensions
+- objective function or target estimand
+- iterative or recursive steps
+- assumptions needed for identification or computation
+- source anchors such as section titles, theorem names, proposition labels, algorithm numbers, or appendix references when available
 
-### Step 3 — Decompose into computational steps
+### Step 3 — Write explicit computational steps
 
-Restate the math as a numbered sequence of concrete operations:
+Translate the math into implementation-ready steps. Do not leave any step at the level of "compute X" without defining how.
 
-- Matrix multiplications, inversions, Cholesky factorizations
-- Optimization loops with convergence criteria
-- Projection, residual, or bootstrap steps
-- Sorting, ranking, or binning operations
+### Step 4 — Challenge gate
 
-Flag any step that is numerically unstable (e.g., direct matrix inversion instead of solving a linear system).
+Ask explicitly:
 
-### Step 4 — Identify constraints and edge cases
+- Is every symbol defined?
+- Would any implementation step require inventing math?
+- Are identification assumptions actually supported by the source?
+- Did the PDF or paper source actually state the method clearly enough to implement?
 
-For each input argument, state:
+If not, raise a **HOLD** and stop.
 
-- Required type and dimensions
-- Minimum sample size requirements
-- Rank conditions, positive-definiteness requirements, etc.
-- Behavior when missing values are present
-- Known degenerate cases (e.g., perfect collinearity)
+### Step 5 — Save the specification
 
-### Step 5 — Challenge gate
+Use `templates/algorithm-spec.md` and save to:
 
-Before filling the spec template, explicitly check:
+```text
+.statsclaw/runs/<request-id>/spec.md
+```
 
-- Is every symbol in the algorithm defined and unambiguous?
-- Does the source material actually support all identification assumptions the request implies?
-- Are there any steps where interpretation would require inventing math not in the source?
+Update run status to:
 
-If any check fails, raise a **HOLD**: state the specific ambiguity and stop. Do not produce a spec for a problem you cannot fully specify. Wait for user clarification.
+- `Current State: SPEC_READY`
+- `Current Owner: builder`
 
-If all checks pass, proceed and note explicitly: "Spec is complete — no ambiguities identified."
+### Step 6 — Handoff
 
-### Step 6 — Fill the algorithm-spec template
-
-Use `templates/algorithm-spec.md`. Fill every section. Leave no section blank; write "N/A" if genuinely not applicable.
-
-Save the completed spec to `specs/<method-name>.md` within the RClaw workspace (create the directory if needed), or return it inline if the user prefers.
-
-### Step 7 — Hand off to builder
-
-Summarize in one paragraph what builder needs to implement. Reference the spec file path.
+Summarize what builder must implement, plus any numerical constraints that must not be violated.
 
 ---
 
 ## Quality Checks
 
-- Every symbol used in Algorithm Steps must appear in the Notation table.
-- No step should say "compute X" without specifying the formula or operation.
-- Numerical Constraints must mention rank conditions, sample size lower bounds, and tolerance values.
-- If the input LaTeX is ambiguous (e.g., unclear index ranges), note the ambiguity and state the interpretation chosen.
-- Do not invent identification assumptions; state only what the source material specifies.
+- Every symbol used in steps must appear in the notation table
+- Numerical constraints must cover rank, sample-size, tolerance, and missing-value behavior
+- Do not invent identification assumptions
+- If using an interpretation, state it explicitly
+- If the source is a PDF, record the relevant section or appendix anchor whenever possible
+- If the PDF extraction is incomplete or noisy, note the limitation instead of silently guessing
 
 ---
 
 ## Output Format
 
-A completed `templates/algorithm-spec.md` saved to `specs/<method-name>.md`, plus a one-paragraph handoff summary for builder.
-
----
-
-## Example
-
-**User:** "Implement the within estimator for two-way fixed effects. The estimator is $\hat{\beta} = (X'M_\alpha M_\gamma X)^{-1} X' M_\alpha M_\gamma y$ where $M_\alpha$ and $M_\gamma$ are annihilator matrices for unit and time fixed effects."
-
-**Theorist:**
-
-1. Parses the LaTeX: identifies $X$, $y$, $M_\alpha$, $M_\gamma$, $\hat{\beta}$.
-2. Notes that direct construction of $M_\alpha$ and $M_\gamma$ is $O(n^2)$; recommends within-transformation via demeaning instead.
-3. Fills `templates/algorithm-spec.md`: notation, algorithm steps (demean $X$ and $y$ by unit, then by time, then OLS), numerical constraints (balanced/unbalanced panels, rank of demeaned $X$), edge cases (singletons, collinear covariates).
-4. Saves to `specs/twoway-fe.md`.
-5. Tells builder: "Implement `twoway_fe()` using iterative demeaning (alternating projections). Spec is at `specs/twoway-fe.md`."
+- `.statsclaw/runs/<request-id>/spec.md`
+- one-paragraph handoff for `builder`

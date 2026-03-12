@@ -1,0 +1,16 @@
+.DS_Store
+
+# Local runtime state
+.statsclaw/
+
+# Local Claude/Cursor artifacts
+.claude/settings.local.json
+.claude/worktrees/
+.cursor/
+
+# Generated workflow artifacts kept local by default
+runs/
+specs/
+logs/
+tmp/
+tutorials/
