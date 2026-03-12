@@ -3,6 +3,7 @@
 Triage turns an unstructured user request into a structured run contract. It is the normal first step for any non-trivial request and is responsible for selecting or detecting the active project profile.
 
 For any non-trivial request, `triage` must create the runtime artifacts. If `request.md` and `status.md` are not written, triage is not complete.
+For any non-trivial request, `triage` should also select the workflow and let it continue automatically. Do not hand control back to the user for a simple "continue" confirmation.
 
 ---
 
@@ -16,6 +17,7 @@ Invoke `triage` when the user:
 - asks what needs to be done
 - asks for a release-ready workflow
 - provides a large or ambiguous request
+- gives a free-form request that spans multiple kinds of work
 
 ---
 
@@ -117,6 +119,12 @@ Also decide whether the request needs:
 
 based on the active project profile and project-context commands.
 
+Default behavior:
+
+- if the request is broad, end-to-end, or contains multiple kinds of work, select the full workflow
+- if the request is narrow, select only the required agents
+- do not require the user to explicitly name agents or workflow stages
+
 ### Step 7 — Create or update the run
 
 Use `templates/request.md` and save it to:
@@ -151,6 +159,8 @@ Return a one-paragraph summary that states:
 - which workflow path was selected
 - what the next agent should do
 
+Do not stop after this summary unless there is a real `HOLD` or another explicit blocking condition.
+
 ---
 
 ## Quality Checks
@@ -161,6 +171,7 @@ Return a one-paragraph summary that states:
 - Do not leave the profile undefined if the workflow depends on tooling conventions
 - Do not ask the user to manually create runtime files if triage can infer them
 - Do not leave `request.md` or `status.md` unwritten for a non-trivial request
+- Do not ask the user for a simple "go on" or "continue" after triage
 - Make the next step explicit
 
 ---

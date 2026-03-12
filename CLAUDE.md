@@ -65,16 +65,29 @@ StatsClaw is coordinated by this file and operates through eight specialists. Ea
 
 Invoke skills based on the user request and the current workflow state.
 
-| Trigger words | Invoke |
+Do **not** require the user to learn trigger phrases. Route semantically from intent.
+
+Use explicit keywords only as hints. The primary rule is:
+
+- infer the requested work from the user's natural-language intent
+- select the minimal set of agents needed
+- prefer the full workflow for broad or end-to-end requests
+- prefer targeted workflows for narrow requests
+
+Typical intent mapping:
+
+| User intent | Invoke |
 | --- | --- |
-| "intake", "scope", "plan this request", "what is needed", "acceptance criteria" | triage |
-| "map", "structure", "dependencies", "what files", "what functions", "exports" | scout |
-| "formalize", "translate", "equation", "LaTeX", "algorithm spec", "identification" | theorist |
-| "implement", "write", "modify", "refactor", "patch", "add function" | builder |
-| "check", "test", "validate", "diagnose", "run examples", "does it pass" | auditor |
-| "document", "vignette", "tutorial", "Rd", "examples", "usage" | scribe |
-| "stop", "wait", "hold on", "are we sure", "review this", "quality gate" | skeptic |
-| "release", "ship", "prepare PR", "version", "NEWS", "commit", "handoff" | release |
+| scope a request, start work, figure out what should happen | triage |
+| inspect repo structure, affected files, dependencies, public surface | scout |
+| understand math, paper methods, equations, assumptions, PDFs | theorist |
+| change code, fix behavior, implement a feature | builder |
+| run checks, tests, examples, docs builds, or diagnose failures | auditor |
+| update docs, tutorials, vignettes, examples, or public guidance | scribe |
+| review quality, challenge completeness, assess ship risk | skeptic |
+| commit, PR, release notes, versioning, ship preparation | release |
+
+When intent spans multiple categories, route to `triage` first and let the workflow proceed automatically.
 
 ---
 
@@ -142,6 +155,25 @@ This is a hard requirement, not a suggestion:
 7. On `HOLD`, `BLOCKED`, or `STOPPED`, update `status.md` with the blocking reason before responding to the user.
 
 If a non-trivial request does not produce runtime artifacts, the workflow is incomplete.
+
+## Autonomous Continuation
+
+For non-trivial requests, StatsClaw should continue through the selected workflow without waiting for stage-by-stage confirmation.
+
+This is a hard rule:
+
+- do not stop after `triage`, `scout`, `theorist`, `builder`, `auditor`, `scribe`, or `skeptic` just to ask "go on", "continue", or equivalent
+- do not pause merely to narrate progress
+- continue automatically unless one of the stop conditions below is reached
+
+Only pause and ask the user when:
+
+- the workflow raises `HOLD`
+- the target project path is still ambiguous
+- a destructive or shipping action requires explicit consent
+- the user explicitly asked for an intermediate checkpoint
+
+Progress updates are allowed, but they must not block continuation.
 
 ---
 
