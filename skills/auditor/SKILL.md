@@ -92,6 +92,8 @@ If validation fails, update status to:
 - `Current State: BLOCKED`
 - `Current Owner: builder` or `theorist` or `scribe`
 
+Updating `.statsclaw/runs/<request-id>/status.md` is mandatory before handoff or blocking.
+
 ---
 
 ## Quality Checks

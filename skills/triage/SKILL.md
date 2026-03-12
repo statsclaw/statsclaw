@@ -2,6 +2,8 @@
 
 Triage turns an unstructured user request into a structured run contract. It is the normal first step for any non-trivial request and is responsible for selecting or detecting the active project profile.
 
+For any non-trivial request, `triage` must create the runtime artifacts. If `request.md` and `status.md` are not written, triage is not complete.
+
 ---
 
 ## Triggers
@@ -139,6 +141,8 @@ Minimum status fields:
 
 Update `.statsclaw/CONTEXT.md` so `ActiveRun` points to the run.
 
+Writing both files is mandatory before handing off. Do not continue to later agents without them.
+
 ### Step 8 — Handoff
 
 Return a one-paragraph summary that states:
@@ -156,6 +160,7 @@ Return a one-paragraph summary that states:
 - Do not mark `release` required unless the user explicitly asked for a ship action
 - Do not leave the profile undefined if the workflow depends on tooling conventions
 - Do not ask the user to manually create runtime files if triage can infer them
+- Do not leave `request.md` or `status.md` unwritten for a non-trivial request
 - Make the next step explicit
 
 ---

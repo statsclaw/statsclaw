@@ -56,7 +56,7 @@ Requirements:
 - tutorials or docs should explain the feature before showing code
 - use `templates/tutorial-template.md` for larger tutorial content
 
-If docs contradict the spec or validated behavior, raise a **HOLD**.
+If docs contradict the spec or validated behavior, raise a **HOLD** and update `.statsclaw/runs/<request-id>/status.md` with the blocking reason.
 
 ### Step 4 — Record the doc handoff
 
@@ -70,6 +70,8 @@ Update run status to:
 
 - `Current State: DOCUMENTED`
 - `Current Owner: skeptic`
+
+Updating `.statsclaw/runs/<request-id>/status.md` is mandatory before handoff.
 
 ---
 

@@ -84,7 +84,7 @@ Ask explicitly:
 - Are identification assumptions actually supported by the source?
 - Did the PDF or paper source actually state the method clearly enough to implement?
 
-If not, raise a **HOLD** and stop.
+If not, raise a **HOLD**, update `.statsclaw/runs/<request-id>/status.md` with the blocking reason, and stop.
 
 ### Step 5 — Save the specification
 
@@ -98,6 +98,8 @@ Update run status to:
 
 - `Current State: SPEC_READY`
 - `Current Owner: builder`
+
+Updating `.statsclaw/runs/<request-id>/status.md` is mandatory before handoff.
 
 ### Step 6 — Handoff
 

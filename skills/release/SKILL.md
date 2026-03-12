@@ -80,6 +80,8 @@ Update run status to:
 - `Current State: READY_TO_RELEASE` before ship actions
 - `Current State: DONE` after ship actions complete, or after a release handoff is prepared if no git action was requested
 
+Updating `.statsclaw/runs/<request-id>/status.md` is mandatory before and after release-stage transitions.
+
 ---
 
 ## Quality Checks

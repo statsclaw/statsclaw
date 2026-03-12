@@ -15,3 +15,7 @@ Last Updated: [YYYY-MM-DD HH:MM]
 ## Blocking Reason
 
 [optional]
+
+## Persistence Rule
+
+This file must be updated after every completed stage and every `HOLD`, `BLOCKED`, or `STOPPED` transition.
