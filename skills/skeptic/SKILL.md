@@ -81,6 +81,8 @@ If the review fails, update run status to:
 - `Current State: STOPPED`
 - `Current Owner: builder` or `auditor` or `scribe`
 
+Updating `.statsclaw/runs/<request-id>/status.md` is mandatory before responding with the verdict.
+
 ---
 
 ## Quality Checks

@@ -127,6 +127,22 @@ Each run lives under `.statsclaw/runs/<request-id>/` and moves through explicit 
 
 The current state must be reflected in `.statsclaw/runs/<request-id>/status.md` or `status.json`.
 
+## Mandatory Runtime Persistence
+
+For every non-trivial request, runtime persistence is mandatory.
+
+This is a hard requirement, not a suggestion:
+
+1. Before substantive analysis or implementation, create or update `.statsclaw/`.
+2. Create or update an active run under `.statsclaw/runs/<request-id>/`.
+3. Write `.statsclaw/runs/<request-id>/request.md`.
+4. Write `.statsclaw/runs/<request-id>/status.md`.
+5. After each completed stage, update `status.md` immediately.
+6. When a stage produces an artifact (`impact.md`, `spec.md`, `implementation.md`, `audit.md`, `docs.md`, `review.md`, `release.md`), write that artifact before moving to the next stage.
+7. On `HOLD`, `BLOCKED`, or `STOPPED`, update `status.md` with the blocking reason before responding to the user.
+
+If a non-trivial request does not produce runtime artifacts, the workflow is incomplete.
+
 ---
 
 ## Safety Protocol

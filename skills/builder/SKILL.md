@@ -56,7 +56,7 @@ Before editing code, ask:
 - Does the change conflict with package naming or API conventions?
 - Does it require a judgment call that could affect results?
 
-If yes, raise a **HOLD** and stop for clarification.
+If yes, raise a **HOLD**, update `.statsclaw/runs/<request-id>/status.md` with the blocking reason, and stop for clarification.
 
 ### Step 4 — Implement
 
@@ -83,6 +83,8 @@ Update run status to:
 
 - `Current State: IMPLEMENTED`
 - `Current Owner: auditor`
+
+Updating `.statsclaw/runs/<request-id>/status.md` is mandatory before handoff.
 
 ---
 

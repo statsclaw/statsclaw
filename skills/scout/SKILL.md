@@ -89,6 +89,8 @@ Update run status to:
 - `Current State: SCOPED`
 - `Current Owner: theorist` or `builder`
 
+Updating `.statsclaw/runs/<request-id>/status.md` is mandatory before handoff.
+
 ---
 
 ## Quality Checks

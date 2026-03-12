@@ -27,6 +27,8 @@ StatsClaw will auto-create the local runtime when needed:
 
 The user does not need to run setup scripts or manually fill runtime files.
 
+For non-trivial requests, StatsClaw is expected to persist workflow state under `.statsclaw/runs/<request-id>/`, including `request.md`, `status.md`, and stage artifacts as the work progresses.
+
 ## Product Model
 
 StatsClaw separates framework files from runtime files.
