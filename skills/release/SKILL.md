@@ -37,6 +37,7 @@ Read:
 - `.statsclaw/runs/<request-id>/audit.md`
 - `.statsclaw/runs/<request-id>/review.md`
 - `.statsclaw/runs/<request-id>/docs.md` if present
+- `.statsclaw/runs/<request-id>/github.md` if the request originated from a GitHub issue
 
 Do not proceed if `skeptic` has not passed.
 
@@ -49,6 +50,8 @@ Depending on the request:
 - draft commit message
 - prepare PR title and body
 - prepare delivery notes for the user
+- determine the branch name to push
+- prepare the issue-resolution summary when the request originated from a GitHub issue
 
 Use `templates/stage-report.md` for the release summary.
 
@@ -60,12 +63,14 @@ Allowed actions only with explicit user instruction:
 - `git commit`
 - `git push`
 - `gh pr create`
+- `gh issue comment`
 
 Follow repository safety rules:
 
 - never force push unless explicitly requested
 - never commit unrelated files
 - never create an empty release action
+- never close a GitHub issue automatically
 
 ### Step 4 — Save the release artifact
 
@@ -90,6 +95,8 @@ Updating `.statsclaw/runs/<request-id>/status.md` is mandatory before and after 
 - Do not version bump unless it is in scope
 - Make the test plan explicit in PR output
 - Keep commit and PR summaries aligned with the actual change
+- If the run originated from a GitHub issue, post a resolution comment after branch push / PR creation when requested or policy-driven
+- Never auto-close the issue; leave closure to a human maintainer
 
 ---
 
@@ -97,4 +104,4 @@ Updating `.statsclaw/runs/<request-id>/status.md` is mandatory before and after 
 
 - `.statsclaw/runs/<request-id>/release.md`
 - concise release summary
-- commit and PR metadata when requested
+- commit, branch, PR, and issue-comment metadata when requested

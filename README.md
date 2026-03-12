@@ -28,11 +28,12 @@ This repository does **not** contain user-specific runtime artifacts after insta
 
 ## Agent Team
 
-StatsClaw coordinates eight specialists:
+StatsClaw coordinates nine specialists:
 
 | Agent | Role |
 | --- | --- |
 | `triage` | Turns a natural-language request into a structured task contract |
+| `github` | Handles issues, PRs, checks, labels, and daily issue queue interactions |
 | `scout` | Maps project structure, exports, dependencies, tooling, and blast radius |
 | `theorist` | Converts mathematical intent into a formal implementation spec |
 | `builder` | Implements the requested change in the target project |
@@ -51,6 +52,12 @@ For a full feature or method request, the standard path is:
 triage → scout → theorist? → builder → auditor → scribe → skeptic → release?
 ```
 
+For issue-driven work, the path can begin with:
+
+```text
+github → triage → scout → ...
+```
+
 Meaning:
 
 - `theorist` is required when the request changes mathematical logic
@@ -64,6 +71,41 @@ StatsClaw keeps one workflow and switches execution rules by project profile. Pr
 - `python-package`
 - `typescript-package`
 - `stata-project`
+
+StatsClaw can also operate in GitHub-driven mode:
+
+- inspect issues and PRs
+- summarize CI/check failures
+- create issue-driven run artifacts
+- maintain a daily actionable issue queue
+
+The GitHub agent can also manage a recurring scan schedule inside the Claude-side workflow layer, for example:
+
+- scan the target repo's open issues every day at `00:00 America/Los_Angeles`
+- build an actionable queue
+- activate the full StatsClaw workflow for the top actionable issue
+- after solving, push the changes to the corresponding branch and reply on the issue with the resolution summary
+
+This schedule belongs to the StatsClaw runtime and is handled by Claude-side orchestration rather than external GitHub Actions.
+
+You do not need to fill schedule fields manually. You can just say things like:
+
+- "每天 0 点 PT 扫描"
+- "每周一早上 9 点扫一次"
+- "只看 bug label"
+- "自动激活整个 workflow 去解决"
+
+GitHub access preference:
+
+- preferred: `gh` CLI if it is installed and authenticated
+- fallback: GitHub REST API via `GH_TOKEN` or `GITHUB_TOKEN`
+- if neither exists, the GitHub agent should pause with a clear HOLD instead of silently failing
+
+Issue-resolution policy:
+
+- after an issue-driven workflow succeeds, StatsClaw should push the changes to the corresponding branch
+- it should also post an issue comment summarizing what was solved and where the branch/PR lives
+- it must not auto-close the issue
 
 The workflow is stateful. Each active request gets a local run folder under `.statsclaw/runs/<request-id>/`.
 
@@ -85,6 +127,15 @@ StatsClaw will automatically:
 Example prompts:
 
 ```text
+Work on ~/GitHub/fect.
+Inspect open GitHub issues, build an actionable queue, and route the top issue into the workflow.
+
+Work on ~/GitHub/fect.
+Every day at 00:00 America/Los_Angeles, scan the repo's open GitHub issues, pick the top actionable one, and run the full StatsClaw workflow to solve it.
+
+处理 /Users/tianzhuqin/GitHub/fect。
+每天 0 点 PT 扫描 open issues，只看 bug label，并自动激活整个 workflow 去解决。
+
 Work on ~/GitHub/fect.
 Map the project and identify the files affected by a new ATT estimator.
 
@@ -131,4 +182,5 @@ See `docs/README.md` for the full guide.
 - **Validation before documentation sign-off.** Docs follow passing checks.
 - **Review before release.** Shipping happens only after a skeptical review.
 - **Explicit release actions.** No commit, PR, or version bump without user instruction.
+- **GitHub-aware intake.** Issue-driven work can enter the workflow through the GitHub agent, including Claude-managed recurring scans.
 

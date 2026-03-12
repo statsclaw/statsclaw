@@ -41,16 +41,18 @@ StatsClaw is designed for **zero-config use**:
 - do not require the user to manually create runtime files
 - do not require the user to manually choose a profile unless detection is ambiguous
 - default to prompt-driven execution: the user tells Claude the target project path and the desired work
+- keep GitHub issue scheduling and workflow activation inside Claude-side orchestration rather than external automation
 
 ---
 
 ## Team
 
-StatsClaw is coordinated by this file and operates through eight specialists. Each skill defines triggers, workflow, outputs, and quality bars.
+StatsClaw is coordinated by this file and operates through nine specialists. Each skill defines triggers, workflow, outputs, and quality bars.
 
 | Name | Role |
 | --- | --- |
 | **triage** | Structures the user request into a task contract and selects the workflow path |
+| **github** | Interacts with GitHub issues, PRs, checks, labels, and Claude-managed daily issue queues |
 | **scout** | Maps project structure, exports, dependencies, tooling, and blast radius |
 | **theorist** | Converts mathematical intent into an implementation-ready specification |
 | **builder** | Implements or modifies code without expanding scope |
@@ -79,6 +81,7 @@ Typical intent mapping:
 | User intent | Invoke |
 | --- | --- |
 | scope a request, start work, figure out what should happen | triage |
+| inspect issues, PRs, review comments, checks, labels, or GitHub queues | github |
 | inspect repo structure, affected files, dependencies, public surface | scout |
 | understand math, paper methods, equations, assumptions, PDFs | theorist |
 | change code, fix behavior, implement a feature | builder |
@@ -114,6 +117,7 @@ Execution rules are **profile-aware**:
 
 Targeted workflows:
 
+- GitHub issue intake: `github → triage → scout → ...`
 - Diagnostics only: `triage → scout? → auditor`
 - Docs only: `triage → scout → scribe → skeptic`
 - Release only: `triage → skeptic → release`
@@ -151,10 +155,38 @@ This is a hard requirement, not a suggestion:
 3. Write `.statsclaw/runs/<request-id>/request.md`.
 4. Write `.statsclaw/runs/<request-id>/status.md`.
 5. After each completed stage, update `status.md` immediately.
-6. When a stage produces an artifact (`impact.md`, `spec.md`, `implementation.md`, `audit.md`, `docs.md`, `review.md`, `release.md`), write that artifact before moving to the next stage.
+6. When a stage produces an artifact (`github.md`, `impact.md`, `spec.md`, `implementation.md`, `audit.md`, `docs.md`, `review.md`, `release.md`), write that artifact before moving to the next stage.
 7. On `HOLD`, `BLOCKED`, or `STOPPED`, update `status.md` with the blocking reason before responding to the user.
 
 If a non-trivial request does not produce runtime artifacts, the workflow is incomplete.
+
+## GitHub Schedule Semantics
+
+StatsClaw may manage recurring GitHub issue scans from within Claude Code.
+
+Rules:
+
+- If the user asks for a recurring GitHub scan schedule, store it in `.statsclaw/CONTEXT.md`.
+- Example schedule format: `daily 00:00 America/Los_Angeles`.
+- Parse schedules semantically from natural language. Examples:
+  - "每天 0 点 PT 扫描" → `daily 00:00 America/Los_Angeles`
+  - "每周一早上 9 点扫一次" → `weekly Monday 09:00 [timezone]`
+- Parse GitHub filters semantically from natural language. Examples:
+  - "只看 bug label" → `label:bug`
+  - "只看 open 的 enhancement" → `is:open label:enhancement`
+- Parse automatic solving intent semantically from natural language. Examples:
+  - "自动解决" → `GitHubAutoSolve: true`
+  - "只排队不要自动解决" → `GitHubAutoSolve: false`
+- When a Claude session starts or continues, check whether the GitHub scan is due.
+- If the scan is due, run `github` before other substantive work unless the user explicitly says otherwise.
+- If the user requested automatic issue solving, `github` should convert the top actionable issue into a run and activate the downstream workflow immediately in the same Claude execution context.
+- If an issue-driven workflow reaches completion, route through `release` so the changes can be pushed to a branch and the issue can receive a resolution comment.
+
+Important boundary:
+
+- StatsClaw is a Claude Code architecture, not an external cron service.
+- Therefore the schedule is enforced within Claude-side execution, not through `.github/workflows` or external webhooks.
+- GitHub issues must not be auto-closed by the workflow; closure is a human decision.
 
 ## Autonomous Continuation
 
@@ -257,6 +289,7 @@ Effect:
 ├── runs/
 │   └── <request-id>/
 │       ├── request.md
+│       ├── github.md
 │       ├── impact.md
 │       ├── spec.md
 │       ├── implementation.md
