@@ -62,6 +62,8 @@ triage → scout → theorist? → builder → auditor → scribe → skeptic �
 
 The workflow is language-agnostic. Execution details come from the active project profile and optional project-context overrides.
 
+Users do not need to explicitly name agents or write rigid trigger phrases. StatsClaw is intended to infer intent from natural language and route the work automatically.
+
 Profiles currently supported:
 
 - `r-package`
@@ -75,6 +77,8 @@ Meaning:
 - `scribe` runs after validation so docs match the final implementation
 - `skeptic` reviews the finished change set
 - `release` runs only when the user explicitly asks to ship
+
+For non-trivial requests, StatsClaw should continue through the selected workflow automatically. It should not pause between stages just to ask for "go on" or "continue" unless a real blocking condition exists.
 
 Targeted variants:
 
