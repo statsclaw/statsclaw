@@ -25,6 +25,7 @@
       "Bash(mkdir:*)",
       "Bash(rm:*)",
       "Bash(chmod:*)",
+      "Bash(curl:*)",
       "Bash(git status:*)",
       "Bash(git diff:*)",
       "Bash(git log:*)",

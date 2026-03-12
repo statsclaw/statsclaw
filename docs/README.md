@@ -60,6 +60,12 @@ Standard flow:
 triage → scout → theorist? → builder → auditor → scribe → skeptic → release?
 ```
 
+Issue-driven flow can begin with:
+
+```text
+github → triage → scout → ...
+```
+
 The workflow is language-agnostic. Execution details come from the active project profile and optional project-context overrides.
 
 Users do not need to explicitly name agents or write rigid trigger phrases. StatsClaw is intended to infer intent from natural language and route the work automatically.
@@ -77,15 +83,46 @@ Meaning:
 - `scribe` runs after validation so docs match the final implementation
 - `skeptic` reviews the finished change set
 - `release` runs only when the user explicitly asks to ship
+- `github` handles issues, PRs, checks, and queue-driven intake when work begins from GitHub
 
 For non-trivial requests, StatsClaw should continue through the selected workflow automatically. It should not pause between stages just to ask for "go on" or "continue" unless a real blocking condition exists.
 
 Targeted variants:
 
+- GitHub issue intake: `github → triage → scout → ...`
 - mapping only: `triage → scout`
 - validation only: `triage → auditor`
 - docs only: `triage → scout → scribe → skeptic`
 - release only: `triage → skeptic → release`
+
+The GitHub agent can maintain a recurring scan schedule inside the Claude-side workflow layer. Example:
+
+- every day at `00:00 America/Los_Angeles`
+- scan the target repo's open issues
+- build an actionable queue
+- activate the full StatsClaw workflow for the top actionable issue
+- after a successful solve, push the work to a branch and comment on the issue with the resolution summary
+
+This schedule belongs to StatsClaw runtime state and is managed inside Claude-side orchestration rather than external GitHub Actions.
+
+Users do not need to fill schedule fields manually. StatsClaw should parse natural-language instructions such as:
+
+- "每天 0 点 PT 扫描"
+- "每周一早上 9 点扫一次"
+- "只看 bug label"
+- "自动激活整个 workflow 去解决"
+
+GitHub access preference:
+
+- preferred: `gh` CLI if it is installed and authenticated
+- fallback: GitHub REST API via `GH_TOKEN` or `GITHUB_TOKEN`
+- if neither exists, the GitHub agent should pause with a clear HOLD instead of silently failing
+
+Issue-resolution policy:
+
+- after an issue-driven workflow succeeds, StatsClaw should push the resulting changes to the corresponding branch
+- it should also comment on the GitHub issue with the branch and PR status plus a short resolution summary
+- it must not auto-close the issue
 
 ## Agent Roles
 
@@ -100,6 +137,18 @@ Produces:
 
 - `.statsclaw/runs/<request-id>/request.md`
 - `.statsclaw/runs/<request-id>/status.md`
+
+### `github`
+
+- inspects issues, PRs, review comments, labels, and checks
+- converts actionable GitHub items into StatsClaw runs
+- supports daily issue queue maintenance
+
+Produces:
+
+- `.statsclaw/runs/<request-id>/github.md`
+- optionally `.statsclaw/runs/<request-id>/request.md`
+- optionally `.statsclaw/runs/<request-id>/status.md`
 
 ### `scout`
 
@@ -193,6 +242,7 @@ Suggested run layout:
 ```text
 .statsclaw/runs/<request-id>/
 ├── request.md
+├── github.md
 ├── impact.md
 ├── spec.md
 ├── implementation.md
@@ -246,6 +296,12 @@ Typical owner:
 
 ```text
 Work on ~/GitHub/fect and triage this request.
+
+Inspect open GitHub issues for the active project, build an actionable queue, and route the top issue into the workflow.
+
+For /Users/tianzhuqin/GitHub/fect, every day at 00:00 America/Los_Angeles, scan open GitHub issues, pick the top actionable one, and activate the full StatsClaw workflow to solve it.
+
+处理 /Users/tianzhuqin/GitHub/fect。每天 0 点 PT 扫描 open issues，只看 bug label，并自动激活整个 workflow 去解决。
 
 Work on ~/GitHub/fect and map the project files affected by this estimator change.
 
