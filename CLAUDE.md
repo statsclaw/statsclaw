@@ -1,6 +1,8 @@
-# RClaw — R Package Development Workspace
+# StatsClaw — Framework-Only Product for Claude Code
 
-RClaw is an agentic workspace for developing, maintaining, and documenting statistical R packages. It translates mathematical specifications into working code, validates implementations, and keeps documentation synchronized with the codebase.
+StatsClaw is a reusable workflow framework for building, validating, documenting, and shipping code changes with Claude Code across multiple languages. The repository itself contains the framework only: orchestration rules, agent definitions, templates, profiles, and docs.
+
+StatsClaw does **not** version user runtime state. All request state, project contexts, generated specs, reports, and run artifacts live under a local `.statsclaw/` directory that is ignored by git by default.
 
 ---
 
@@ -8,158 +10,227 @@ RClaw is an agentic workspace for developing, maintaining, and documenting stati
 
 At the start of every session:
 
-1. Read `CONTEXT.md` to find the `Active:` field, which points to a file under `packages/`.
-2. Read that package file to load the package path, description, known issues, and current task.
-3. If `CONTEXT.md` points to `_template.md` or the package file is unfilled, ask the user to set up their package context before proceeding.
-4. Hold the package path and task in mind for all subsequent operations.
+1. Read `.statsclaw/CONTEXT.md` if it exists.
+2. If `.statsclaw/CONTEXT.md` does not exist, create a minimal local runtime automatically:
+   - create `.statsclaw/`, `.statsclaw/packages/`, `.statsclaw/runs/`, `.statsclaw/logs/`, `.statsclaw/tmp/`
+   - create `.statsclaw/CONTEXT.md` from `templates/context.md`
+3. If the user message includes a target repo path, use it immediately.
+4. If no target repo path is given, try to infer one from available context.
+5. If there is still no clear target project, ask one concise clarification question.
+6. Create or update the active project context under `.statsclaw/packages/` automatically when missing.
+7. Determine the project profile from the active project context or repo markers and write it back to the local runtime when missing.
+8. If an active run is set, read the request artifact for that run under `.statsclaw/runs/<request-id>/`.
+9. Hold the project path, profile, acceptance criteria, active run, and current workflow state in memory for the rest of the session.
+
+Compatibility note: `CONTEXT.md` at the repo root exists only as a compatibility pointer. Runtime state belongs in `.statsclaw/` and is auto-managed by StatsClaw.
+
+---
+
+## Product Model
+
+StatsClaw separates two classes of files:
+
+- **Versioned framework files** — `CLAUDE.md`, `skills/`, `templates/`, `profiles/`, `docs/`
+- **Local runtime files** — `.statsclaw/CONTEXT.md`, `.statsclaw/packages/`, `.statsclaw/runs/`, `.statsclaw/logs/`, `.statsclaw/tmp/`
+
+Agents may read and write local runtime artifacts, but framework files should only change when improving StatsClaw itself.
+
+StatsClaw is designed for **zero-config use**:
+
+- do not require the user to run setup scripts
+- do not require the user to manually create runtime files
+- do not require the user to manually choose a profile unless detection is ambiguous
+- default to prompt-driven execution: the user tells Claude the target project path and the desired work
 
 ---
 
 ## Team
 
-RClaw operates through six specialists. Each has a `skills/<name>/SKILL.md` that describes their triggers, tools, workflow, and output format.
+StatsClaw is coordinated by this file and operates through eight specialists. Each skill defines triggers, workflow, outputs, and quality bars.
 
 | Name | Role |
 | --- | --- |
-| **scout** | Maps the package: structure, exports, dependencies, affected files |
-| **theorist** | Formalizes mathematical or algorithmic specifications |
-| **builder** | Implements and modifies R functions from specs |
-| **auditor** | Runs `devtools::check()`, tests, and examples; diagnoses failures |
-| **scribe** | Updates `.Rd` documentation, vignettes, and tutorials |
-| **skeptic** | Adversarial quality gate: challenges tests, refactors, and artifacts before any commit; issues STOP or PASS |
+| **triage** | Structures the user request into a task contract and selects the workflow path |
+| **scout** | Maps project structure, exports, dependencies, tooling, and blast radius |
+| **theorist** | Converts mathematical intent into an implementation-ready specification |
+| **builder** | Implements or modifies code without expanding scope |
+| **auditor** | Runs profile-aware validation, tests, examples, docs builds, and tutorial renders; diagnoses failures |
+| **scribe** | Updates profile-appropriate user-facing docs, examples, and tutorials |
+| **skeptic** | Reviews the completed change set adversarially before any ship action |
+| **release** | Handles versioning, changelog, commit, PR, and final delivery artifacts when requested |
 
 ---
 
 ## Routing
 
-Invoke skills based on the user's request. Use exact matches first; fall back to semantic judgment.
+Invoke skills based on the user request and the current workflow state.
 
 | Trigger words | Invoke |
 | --- | --- |
+| "intake", "scope", "plan this request", "what is needed", "acceptance criteria" | triage |
 | "map", "structure", "dependencies", "what files", "what functions", "exports" | scout |
 | "formalize", "translate", "equation", "LaTeX", "algorithm spec", "identification" | theorist |
 | "implement", "write", "modify", "refactor", "patch", "add function" | builder |
 | "check", "test", "validate", "diagnose", "run examples", "does it pass" | auditor |
 | "document", "vignette", "tutorial", "Rd", "examples", "usage" | scribe |
-| "stop", "wait", "hold on", "are we sure", "is this right", "before we commit", "review this" | skeptic |
+| "stop", "wait", "hold on", "are we sure", "review this", "quality gate" | skeptic |
+| "release", "ship", "prepare PR", "version", "NEWS", "commit", "handoff" | release |
 
-For a **full method request** (adding a new method end-to-end), invoke all six in sequence:
+---
+
+## Closed-Loop Workflow
+
+For any non-trivial request, run this closed loop:
 
 ```text
-scout → theorist → builder → auditor → skeptic → scribe
+triage → scout → theorist? → builder → auditor → scribe → skeptic → release?
 ```
+
+Rules:
+
+- `theorist` is mandatory for new or changed statistical, mathematical, or algorithmic methods and optional for non-mathematical refactors.
+- `scribe` runs after auditor passes for any public-facing change, API change, example change, or docs-bearing project.
+- `skeptic` reviews the full finished change set, including code, tests, docs, tutorial outputs, and workflow artifacts.
+- `release` only runs when the user asks to ship, version, commit, or open a PR.
+
+Execution rules are **profile-aware**:
+
+- Use the active project profile under `profiles/` to decide repo markers, build tools, validation commands, docs conventions, and release conventions.
+- Prefer project-context commands when explicitly provided.
+- Fall back to profile defaults when the project context does not override them.
+
+Targeted workflows:
+
+- Diagnostics only: `triage → scout? → auditor`
+- Docs only: `triage → scout → scribe → skeptic`
+- Release only: `triage → skeptic → release`
+
+---
+
+## State Signals
+
+Each run lives under `.statsclaw/runs/<request-id>/` and moves through explicit states:
+
+- `NEW`
+- `TRIAGED`
+- `SCOPED`
+- `SPEC_READY`
+- `IMPLEMENTED`
+- `VALIDATED`
+- `DOCUMENTED`
+- `REVIEW_PASSED`
+- `READY_TO_RELEASE`
+- `DONE`
+- `HOLD`
+- `BLOCKED`
+- `STOPPED`
+
+The current state must be reflected in `.statsclaw/runs/<request-id>/status.md` or `status.json`.
 
 ---
 
 ## Safety Protocol
 
-Any skill may raise a **HOLD** or a **BLOCK** at any point in the pipeline.
+Any skill may raise a workflow signal when the next step would be unsafe or ambiguous.
 
-**HOLD** — raised by theorist or builder before proceeding:
+### HOLD
 
-- The pipeline pauses immediately.
-- The skill states the concern in one or two sentences.
-- Present the concern to the user and wait for explicit instruction. Do not resolve it by making a "best guess."
+Raised by `triage`, `theorist`, `builder`, or `scribe`.
 
-**BLOCK** — raised by auditor:
+Use HOLD when:
 
-- The pipeline stops. Scribe does not run.
-- The block persists until the underlying issue is resolved and auditor re-runs cleanly.
+- The request is ambiguous or under-scoped
+- Mathematical interpretation would require invention
+- The change conflicts with the existing API or package conventions
+- Documentation and implementation disagree in a way that needs user choice
 
-**Conditions that require a HOLD:**
+Effect:
 
-| Raised by | Condition |
-| --- | --- |
-| theorist | Math is ambiguous or underspecified — interpretation would require invention |
-| theorist | Source material does not support an identification assumption that the request implies |
-| theorist | Notation conflicts or symbols are overloaded in ways that affect computation |
-| builder | Spec conflicts with existing package API or calling conventions |
-| builder | Implementation requires an undocumented judgment call that would affect results |
-| builder | Requested change would silently break a downstream function |
+- Pause the run
+- Record the concern in the run status
+- Ask the user for explicit clarification before proceeding
 
-**Conditions that require a BLOCK:**
+### BLOCK
 
-| Raised by | Condition |
-| --- | --- |
-| auditor | Any ERROR in `devtools::check()` or `devtools::test()` |
-| auditor | Numerical results are implausible given the method (even if tests formally pass) |
-| auditor | Test suite passes trivially — structure-only checks with no correctness assertions |
+Raised by `auditor`.
 
-**Conditions that require a STOP (skeptic):**
+Use BLOCK when:
 
-| Condition |
-| --- |
-| A changed code path has no test coverage |
-| Tests are structural-only with no correctness assertions, and the risk is non-trivial |
-| `devtools::check(args = '--as-cran')` was not run after a structural refactor |
-| Tutorial was not re-rendered after any code change |
-| Memory or skill files contain inaccuracies or contradict the actual repo state |
-| Commit message omits a meaningful change |
+- required profile-aware validation commands fail
+- examples or docs builds fail when required
+- tutorial rendering fails when required
+- numerical results are implausible or unsupported by the spec
 
-A HOLD, BLOCK, or STOP is not a failure. It is the skill doing its job correctly.
+Effect:
 
----
+- Stop downstream work
+- Route back to `builder`, `theorist`, or `scribe` as appropriate
 
-## Pipeline
+### STOP
 
-For any non-trivial code change:
+Raised by `skeptic`.
 
-1. **scout** — identify affected files and existing related functions
-2. **theorist** — formalize the spec; raise HOLD if underspecified; sign off explicitly when complete
-3. **builder** — challenge the spec before implementing; raise HOLD if conflicts exist; implement
-4. **auditor** — run checks, tests, and numerical diagnostics (cross-referencing the spec); raise BLOCK on any failure or implausible result; route math inconsistencies back to theorist
-5. **skeptic** — review the diff adversarially before any commit; challenge test coverage, refactor correctness, documentation freshness, and artifact accuracy; issue STOP or PASS
-6. **scribe** — update documentation; flag any contradiction between docs and spec
+Use STOP when:
 
-If **auditor** raises a BLOCK:
+- Changed code paths lack meaningful test coverage
+- Validation was skipped or insufficient
+- Docs or tutorials do not reflect the final implementation
+- Workflow artifacts contradict the actual repo state
+- A release artifact omits a meaningful change
 
-- Code bug → route back to **builder**
-- Math inconsistency → route back to **theorist**
-- Documentation example fails → route to **scribe**
+Effect:
 
-If **skeptic** raises a STOP:
-
-- Missing tests → route back to **builder**
-- Auditor checks incomplete → route back to **auditor**
-- Docs stale → route to **scribe**
-- Memory or skills inaccurate → fix in place before committing the RClaw repo
-
-Repeat until auditor passes cleanly and skeptic issues a PASS.
+- Block commit, PR creation, or release
+- Route back to the responsible specialist
 
 ---
 
 ## Principles
 
-- Mathematical intent must be separated from software implementation. Any code update affecting a statistical method should begin with a theorist spec.
-- Numerical reliability matters. builder must handle NA, Inf, and edge cases as specified by theorist.
-- Documentation is not optional. scribe always runs after a successful auditor pass.
-- Do not modify unrelated functions. Changes should be surgical.
-- Templates live in `templates/`. Use them.
-- Skills have independent judgment. A skill that raises a HOLD or BLOCK is not blocking progress — it is preventing a worse outcome.
+- **Framework repo, local runtime.** Never assume user runtime state should be committed.
+- **Zero-config by default.** The user should be able to open StatsClaw and start with a plain-language request that includes the target project path.
+- **Profile-aware execution.** The workflow stays stable while build, test, lint, docs, and packaging rules come from the active project profile.
+- **Math before code.** Statistical or algorithmic method changes start with `theorist`.
+- **Tests and checks before docs sign-off.** `auditor` must pass before `scribe` finalizes public-facing materials.
+- **Docs before quality gate.** `skeptic` reviews the complete change set, not a partial one.
+- **Release is explicit.** Do not version, commit, or open PRs unless the user asks.
+- **Surgical scope.** Each run should modify only what the request requires.
+- **Templates are contracts.** Use `templates/` to keep handoffs structured and inspectable.
 
 ---
 
-## File Layout
+## Runtime Layout
 
 ```text
-RClaw/
-├── CLAUDE.md              — this file
-├── CONTEXT.md             — points to the active package file
+.statsclaw/
+├── CONTEXT.md
 ├── packages/
-│   ├── _template.md       — copy this to add a new package
-│   ├── fect.md            — per-package context (path, tasks, issues)
-│   └── ...
+│   └── <package>.md
+├── runs/
+│   └── <request-id>/
+│       ├── request.md
+│       ├── impact.md
+│       ├── spec.md
+│       ├── implementation.md
+│       ├── audit.md
+│       ├── docs.md
+│       ├── review.md
+│       ├── release.md
+│       └── status.md
+├── logs/
+└── tmp/
+```
+
+---
+
+## Framework Layout
+
+```text
+StatsClaw/
+├── CLAUDE.md
+├── README.md
+├── profiles/
+├── docs/
 ├── skills/
-│   ├── scout/SKILL.md
-│   ├── theorist/SKILL.md
-│   ├── builder/SKILL.md
-│   ├── auditor/SKILL.md
-│   ├── scribe/SKILL.md
-│   └── skeptic/SKILL.md
-├── templates/
-│   ├── algorithm-spec.md
-│   ├── diagnostic-report.md
-│   └── tutorial-template.md
-├── specs/                 — algorithm specs produced by theorist
-└── reports/               — diagnostic reports produced by auditor
+└── templates/
 ```
