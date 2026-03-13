@@ -1,9 +1,9 @@
-# RClaw — Active Context
+# StatsClaw — Active Context
 
-Set `Active` to the package you are working on. RClaw reads this at session startup.
+This file is a legacy compatibility pointer. Runtime state now lives in `.statsclaw/CONTEXT.md`.
+
+For per-package context, see `packages/` or `.statsclaw/packages/`.
 
 ```yaml
-Active: packages/panelview.md
+Active: packages/fect.md
 ```
-
-> Copy `packages/_template.md` to `packages/<your-package>.md`, fill it in, then update the line above.

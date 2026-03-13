@@ -1,0 +1,30 @@
+# StatsClaw runtime state (never committed)
+.statsclaw/
+
+# R artifacts
+.Rhistory
+.Rapp.history
+.Ruserdata
+.RData
+.Rproj.user/
+.Data
+*-Ex.R
+/*.tar.gz
+/*.Rcheck/
+
+# Compiled code
+src/*.o
+src/*.so
+src/*.dll
+
+# Vignette outputs
+vignettes/*.html
+vignettes/*.pdf
+vignettes/*_cache/
+vignettes/*_files/
+
+# OS files
+.DS_Store
+
+# Build artifacts
+check/
