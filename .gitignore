@@ -1,16 +1,31 @@
-.DS_Store
-
-# Local runtime state
+# StatsClaw runtime state (never committed)
 .statsclaw/
 
-# Local Claude/Cursor artifacts
-.claude/settings.local.json
-.claude/worktrees/
-.cursor/
+# R artifacts
+.Rhistory
+.Rapp.history
+.Ruserdata
+.RData
+.Rproj.user/
+.Data
+*-Ex.R
+/*.tar.gz
+/*.Rcheck/
 
-# Generated workflow artifacts kept local by default
-runs/
-specs/
-logs/
-tmp/
-tutorials/
+# Compiled code
+src/*.o
+src/*.so
+src/*.dll
+
+# Vignette outputs
+vignettes/*.html
+vignettes/*.pdf
+vignettes/*_cache/
+vignettes/*_files/
+
+# OS files
+.DS_Store
+
+# Build artifacts
+check/
+.claude/
