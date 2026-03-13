@@ -32,6 +32,8 @@ The user does not need to run setup scripts or manually fill runtime files.
 
 When `StatsClaw` itself is the open Claude Code repository, non-trivial requests should enter the StatsClaw workflow automatically. Users should not need to say "use StatsClaw", "start with lead", or any other control phrase unless they intentionally want to bypass the framework.
 
+If the user points StatsClaw at another GitHub repository, StatsClaw must first turn that repository reference into a usable local checkout. If that acquisition step fails, the run must enter `HOLD` instead of editing or shipping the `StatsClaw` repository.
+
 For non-trivial requests, StatsClaw is expected to persist workflow state under `.statsclaw/runs/<request-id>/`, including `request.md`, `status.md`, `impact.md`, and stage artifacts as the work progresses.
 
 ## Product Model
@@ -77,6 +79,8 @@ The workflow is language-agnostic. Execution details come from the active projec
 Users do not need to explicitly name agents or write rigid trigger phrases. StatsClaw is intended to infer intent from natural language and route the work automatically.
 
 In the normal case, the user should be able to give only a target repository path plus a short task description and let StatsClaw take over from there.
+
+In cloud environments, the target may start as a GitHub URL rather than a local path. StatsClaw should normalize the URL, acquire the target checkout, and then shift all implementation, validation, and ship actions to that target repository.
 
 Profiles currently supported:
 
@@ -124,6 +128,13 @@ In both modes:
 
 - only `lead` updates `status.md` and lock ownership
 - teammates write only their own stage artifact plus append-only mailbox messages
+
+Repository boundary:
+
+- when the user target is external, `StatsClaw` is only the control plane
+- only `.statsclaw/` runtime artifacts may be written inside `StatsClaw`
+- target code, docs, tests, commits, pushes, and PRs must happen in the target repository checkout
+- if the target checkout is unavailable or wrong, the workflow must raise `HOLD` or `STOP`
 
 StatsClaw separates:
 
@@ -301,6 +312,9 @@ Typical owner:
 ## First Prompt Suggestions
 
 ```text
+Work on https://github.com/xuyiqing/fect/tree/cfe.
+Check all plot-related content.
+
 Work on ~/GitHub/fect.
 Check all plot-related content.
 

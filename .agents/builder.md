@@ -34,6 +34,8 @@
 - change docs unless the task explicitly includes docs and the lock was assigned
 - redefine scope or acceptance criteria
 - rescan the whole repo when `impact.md` already covers the surface
+- write versioned `StatsClaw` files when the target repository is some other repository
+- start implementation if `lead` has not confirmed the target checkout and assigned the write surface
 
 ## Required Duties
 

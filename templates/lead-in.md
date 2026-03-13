@@ -22,10 +22,13 @@ Use this template to understand what `lead` is allowed to consume before plannin
 
 - `.statsclaw/runs/<request-id>/github.md`
 - target repo metadata needed for profile detection
+- normalized GitHub URL or repository reference
+- target checkout path and remote verification state
 
 ## Required Decisions
 
 - target package and profile
+- target repository identity and local checkout path
 - acceptance criteria
 - workflow path
 - required teammates
@@ -35,3 +38,7 @@ Use this template to understand what `lead` is allowed to consume before plannin
 
 - request scope after it is written
 - impact map after it is written unless the request actually changed
+
+## Hard Gate
+
+- do not route implementation, validation, or ship work until the target repository exists locally and the repo boundary is recorded

@@ -5,6 +5,8 @@ ActivePackage: .statsclaw/packages/example-package.md
 ActiveRun: ""
 DefaultWorkflow: agent-teams
 DefaultProfile: ""
+TargetRepositoryURL: ""
+TargetRepositoryCheckout: ""
 GitHubIssueSchedule: ""
 GitHubIssueFilter: ""
 GitHubAutoSolve: ""
@@ -20,6 +22,8 @@ LastGitHubIssueScanAt: ""
 - `ActiveRun` may be left empty until `lead` starts a request run.
 - `DefaultWorkflow` is optional and can remain `agent-teams`.
 - `DefaultProfile` may be left empty and inferred from the project.
+- `TargetRepositoryURL` may store the normalized external repository URL when the target is not the open framework repository.
+- `TargetRepositoryCheckout` may store the local checkout path used for implementation and validation work.
 - `GitHubIssueSchedule` may store a schedule like `daily 00:00 America/Los_Angeles`.
 - `GitHubIssueFilter` may store a normalized issue filter such as `label:bug` or `is:open label:bug`.
 - `GitHubAutoSolve` may store `true` or `false`.

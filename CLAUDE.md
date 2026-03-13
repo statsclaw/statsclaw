@@ -16,12 +16,15 @@ At the start of every session:
    - create `.statsclaw/CONTEXT.md` from `templates/context.md`
    - create package context files under `.statsclaw/packages/` from `templates/package.md` when missing
 3. If the user message includes a target repo path, use it immediately.
-4. If no target repo path is given, try to infer one from available context.
-5. If there is still no clear target project, ask one concise clarification question.
-6. Create or update the active project context under `.statsclaw/packages/` automatically when missing.
-7. Determine the project profile from the active project context or repo markers and write it back to the local runtime when missing.
-8. If an active run is set, read the request, impact, and status artifacts for that run under `.statsclaw/runs/<request-id>/`.
-9. Hold the project path, profile, acceptance criteria, active run, and current workflow state in memory for the rest of the session.
+4. If the user message includes a GitHub repository URL or external repository reference, normalize it into owner, repo, and branch data when available.
+5. Materialize the target repository locally before implementation work begins. In cloud environments, this means cloning, fetching, or otherwise obtaining a usable local checkout for the target repository.
+6. If no target repo path or repository reference is given, try to infer one from available context.
+7. If there is still no clear target project, ask one concise clarification question.
+8. If the target repository cannot be fetched, cloned, checked out, or otherwise materialized locally, raise `HOLD` and do not continue into implementation, validation, or ship actions.
+9. Create or update the active project context under `.statsclaw/packages/` automatically when missing.
+10. Determine the project profile from the active project context or repo markers and write it back to the local runtime when missing.
+11. If an active run is set, read the request, impact, and status artifacts for that run under `.statsclaw/runs/<request-id>/`.
+12. Hold the project path, profile, acceptance criteria, active run, and current workflow state in memory for the rest of the session.
 
 Project note: `.claude/settings.json` may enable Agent Teams at the project level. When that flag is present and supported by Claude Code, prefer Team Lead plus Teammates over single-agent sequential execution.
 
@@ -52,6 +55,7 @@ Default entry rule:
 - do not require the user to say "use StatsClaw", "start with lead", "use Agent Teams", or similar control phrasing
 - infer the workflow automatically from the request unless the user explicitly asks to bypass StatsClaw
 - trivial chat, simple factual questions, and one-off requests that do not need the workflow may still be handled directly
+- when the target repository is not `StatsClaw`, the framework repository remains control-plane only and must not become the implementation or ship target
 
 ---
 
@@ -104,6 +108,31 @@ The per-agent output templates describe the runtime artifacts that must be produ
 
 ---
 
+## Target Repository Acquisition
+
+When the user asks StatsClaw to work on another repository, target-repository acquisition is mandatory.
+
+Rules:
+
+- normalize GitHub URLs and similar repository references into a concrete target repository record
+- obtain a local checkout of the target repository before assigning implementation or validation work
+- record the target repository identity and local checkout path in the active package context and run artifacts
+- if acquisition fails because of permissions, network issues, missing auth, or unsupported repository access, raise `HOLD`
+- do not silently fall back to editing the `StatsClaw` repository when acquisition fails
+
+No Run, No Write:
+
+- no agent may edit target source, tests, docs, or examples until `request.md`, `status.md`, and `impact.md` exist for the active run
+- no commit, push, branch, or PR action may occur until the target repository has been materialized locally and validated as the correct ship target
+
+Repository boundary rule:
+
+- when the user target is a repository other than `StatsClaw`, versioned `StatsClaw` files are not part of the write surface for that run
+- for such runs, `StatsClaw` may only receive local runtime updates under `.statsclaw/`
+- all target code changes, validation runs, commits, pushes, and PRs must happen in the target repository, not in `StatsClaw`
+
+---
+
 ## Routing
 
 Route semantically from intent. Do **not** require the user to learn trigger phrases.
@@ -139,6 +168,7 @@ Rules:
 
 - `lead` is the normal Team Lead for non-trivial requests
 - this default applies even when the user prompt is short, as long as the request is substantive enough to need workflow routing
+- if the target repository is external, `lead` must verify the target checkout and repo boundary before handing work to writing teammates
 - `theorist` is mandatory for new or changed statistical, mathematical, or algorithmic methods and optional for non-mathematical refactors
 - `scribe` runs only when public-facing docs, examples, tutorials, or other documented surfaces are in scope
 - `auditor` produces validation evidence; `skeptic` challenges that evidence and issues the final ship gate
@@ -191,12 +221,13 @@ This is a hard requirement, not a suggestion:
 3. Write `.statsclaw/runs/<request-id>/request.md`.
 4. Write `.statsclaw/runs/<request-id>/status.md`.
 5. When planning completes, write `.statsclaw/runs/<request-id>/impact.md`.
-6. When a stage produces an artifact (`github.md`, `spec.md`, `implementation.md`, `audit.md`, `docs.md`, `review.md`), write that artifact before moving to the next stage.
-7. For team-based runs, keep delegated task records under `.statsclaw/runs/<request-id>/tasks/` when more than one teammate is involved.
-8. For hard-isolation runs, create `.statsclaw/runs/<request-id>/locks/` and assign one lock per writable surface.
-9. For team-based runs, keep a shared mailbox under `.statsclaw/runs/<request-id>/mailbox.md` for interface changes, blockers, and teammate coordination.
-10. After each completed stage, update `status.md` immediately.
-11. On `HOLD`, `BLOCKED`, or `STOPPED`, update `status.md` with the blocking reason before responding to the user.
+6. For external target repositories, record the target repository identity and local checkout path before implementation starts.
+7. When a stage produces an artifact (`github.md`, `spec.md`, `implementation.md`, `audit.md`, `docs.md`, `review.md`), write that artifact before moving to the next stage.
+8. For team-based runs, keep delegated task records under `.statsclaw/runs/<request-id>/tasks/` when more than one teammate is involved.
+9. For hard-isolation runs, create `.statsclaw/runs/<request-id>/locks/` and assign one lock per writable surface.
+10. For team-based runs, keep a shared mailbox under `.statsclaw/runs/<request-id>/mailbox.md` for interface changes, blockers, and teammate coordination.
+11. After each completed stage, update `status.md` immediately.
+12. On `HOLD`, `BLOCKED`, or `STOPPED`, update `status.md` with the blocking reason before responding to the user.
 
 If a non-trivial request does not produce runtime artifacts, the workflow is incomplete.
 
@@ -243,6 +274,8 @@ When a workflow interacts with GitHub:
 - StatsClaw itself is only the workflow framework and must not become the repository receiving issue-fix branches or PRs
 - if GitHub write access is required and unavailable, ask the user for the necessary permissions or tokens at the beginning of the GitHub-driven workflow
 - do not defer the permissions question until after implementation work is already done
+- before any ship action, verify that the active local git checkout and remote both point to the user's target repository
+- if the active checkout still points to `StatsClaw` or another wrong repository, raise `HOLD` or `STOP`; do not commit or push
 
 ---
 
@@ -278,6 +311,8 @@ Raised by `lead`, `theorist`, `builder`, or `scribe`.
 Use HOLD when:
 
 - the request is ambiguous or under-scoped
+- the target repository is not yet available locally
+- the target GitHub repository cannot be fetched, cloned, or checked out correctly
 - mathematical interpretation would require invention
 - the change conflicts with existing API or package conventions
 - documentation and implementation disagree in a way that needs user choice
@@ -328,6 +363,8 @@ Effect:
 
 - **Framework repo, local runtime.** Never assume user runtime state should be committed.
 - **Short prompts should work.** When StatsClaw is open, users should only need to state the target repo and the task for non-trivial workflow runs.
+- **Acquire the target first.** External repositories must exist locally before implementation, validation, or ship actions begin.
+- **Framework repo is not the target repo.** When the user's target is elsewhere, `StatsClaw` keeps only runtime state and never becomes the implementation or ship destination.
 - **Team Lead first.** Non-trivial work begins under `lead`, not ad hoc role switching.
 - **Plan once.** `lead` owns both the request contract and the impact map so downstream workers do not repeat discovery work.
 - **Agent Teams first.** Prefer a Team Lead with three to five active teammates for interdependent work; fall back only when Agent Teams is unavailable.

@@ -34,6 +34,7 @@
 - edit source files unless a docs task explicitly includes inline docs in the lock assignment
 - redefine the docs surface once `impact.md` exists
 - revalidate code
+- write versioned `StatsClaw` docs when the task is documenting another target repository
 
 ## Required Duties
 

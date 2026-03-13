@@ -32,6 +32,7 @@
 - edit tests or docs as part of validation
 - issue final ship approval
 - redefine the request contract
+- treat validation against the wrong local checkout as valid evidence
 
 ## Required Duties
 

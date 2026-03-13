@@ -6,6 +6,8 @@ Current State: [state]
 Current Owner: [agent]  
 Next Step: [action]  
 Active Profile: [profile]  
+Target Repository: [owner/repo or local path]  
+Target Checkout: [absolute path or unavailable]  
 Last Updated: [YYYY-MM-DD HH:MM]
 
 ## Ownership Ledger
@@ -27,6 +29,13 @@ Last Updated: [YYYY-MM-DD HH:MM]
 ## Blocking Reason
 
 [optional]
+
+## Repo Boundary
+
+- Framework repository may receive:
+  - `.statsclaw/` runtime artifacts only
+- Target repository may receive:
+  - `[code/docs/tests/ship actions or none]`
 
 ## Persistence Rule
 

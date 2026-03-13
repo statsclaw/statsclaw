@@ -28,6 +28,15 @@ Status: [queued / in_progress / blocked / completed / cancelled]
 - Required locks:
   - `.statsclaw/runs/<request-id>/locks/[lock-file].md`
 
+## Repository Boundary
+
+- Target repository:
+  - `[owner/repo or local path]`
+- Allowed checkout root:
+  - `[absolute path]`
+- Framework write policy:
+  - `Only .statsclaw/ may be written in StatsClaw when the target repo is external`
+
 ## Constraints
 
 - [ownership rule]
