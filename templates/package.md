@@ -9,6 +9,10 @@ This file lives under `.statsclaw/packages/` in normal use and is typically crea
 ```yaml
 Package path: ~/path/to/project
 Package name: project
+Repository source: local-path / github-url / other
+Repository URL: [optional]
+Default branch: [optional]
+Local checkout path: ~/path/to/local/checkout
 Version: unknown
 Ship target: package registry / internal / app deployment / unknown
 Description: [one-sentence description]
@@ -56,6 +60,7 @@ Ship command: [optional]
 ```yaml
 - [API conventions, numerical constraints, or shipping caveats]
 - [Any profile-specific docs, tooling, or tutorial requirements]
+- [If this is not the StatsClaw repo, StatsClaw versioned files are out of scope for product changes]
 ```
 
 ---

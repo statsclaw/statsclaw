@@ -134,9 +134,14 @@ StatsClaw will automatically:
 
 If `StatsClaw` is the repository currently open in Claude Code, non-trivial requests should enter the StatsClaw workflow by default. The user does not need to say "use StatsClaw" or "start with lead"; a target path plus the task is enough.
 
+If the target is another GitHub repository, StatsClaw must first obtain a local checkout of that target before implementation starts. If target acquisition fails, the run should stop in `HOLD`; it must not fall back to editing or shipping the `StatsClaw` repository itself.
+
 Example prompts:
 
 ```text
+Work on https://github.com/xuyiqing/fect/tree/cfe.
+Check all plot-related content.
+
 Work on ~/GitHub/fect.
 Check all plot-related content.
 
@@ -185,6 +190,8 @@ See `docs/README.md` for the full guide.
 ## Design Principles
 
 - **Framework repo, local runtime.** Product code is versioned; user runtime artifacts are local.
+- **Acquire the target first.** GitHub URL targets must be normalized and checked out locally before implementation or validation starts.
+- **Never ship from the wrong repo.** When the user target is not `StatsClaw`, only `.statsclaw/` may change in `StatsClaw`; all product changes and ship actions belong to the target repository.
 - **Team Lead first.** Non-trivial work begins under `lead`, not ad hoc role switching.
 - **Plan once.** `lead` owns both the request contract and the impact map so downstream agents do not repeat discovery work.
 - **Agent Teams first.** Prefer a Team Lead with a small teammate set for interdependent work.

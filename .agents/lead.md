@@ -20,6 +20,7 @@
 - `.statsclaw/packages/*`
 - `.statsclaw/runs/<request-id>/*`
 - target repo metadata needed to identify scope and profile
+- target repository acquisition state, checkout path, and git remote identity
 
 ## Allowed Writes
 
@@ -39,16 +40,20 @@
 - rerun work already assigned unless a teammate failed or the task was explicitly reassigned
 - allow two teammates to hold overlapping write locks at the same time
 - let teammates mutate `status.md` or `locks/*`
+- let implementation or ship work start before the target repository is materialized locally
+- let a run against an external target repository write versioned `StatsClaw` files
 
 ## Required Duties
 
 1. Create the canonical `request.md`.
-2. Create the canonical `impact.md`.
-3. Split work into isolated tasks with explicit write surfaces.
-4. Assign one lock per writable surface.
-5. Route to teammates in the smallest viable parallel set.
-6. Update `status.md` whenever ownership or state changes.
-7. Be the only agent that mutates `status.md` and `locks/*`.
+2. Verify the target repository identity and local checkout before assigning implementation work.
+3. Raise `HOLD` if the target repository cannot be fetched, cloned, checked out, or otherwise materialized locally.
+4. Create the canonical `impact.md`.
+5. Split work into isolated tasks with explicit write surfaces.
+6. Assign one lock per writable surface.
+7. Route to teammates in the smallest viable parallel set.
+8. Update `status.md` whenever ownership or state changes.
+9. Be the only agent that mutates `status.md` and `locks/*`.
 
 ## Isolation Rules
 

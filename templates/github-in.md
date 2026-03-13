@@ -7,6 +7,7 @@ Use this template to define what `github` may consume.
 - `.statsclaw/CONTEXT.md`
 - active package context
 - `.statsclaw/runs/<request-id>/mailbox.md`
+- target repository reference or GitHub URL when the run starts externally
 
 ## Optional Inputs
 
@@ -17,3 +18,4 @@ Use this template to define what `github` may consume.
 ## Required Decision
 
 - whether the task is issue intake, check inspection, or explicit ship work
+- whether the target repository is available locally and verified as the correct checkout

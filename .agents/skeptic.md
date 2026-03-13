@@ -37,4 +37,5 @@
 
 1. Review the finished change set against the request contract.
 2. Check that every important risk has evidence.
-3. Issue `PASS`, `PASS WITH NOTE`, or `STOP`.
+3. Issue `STOP` if implementation or ship actions touched the wrong repository.
+4. Issue `PASS`, `PASS WITH NOTE`, or `STOP`.
