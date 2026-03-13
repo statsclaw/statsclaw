@@ -1,90 +1,35 @@
-# Project Context — [project-name]
-
-This file lives under `.statsclaw/packages/` in normal use and is typically created automatically by `lead`.
-
----
-
-## Package
+# Package Context
 
 ```yaml
-Package path: ~/path/to/project
-Package name: project
-Repository source: local-path / github-url / other
-Repository URL: [optional]
-Default branch: [optional]
-Local checkout path: ~/path/to/local/checkout
+Package path: ""
+Package name: ""
+Repository source: ""
+Repository URL: ""
+Default branch: ""
+Local checkout path: ""
 Version: unknown
-Ship target: package registry / internal / app deployment / unknown
-Description: [one-sentence description]
-Project type: package / library / app / research-repo
-Primary language: R / Python / TypeScript / Stata / other
-Project profile: r-package / python-package / typescript-package / stata-project / custom
-Package manager: devtools / uv / pip / npm / pnpm / yarn / stata / other
+Primary language: ""
+Project profile: ""
 ```
-
----
 
 ## Request Defaults
 
-```yaml
-Default task type: feature / bugfix / validation / docs / ship
-Default workflow: agent-teams
-Documentation surface:
-  - README.md
-  - docs/
-  - examples/
-  - tutorial/
-Validation commands:
-  - [primary validation command]
-  - [test command]
-  - [example or docs-build command]
-Lint command: [optional]
-Typecheck command: [optional]
-Docs command: [optional]
-Ship command: [optional]
-```
+- Default acceptance criteria: all profile validation commands pass with zero errors
+- Default write surface: determined by impact.md per run
+- Default validation level: full (build + check + test)
 
----
+## Key Functions
 
-## Key Functions or Modules
-
-```yaml
-- function_or_module: [what it does]
-- function_or_module: [what it does]
-```
-
----
+_List key public functions, entry points, or exported symbols relevant to ongoing work._
 
 ## Package Constraints
 
-```yaml
-- [API conventions, numerical constraints, or shipping caveats]
-- [Any profile-specific docs, tooling, or tutorial requirements]
-- [If this is not the StatsClaw repo, StatsClaw versioned files are out of scope for product changes]
-```
-
----
+_List architectural constraints, compatibility requirements, or conventions that all runs must respect._
 
 ## Known Issues
 
-```yaml
-- [known issue]
-```
-
----
+_List known bugs, limitations, or technical debt relevant to planning._
 
 ## Current Notes
 
-```yaml
-Current focus: [optional]
-Open risks: [optional]
-Last lead summary: [optional]
-```
-
----
-
-## Session Scratchpad
-
-```text
-[optional local notes]
-```
+_Session-specific notes, observations, or reminders._

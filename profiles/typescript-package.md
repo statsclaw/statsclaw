@@ -1,48 +1,56 @@
-# Profile: typescript-package
-
-Use this profile for TypeScript packages, libraries, and applications.
+# Profile: TypeScript Package
 
 ## Repo Markers
 
-- `package.json`
-- `tsconfig.json`
-- `pnpm-lock.yaml`
-- `yarn.lock`
-- `package-lock.json`
+Detect this profile when the target repository contains:
 
-## Typical Validation Commands
+- `package.json` (required)
+- `tsconfig.json` (required)
+- `src/` directory
 
-- `npm test` or `pnpm test`
-- `npm run lint` or `pnpm lint`
-- `npm run typecheck` or `pnpm typecheck`
-- `tsc --noEmit`
+## Validation Commands
 
-Use only commands that exist in the target repo or are explicitly configured in the project context.
+| Stage | Command | Notes |
+| --- | --- | --- |
+| Type check | `tsc --noEmit` | Compile without output to verify types |
+| Unit tests | `npm test` | Runs the project's test script |
+| Lint | `npx eslint .` | Code quality and style |
+| Build | `npm run build` | Compile to output (dist/) |
+| Format check | `npx prettier --check .` | When Prettier is configured |
 
-## Documentation Conventions
+If the project uses `pnpm`, substitute `pnpm` for `npm` in all commands.
 
-- `README.md`
-- `docs/`
-- generated API docs when the repo uses them
-- storybook or demo apps when relevant
+## Documentation
+
+- **API docs**: TSDoc comments (`/** */`) on all exported functions, classes, and types
+- **Types**: TypeScript declarations serve as living documentation; prefer explicit types over `any`
+- **README**: `README.md` at the repo root
+- **CHANGELOG**: `CHANGELOG.md` for user-visible changelog
 
 ## Common Tooling
 
-- `npm`
-- `pnpm`
-- `yarn`
-- `eslint`
-- `tsc`
-- `vitest` / `jest`
+- `npm` or `pnpm` — package manager
+- `typescript` — compiler and type checker
+- `vitest` or `jest` — test framework
+- `eslint` — linter
+- `prettier` — formatter (when configured)
+- `tsup` or `tsc` — bundler / build tool
 
 ## Builder Notes
 
-- preserve existing module system and import conventions
-- keep types aligned with implementation changes
-- update tests and public docs for API changes
+- Use strict TypeScript: do not use `any` unless absolutely necessary and justified in a comment.
+- Respect the existing `tsconfig.json` strictness settings; do not relax them.
+- Export types alongside runtime values so consumers get full type information.
+- Place tests adjacent to source (`*.test.ts`) or under `tests/` depending on project convention.
+- Do not add new dependencies to `package.json` without noting it in the mailbox for lead review.
+- Prefer `const` over `let`; avoid `var`.
+- Use async/await over raw Promises; handle errors explicitly.
 
 ## Auditor Notes
 
-- run configured test, lint, and typecheck commands
-- build docs or demo artifacts when required by the repo
-- treat build failures and type errors as blockers
+- `tsc --noEmit` must pass with zero errors; type check failures are always blockers.
+- `npm test` must pass with zero failures.
+- `eslint` must pass with zero errors; warnings should be reviewed and reported.
+- If the project has a build step, confirm `npm run build` succeeds.
+- Check that all new exported symbols have TSDoc comments.
+- Report test coverage when the project has coverage tooling configured.

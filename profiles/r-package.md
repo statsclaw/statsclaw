@@ -1,42 +1,55 @@
-# Profile: r-package
-
-Use this profile for standard R packages.
+# Profile: R Package
 
 ## Repo Markers
 
-- `DESCRIPTION`
-- `NAMESPACE`
-- `R/`
-- `man/`
+Detect this profile when the target repository contains:
 
-## Typical Validation Commands
+- `DESCRIPTION` file (required)
+- `NAMESPACE` file
+- `R/` directory
+- `man/` directory
 
-- `Rscript --vanilla -e "devtools::check('<pkg>', args = '--as-cran', quiet = FALSE)"`
-- `Rscript --vanilla -e "devtools::test('<pkg>')"`
-- `Rscript --vanilla -e "devtools::run_examples('<pkg>')"`
+## Validation Commands
 
-## Documentation Conventions
+| Stage | Command | Notes |
+| --- | --- | --- |
+| Build | `R CMD build .` | Produces the source tarball |
+| Check | `R CMD check --as-cran <tarball>` | Full CRAN-style check |
+| Unit tests | `Rscript -e "devtools::test()"` | Runs testthat suite |
+| Examples | `Rscript -e "devtools::run_examples()"` | Exercises all `@examples` blocks |
+| Document | `Rscript -e "devtools::document()"` | Regenerates NAMESPACE and man/*.Rd |
 
-- roxygen2 headers
-- `.Rd` files in `man/`
-- `vignettes/`
-- optional `tutorial/` Quarto book
+## Documentation
+
+- **API docs**: roxygen2 comments in `R/*.R` files, rendered to `man/*.Rd`
+- **Vignettes**: R Markdown or Quarto files under `vignettes/`
+- **Tutorials**: Optional Quarto book under `tutorial/` or `tutorials/`
+- **README**: `README.Rmd` or `README.md` at the repo root
+- **NEWS**: `NEWS.md` for user-visible changelog
 
 ## Common Tooling
 
-- `devtools`
-- `roxygen2`
-- `testthat`
-- `quarto`
+- `devtools` — development workflow
+- `roxygen2` — inline documentation to `.Rd`
+- `testthat` — unit testing framework (edition 3 preferred)
+- `quarto` — vignette and tutorial rendering
+- `usethis` — package scaffolding helpers
+- `covr` — test coverage reporting
 
 ## Builder Notes
 
-- respect existing package API and exported surface
-- use numerically stable R idioms
-- update roxygen or `.Rd` when public API changes
+- Respect the existing exported API; do not rename or remove exports without explicit request.
+- Use numerically stable R idioms (avoid `1 - p` when `p` is near 1; prefer `log1p`, `expm1`, `.Machine$double.eps` guards).
+- When adding or changing function signatures, update the corresponding roxygen2 block and run `devtools::document()`.
+- Place internal helpers in files prefixed with `utils-` or mark them with `@noRd` / `@keywords internal`.
+- Use `testthat` edition 3 conventions (`test_that()`, `expect_*()`) unless the package explicitly uses an earlier edition.
+- Do not add new package dependencies without noting it in the mailbox for lead review.
 
 ## Auditor Notes
 
-- prefer `--as-cran`
-- render `tutorial/` if present and relevant
-- treat warnings as blockers unless explicitly waived by the user
+- Prefer `R CMD check --as-cran` over a plain `R CMD check`; the stricter flags catch issues that CRAN submission would reject.
+- Treat all WARNINGs as blockers. NOTEs should be reviewed and reported but are not automatic blockers.
+- Run `devtools::test()` separately to capture granular test output even when `R CMD check` also runs tests.
+- If the package has vignettes, confirm they render without error.
+- Check for undocumented exported functions (`devtools::check_man()`).
+- Report test coverage numbers when `covr` is available.

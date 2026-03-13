@@ -1,15 +1,9 @@
-# StatsClaw — Compatibility Context
+# StatsClaw — Active Context
 
-This file is a compatibility pointer for environments that expect a repo-root `CONTEXT.md`.
+This file is a legacy compatibility pointer. Runtime state now lives in `.statsclaw/CONTEXT.md`.
 
-StatsClaw runtime state lives under `.statsclaw/`, not in the versioned framework repository.
+For per-package context, see `packages/` or `.statsclaw/packages/`.
 
 ```yaml
-Active: .statsclaw/CONTEXT.md
+Active: packages/fect.md
 ```
-
-Next steps:
-
-1. Open StatsClaw in Claude Code
-2. Tell Claude the target project path and your request
-3. StatsClaw will auto-create `.statsclaw/` as needed
