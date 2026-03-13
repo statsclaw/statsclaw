@@ -13,8 +13,8 @@ Any of the following user intents activate this skill. **Exact wording is NOT re
 - "Patrol [repo] issues"
 - "Auto-fix issues in [repo]"
 - "Watch [repo] for bugs and fix them"
-- "帮我自动检查 [repo] 的 issues 并修复"
-- "定时检查 [repo] issues"
+- "Auto-check [repo] issues and fix them"
+- "Periodically check [repo] issues"
 
 A short prompt like `"patrol fect issues on cfe"` is sufficient.
 
@@ -164,6 +164,6 @@ All of these should trigger the same workflow:
 "patrol fect issues on cfe"
 "check open issues in xuyiqing/fect, fix bugs, push to cfe branch"
 "monitor fect issues and auto-fix them"
-"帮我检查fect的issues并修复到cfe分支"
-"自动修复 fect issues"
+"check fect issues and fix them on cfe branch"
+"auto-fix fect issues"
 ```

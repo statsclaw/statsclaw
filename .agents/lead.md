@@ -41,13 +41,13 @@ Lead MUST accept short, informal prompts and route them to the correct workflow.
 
 | User says (any language) | Detected intent | Skill / Workflow |
 | --- | --- | --- |
-| "patrol [repo] issues" / "check issues" / "fix bugs in [repo]" / "自动检查issues" | Issue patrol | `skills/issue-patrol/SKILL.md` |
-| "fix [issue/bug/test]" / "修复" | Single fix | Standard workflow (builder → auditor → skeptic → github) |
-| "monitor [repo]" / "watch issues" / "定时检查" | Recurring patrol | Issue patrol with loop |
-| "定时循环" / "loop" / "every Xm" / "scheduled" / "recurring" / "持续" / "反复" | Scheduled loop | Invoke `/loop` skill via `Skill` tool |
-| "push" / "ship" / "上传" / "推代码" | Ship only | github teammate |
-| "check" / "validate" / "run tests" / "跑测试" | Validation only | auditor teammate |
-| "review" / "审查" | Review only | skeptic teammate |
+| "patrol [repo] issues" / "check issues" / "fix bugs in [repo]" / "auto-check issues" | Issue patrol | `skills/issue-patrol/SKILL.md` |
+| "fix [issue/bug/test]" / "repair" | Single fix | Standard workflow (builder → auditor → skeptic → github) |
+| "monitor [repo]" / "watch issues" / "keep checking" | Recurring patrol | Issue patrol with loop |
+| "loop" / "every Xm" / "scheduled" / "recurring" / "continuously" / "repeatedly" | Scheduled loop | Invoke `/loop` skill via `Skill` tool |
+| "push" / "ship" / "deploy" / "push code" | Ship only | github teammate |
+| "check" / "validate" / "run tests" | Validation only | auditor teammate |
+| "review" / "audit" | Review only | skeptic teammate |
 
 ### Parameter Extraction
 
@@ -56,8 +56,8 @@ When the user gives a simple prompt, lead extracts parameters by inference:
 1. **Repository**: Look for repo names, URLs, or package names. Match against `packages/*.md` for known packages.
 2. **Branch**: Look for branch names. Default to `main` if not specified.
 3. **Scope**: Look for issue numbers, file names, or descriptions of what to fix.
-4. **Mode**: If the user says "monitor", "watch", "定时", "recurring", enable loop mode.
-5. **Scheduled loop**: If the user says "定时循环", "loop", "every Xm/Xmin", "scheduled", "recurring", "持续", "反复", or any equivalent in any language — extract the interval (default `10m`) and inner command, then invoke `/loop` via the `Skill` tool. See CLAUDE.md → Scheduled Loop for full protocol.
+4. **Mode**: If the user says "monitor", "watch", "recurring", "scheduled", enable loop mode.
+5. **Scheduled loop**: If the user says "loop", "every Xm/Xmin", "scheduled", "recurring", "continuously", "repeatedly", or any equivalent in any language — extract the interval (default `10m`) and inner command, then invoke `/loop` via the `Skill` tool. See CLAUDE.md → Scheduled Loop for full protocol.
 
 Example: `"patrol fect issues on cfe"` →
 - repo: `xuyiqing/fect` (resolved from `packages/fect.md`)
