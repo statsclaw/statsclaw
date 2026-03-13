@@ -18,6 +18,9 @@ StatsClaw does **not** version user runtime state. All request state, project co
 | `"fix fect issue #42"` | Runs full workflow to fix issue #42 in fect, pushes fix, comments on the issue |
 | `"check fect issues and auto-fix"` | Same as patrol — scans, triages, fixes, pushes, replies |
 | `"monitor fect issues every 30min"` | Recurring patrol with 30-minute interval |
+| `"每30分钟检查一次 fect issues"` | Same — scheduled recurring patrol |
+| `"定时循环跑测试"` | Scheduled loop running validation on interval |
+| `"loop check fect every 10m"` | Recurring validation every 10 minutes |
 | `"自动检查 fect issues 并修复到 cfe"` | Same as patrol, Chinese is supported |
 | `"fix the failing tests in fect"` | Standard fix workflow on fect repo |
 | `"ship it"` | Push current changes and create PR |
@@ -286,6 +289,7 @@ Route semantically from intent. Do **not** require the user to learn trigger phr
 | update docs, tutorials, examples, or public guidance | `scribe` teammate |
 | review quality, challenge completeness, assess ship risk | `skeptic` teammate |
 | inspect issues, PRs, review comments, checks, schedules, or ship actions | `github` teammate |
+| "定时循环" / "loop" / "every Xm" / "scheduled" / "recurring" / "定时" / "monitor every" | Scheduled loop — invoke `/loop` skill (see Scheduled Loop below) |
 
 **Note**: Routing is semantic. The user does NOT need to use these exact phrases. Lead interprets intent from natural language in any language.
 
@@ -319,6 +323,55 @@ Rules:
 - **auditor and skeptic are NEVER skippable** — see "Mandatory Teammate Stages" above
 
 Execution rules are **profile-aware**: use the active project profile under `profiles/` to decide repo markers, build tools, validation commands, docs conventions, and shipping conventions.
+
+---
+
+## Scheduled Loop (Recurring Tasks)
+
+When the user's intent involves **recurring**, **scheduled**, or **periodic** execution, lead MUST activate the `/loop` skill via the `Skill` tool. This is a built-in Claude Code capability that runs a prompt or command on a fixed interval.
+
+### Trigger Detection
+
+Any of the following signals (in any language) indicate the user wants a scheduled loop:
+
+| Signal (any language) | Example |
+| --- | --- |
+| explicit interval | "every 5m", "every 30min", "每10分钟" |
+| "定时" / "定时循环" / "循环" | "定时循环跑测试" |
+| "loop" / "recurring" / "scheduled" | "loop check fect every 10m" |
+| "monitor" / "watch" / "keep checking" | "monitor fect issues every 30min" |
+| "持续" / "不断" / "反复" | "持续检查issues" |
+
+### How to Activate
+
+When lead detects a loop intent:
+
+1. **Parse the interval** from the user's prompt. Default to `10m` if no interval is specified.
+2. **Parse the inner command** — what should run on each iteration. This can be:
+   - A full workflow prompt (e.g., `"patrol fect issues on cfe"`)
+   - A validation command (e.g., `"check fect"`)
+   - Any slash command (e.g., `/commit`)
+3. **Invoke the `/loop` skill** via the `Skill` tool with the parsed interval and inner command.
+
+**Syntax**: `/loop <interval> <command-or-prompt>`
+
+### Examples
+
+| User says | Lead invokes |
+| --- | --- |
+| `"每30分钟检查一次fect issues并修复"` | `/loop 30m patrol fect issues on cfe` |
+| `"定时循环跑测试"` | `/loop 10m run tests` |
+| `"monitor fect issues every 15min"` | `/loop 15m patrol fect issues` |
+| `"loop check fect every 5m"` | `/loop 5m check fect` |
+| `"keep running tests every hour"` | `/loop 60m run tests` |
+| `"持续检查 deploy 状态"` | `/loop 10m check deploy status` |
+
+### Rules
+
+- Lead MUST use the `Skill` tool to invoke `/loop`. Do NOT implement polling manually with `sleep` or retry loops.
+- The inner command runs in the same StatsClaw context — it can trigger the full workflow protocol on each iteration.
+- The `/loop` skill handles its own lifecycle (start, repeat, stop). Lead does not need to manage the timer.
+- If the user says "stop" / "停止" / "cancel the loop", lead should inform the user to press Ctrl+C or use the appropriate stop mechanism.
 
 ---
 

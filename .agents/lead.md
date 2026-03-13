@@ -44,6 +44,7 @@ Lead MUST accept short, informal prompts and route them to the correct workflow.
 | "patrol [repo] issues" / "check issues" / "fix bugs in [repo]" / "自动检查issues" | Issue patrol | `skills/issue-patrol/SKILL.md` |
 | "fix [issue/bug/test]" / "修复" | Single fix | Standard workflow (builder → auditor → skeptic → github) |
 | "monitor [repo]" / "watch issues" / "定时检查" | Recurring patrol | Issue patrol with loop |
+| "定时循环" / "loop" / "every Xm" / "scheduled" / "recurring" / "持续" / "反复" | Scheduled loop | Invoke `/loop` skill via `Skill` tool |
 | "push" / "ship" / "上传" / "推代码" | Ship only | github teammate |
 | "check" / "validate" / "run tests" / "跑测试" | Validation only | auditor teammate |
 | "review" / "审查" | Review only | skeptic teammate |
@@ -56,6 +57,7 @@ When the user gives a simple prompt, lead extracts parameters by inference:
 2. **Branch**: Look for branch names. Default to `main` if not specified.
 3. **Scope**: Look for issue numbers, file names, or descriptions of what to fix.
 4. **Mode**: If the user says "monitor", "watch", "定时", "recurring", enable loop mode.
+5. **Scheduled loop**: If the user says "定时循环", "loop", "every Xm/Xmin", "scheduled", "recurring", "持续", "反复", or any equivalent in any language — extract the interval (default `10m`) and inner command, then invoke `/loop` via the `Skill` tool. See CLAUDE.md → Scheduled Loop for full protocol.
 
 Example: `"patrol fect issues on cfe"` →
 - repo: `xuyiqing/fect` (resolved from `packages/fect.md`)
