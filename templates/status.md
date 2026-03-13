@@ -1,42 +1,54 @@
 # Run Status
 
-Request ID: [request-id]  
-Package: [package-name]  
-Current State: [state]  
-Current Owner: [agent]  
-Next Step: [action]  
-Active Profile: [profile]  
-Target Repository: [owner/repo or local path]  
-Target Checkout: [absolute path or unavailable]  
+```
+Request ID: [request-id]
+Package: [package-name]
+Current State: NEW
+Current Owner: lead
+Next Step: [action]
+Active Profile: [profile]
+Target Repository: [owner/repo or local path]
+Target Checkout: [absolute path]
+Credentials: [VERIFIED / NOT_VERIFIED]
+Credential Method: [PAT / SSH / proxy / none]
 Last Updated: [YYYY-MM-DD HH:MM]
+```
 
 ## Ownership Ledger
 
-- Layer: [Control / Planning / Production / Assurance / Externalization]
-- Authority: [which artifact or agent currently owns the next decision]
+| Artifact | Owner | State | Completed |
+| --- | --- | --- | --- |
+| credentials.md | lead | pending | |
+| request.md | lead | pending | |
+| impact.md | lead | pending | |
+| spec.md | theorist | pending | |
+| implementation.md | builder | pending | |
+| audit.md | auditor | pending | |
+| docs.md | scribe | pending | |
+| review.md | skeptic | pending | |
+| github.md | github | pending | |
 
 ## Active Isolation
 
-- Held locks:
-  - `[lock-id]`
-- Current write owner:
-  - `[agent or none]`
+| Teammate | Isolation | Worktree Path |
+| --- | --- | --- |
+| builder | worktree | |
+| scribe | worktree | |
 
 ## Open Risks
 
-- [risk]
+_No open risks._
 
 ## Blocking Reason
 
-[optional]
+_Not blocked._
 
 ## Repo Boundary
 
-- Framework repository may receive:
-  - `.statsclaw/` runtime artifacts only
-- Target repository may receive:
-  - `[code/docs/tests/ship actions or none]`
+- Framework repo: StatsClaw (runtime state only, no target code changes)
+- Target repo: [target repository]
+- Ship target: [target repository]
 
 ## Persistence Rule
 
-This file must be updated after every completed stage and every `HOLD`, `BLOCKED`, or `STOPPED` transition.
+All state transitions must be written to this file immediately. Only `lead` may update this file.

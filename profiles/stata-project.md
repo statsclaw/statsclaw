@@ -1,45 +1,48 @@
-# Profile: stata-project
-
-Use this profile for Stata projects, Stata packages, and research repositories where `.do`, `.ado`, or `.mata` files define the main implementation.
+# Profile: Stata Project
 
 ## Repo Markers
 
-- `*.do`
-- `*.ado`
-- `*.mata`
-- `stata.toc`
-- `pkg.pkg`
+Detect this profile when the target repository contains:
 
-## Typical Validation Commands
+- `*.do` files (do-files)
+- `*.ado` files (ado-files / program definitions)
+- `*.sthlp` files (help files)
 
-- `stata -b do main.do`
-- `stata -b do tests/run_tests.do`
+## Validation Commands
 
-Use only commands that exist in the target repo or are explicitly configured in the project context.
+| Stage | Command | Notes |
+| --- | --- | --- |
+| Run master | `stata -b do master.do` | Execute the main entry point in batch mode |
+| Run specific | `stata -b do <file>.do` | Execute a specific do-file |
+| Log check | Inspect `*.log` for `r(...)` errors | Stata writes batch output to log files |
 
-## Documentation Conventions
+If the system uses `stata-mp` or `stata-se` instead of `stata`, substitute accordingly.
 
-- `README.md`
-- package help files such as `.sthlp`
-- replication guides
-- example `.do` scripts
-- papers, appendices, or docs folders when relevant
+## Documentation
+
+- **Help files**: `.sthlp` files providing Stata-native help for each command/ado
+- **README**: `README.md` at the repo root
+- **Comments**: In-file comments in do-files (`//`, `/* */`, `*` at line start)
 
 ## Common Tooling
 
-- `stata`
-- `stata-mp`
-- `stata-se`
+- `stata` (or `stata-mp`, `stata-se`) — runtime
+- `adopath` — custom ado search paths
+- `log using` — execution logging within do-files
 
 ## Builder Notes
 
-- preserve project-specific Stata conventions and directory assumptions
-- be careful with working-directory assumptions inside `.do` files
-- update example scripts and help files when behavior changes
-- avoid hidden environment dependencies
+- Preserve existing naming conventions for ado-files and their companion sthlp files.
+- Use `version X.Y` at the top of ado-files and do-files to pin Stata version compatibility.
+- Prefer `tempfile` and `tempvar` for intermediate objects to avoid polluting the namespace.
+- Use `capture` and return-code checking (`if _rc != 0`) for robust error handling.
+- Keep do-files modular: one logical task per do-file, orchestrated by a master do-file.
+- Do not hard-code file paths; use relative paths or globals set in the master do-file.
 
 ## Auditor Notes
 
-- run configured do-file based validation commands
-- verify that example scripts and replication scripts still run when required
-- treat non-zero batch exits and missing dependency failures as blockers
+- Run `stata -b do master.do` and check the resulting log file for any `r(...)` return-code errors.
+- Treat any non-zero return code in the log as a blocker.
+- Verify that all ado-files have a corresponding sthlp file when the project follows that convention.
+- Check that `version` is declared at the top of each ado-file.
+- If the project includes example data or output, verify that results are reproducible.

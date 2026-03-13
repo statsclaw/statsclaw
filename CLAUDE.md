@@ -1,4 +1,4 @@
-# StatsClaw — Agent Teams-First Framework for Claude Code
+# StatsClaw — Agent Teams Framework for Claude Code
 
 StatsClaw is a reusable workflow framework for building, validating, documenting, reviewing, and externalizing code changes with Claude Code across multiple languages. The repository contains the framework only: orchestration rules, agent definitions, templates, profiles, and docs.
 
@@ -6,27 +6,222 @@ StatsClaw does **not** version user runtime state. All request state, project co
 
 ---
 
+## Simple Prompt Interface
+
+**Users should never need to learn StatsClaw terminology.** A simple sentence is enough to trigger the full workflow. Lead parses natural language (any language) and routes to the correct skill or workflow automatically.
+
+### Example Prompts That Just Work
+
+| User types | What happens |
+| --- | --- |
+| `"patrol fect issues on cfe"` | Scans open issues in xuyiqing/fect, fixes bugs on `cfe` branch, pushes PRs, replies to issues |
+| `"fix fect issue #42"` | Runs full workflow to fix issue #42 in fect, pushes fix, comments on the issue |
+| `"check fect issues and auto-fix"` | Same as patrol — scans, triages, fixes, pushes, replies |
+| `"monitor fect issues every 30min"` | Recurring patrol with 30-minute interval |
+| `"check fect issues every 30 minutes"` | Same — scheduled recurring patrol |
+| `"loop run tests every 10m"` | Scheduled loop running validation on interval |
+| `"loop check fect every 10m"` | Recurring validation every 10 minutes |
+| `"auto-check fect issues and fix on cfe"` | Same as patrol — natural language in any language is supported |
+| `"fix the failing tests in fect"` | Standard fix workflow on fect repo |
+| `"ship it"` | Push current changes and create PR |
+
+### How It Works
+
+1. Lead reads the prompt and detects intent (see `.agents/lead.md` → Simple Prompt Routing)
+2. Lead resolves package names to repos (e.g., `fect` → `xuyiqing/fect` via `packages/fect.md`)
+3. Lead auto-detects credentials (see `skills/credential-setup/SKILL.md`) — no manual PAT setup needed if the environment is configured
+4. Lead activates the appropriate skill or workflow
+5. Everything runs autonomously — user gets results, not questions
+
+### Credential Auto-Detection
+
+StatsClaw automatically detects GitHub credentials in this order:
+1. `GITHUB_TOKEN` environment variable
+2. `gh auth status` (gh CLI already logged in)
+3. SSH key (`ssh -T git@github.com`)
+4. Git credential helper
+
+**Only asks the user if ALL automated methods fail.** See `skills/credential-setup/SKILL.md`.
+
+---
+
 ## Mandatory Execution Protocol
 
 This section is the entry point for every non-trivial user request. You MUST follow these steps in order. You MUST NOT skip steps. You MUST NOT do the user's work directly without completing this protocol. If you find yourself doing substantive analysis, implementation, or review work without having created `request.md` and `impact.md` first, STOP immediately and restart from step 3.
 
+**CRITICAL: You are the Team Lead (`lead`). You MUST use the `Agent` tool to dispatch every teammate. You MUST NOT perform teammate work yourself. If you catch yourself doing builder, auditor, scribe, skeptic, theorist, or github work directly, STOP and dispatch it to an agent instead.**
+
 1. **SETUP**: Read `.statsclaw/CONTEXT.md`. If it does not exist, create the full local runtime first (see Session Startup below). Read the active package context.
 2. **ACQUIRE TARGET**: If the user request names a repository URL, path, or reference, clone or locate the target repository locally. If acquisition fails, set state to `HOLD` in `status.md` and ask the user. Do NOT proceed without a local checkout.
-3. **CREATE RUN**: Generate a request ID. Create `.statsclaw/runs/<request-id>/`. Write `request.md` (scope, acceptance criteria, target repo identity). Write `status.md` with state `NEW`.
-4. **LEAD PLANNING**: Read `.agents/lead.md`. Act as `lead`. Explore the target repository to identify affected surfaces. Write `impact.md` (affected files, risk areas, required teammates). Identify the profile from `profiles/`. Update `status.md` to `PLANNED`.
-5. **DISPATCH TEAMMATES**: Execute the closed-loop workflow. For each stage, read the corresponding `.agents/<agent>.md` definition and follow its rules:
-   - a. **theorist** — ONLY if the request involves statistical, mathematical, or algorithmic method changes. Read `.agents/theorist.md`. Produce `spec.md`. Update status to `SPEC_READY`.
-   - b. **builder** — Read `.agents/builder.md`. Implement code and test changes in the target repository within the write surface defined by `impact.md`. Produce `implementation.md`. Update status to `IMPLEMENTED`.
-   - c. **auditor** — Read `.agents/auditor.md`. Run validation commands from the active profile. Produce `audit.md` with exact evidence. Update status to `VALIDATED`. If validation fails, raise `BLOCK` and route back to builder.
-   - d. **scribe** — ONLY if docs, tutorials, examples, or vignettes are in scope. Read `.agents/scribe.md`. Update documentation to match the validated implementation. Produce `docs.md`. Update status to `DOCUMENTED`.
-   - e. **skeptic** — Read `.agents/skeptic.md`. Review the full evidence chain (request → impact → implementation → audit → docs). Produce `review.md` with a verdict: `PASS`, `PASS WITH NOTE`, or `STOP`. Update status to `REVIEW_PASSED` or `STOPPED`.
-   - f. **github** — ONLY if the user explicitly asked to ship, commit, push, open a PR, or post issue follow-up. Read `.agents/github.md`. Produce `github.md`.
-6. **GATE**: Update `status.md` after EVERY stage completion. Do NOT proceed past `STOP` or `BLOCK` signals. Route back to the responsible agent on failure.
-7. **AUTONOMOUS CONTINUATION**: Do NOT pause between stages to ask the user "should I continue?". Continue automatically through the full workflow until `DONE`, `HOLD`, or `STOP`.
+3. **VERIFY CREDENTIALS**: This is the FIRST hard gate — it runs BEFORE the run is created. Follow `skills/credential-setup/SKILL.md` for the auto-detection sequence.
+   - a. **Auto-detect** credentials: check `GITHUB_TOKEN` env → `gh auth status` → SSH → git credential helper (in order).
+   - b. If any method succeeds, configure it and test with `git ls-remote <remote-url>`.
+   - c. **Only if ALL auto-detection fails**, use `AskUserQuestion` to ask the user for a GitHub Personal Access Token (PAT) or SSH key.
+   - d. Once credentials work, write `credentials.md` to the run directory recording: remote URL tested, method used (PAT/SSH/gh-cli/env-token), timestamp, and result (PASS/FAIL).
+   - e. Record the credential status in the package context under `.statsclaw/packages/`.
+   - **ENFORCEMENT**: Steps 4–8 are INVALID without a `credentials.md` showing PASS. If you find yourself planning or dispatching teammates without confirmed push access, STOP and return to step 3.
+4. **CREATE RUN**: Generate a request ID. Create `.statsclaw/runs/<request-id>/`. Write `request.md` (scope, acceptance criteria, target repo identity). Write `status.md` with state `NEW`.
+5. **LEAD PLANNING**: Read `.agents/lead.md`. Act as `lead`. Explore the target repository to identify affected surfaces. Write `impact.md` (affected files, risk areas, required teammates). Identify the profile from `profiles/`. Update `status.md` to `PLANNED`.
+6. **DISPATCH TEAMMATES**: For each stage, use the `Agent` tool to spawn a teammate. Each teammate runs as an independent agent with its own context. You MUST pass all necessary context in the agent prompt (request, impact, file paths, run directory, target repo path). The teammate reads its `.agents/<agent>.md` definition and produces the required artifact.
+   - a. **theorist** — ONLY if the request involves statistical, mathematical, or algorithmic method changes. Spawn via `Agent` tool. Teammate produces `spec.md`. Update status to `SPEC_READY`.
+   - b. **builder** — Spawn via `Agent` tool with `isolation: "worktree"`. Teammate implements code and test changes in the target repository within the write surface defined by `impact.md`. Teammate produces `implementation.md`. Update status to `IMPLEMENTED`.
+   - c. **auditor** — Spawn via `Agent` tool. Teammate runs validation commands from the active profile. Teammate produces `audit.md` with exact evidence. Update status to `VALIDATED`. If validation fails, raise `BLOCK` and respawn builder.
+   - d. **scribe** — ONLY if docs, tutorials, examples, or vignettes are in scope. Spawn via `Agent` tool with `isolation: "worktree"`. Teammate updates documentation. Teammate produces `docs.md`. Update status to `DOCUMENTED`.
+   - e. **skeptic** — Spawn via `Agent` tool. Teammate reviews the full evidence chain (request → impact → implementation → audit → docs). Teammate produces `review.md` with a verdict: `PASS`, `PASS WITH NOTE`, or `STOP`. Update status to `REVIEW_PASSED` or `STOPPED`.
+   - f. **github** — ONLY if the user explicitly asked to ship, commit, push, open a PR, or post issue follow-up. Spawn via `Agent` tool. Teammate produces `github.md`.
+7. **GATE**: Update `status.md` after EVERY teammate completes. Read the teammate's output artifact. Do NOT proceed past `STOP` or `BLOCK` signals. Respawn the responsible teammate on failure.
+8. **AUTONOMOUS CONTINUATION**: Do NOT pause between stages to ask the user "should I continue?". Continue automatically through the full workflow until `DONE`, `HOLD`, or `STOP`.
 
-When Agent Teams is active and supported by the runtime, dispatch steps 5a–5f as parallel teammates where isolation allows. When Agent Teams is not active, execute steps 5a–5f sequentially as described above — the artifact contracts and stage gates remain identical.
+**Parallelism rule**: When two teammates have no data dependency (e.g., builder and scribe write non-overlapping surfaces, or theorist and github operate independently), dispatch them in the SAME message using multiple `Agent` tool calls. Sequential dispatch is only required when a downstream teammate needs the output artifact of an upstream teammate.
 
 Short prompts MUST work. A user message like "Work on https://github.com/foo/bar. Fix the tests." is a complete, non-trivial request. It MUST trigger the full protocol above, not ad-hoc direct work.
+
+---
+
+## Hard Enforcement: State Transition Preconditions
+
+**This section defines preconditions that MUST be satisfied before updating `status.md` to a new state. These are not advisory — they are hard gates. If a precondition is not met, the state transition is INVALID and MUST NOT occur.**
+
+| Target State | Precondition | Verification |
+| --- | --- | --- |
+| `NEW` | `credentials.md` exists with result PASS | Read the file, confirm PASS is present |
+| `NEW` | Push access to target repo confirmed | `git ls-remote` succeeded during step 3 |
+| `PLANNED` | `request.md` exists and is non-empty | Read the file, confirm it has content |
+| `PLANNED` | `impact.md` exists and is non-empty | Read the file, confirm it has content |
+| `SPEC_READY` | `spec.md` exists in run directory | Read the file path |
+| `SPEC_READY` | Theorist teammate was dispatched via `Agent` tool | Agent tool call must exist in conversation |
+| `IMPLEMENTED` | `implementation.md` exists in run directory | Read the file path |
+| `IMPLEMENTED` | Builder teammate was dispatched via `Agent` tool with `isolation: "worktree"` | Agent tool call must exist in conversation |
+| `VALIDATED` | `audit.md` exists in run directory | Read the file path |
+| `VALIDATED` | Auditor teammate was dispatched via `Agent` tool | Agent tool call must exist in conversation |
+| `VALIDATED` | Lead did NOT run any validation command directly | Self-check: no Bash calls to R CMD check, pytest, npm test, etc. by lead |
+| `DOCUMENTED` | `docs.md` exists in run directory | Read the file path |
+| `REVIEW_PASSED` | `review.md` exists in run directory with verdict `PASS` or `PASS WITH NOTE` | Read the file, check verdict line |
+| `REVIEW_PASSED` | Skeptic teammate was dispatched via `Agent` tool | Agent tool call must exist in conversation |
+| `READY_TO_SHIP` | Status is `REVIEW_PASSED` | Read current status |
+| `DONE` | Github teammate was dispatched via `Agent` tool (if ship was requested) | Agent tool call must exist in conversation |
+
+**Before every `status.md` update, lead MUST:**
+1. Read the current `status.md` to confirm the current state
+2. Verify ALL preconditions for the target state in the table above
+3. Read the required artifact file to confirm it exists and is non-empty
+4. Only then write the new state to `status.md`
+
+**Violation protocol**: If lead discovers it has updated `status.md` without satisfying preconditions, it MUST:
+1. Revert `status.md` to the previous valid state
+2. Dispatch the missing teammate
+3. Re-attempt the state transition only after the precondition is satisfied
+
+---
+
+## Lead Self-Check: Forbidden Direct Actions
+
+Before EVERY tool call, `lead` MUST check whether the action belongs to a teammate. This is a hard behavioral firewall.
+
+**If you are about to do any of the following, STOP immediately and dispatch the appropriate teammate instead:**
+
+| You are about to... | This is... | Dispatch to... |
+| --- | --- | --- |
+| Use `Edit` or `Write` on a file in the **target repository** | builder work | `builder` teammate |
+| Use `Bash` to run `R CMD check`, `pytest`, `npm test`, `devtools::check()`, `devtools::test()`, or any validation command on the target repo | auditor work | `auditor` teammate |
+| Use `Bash` to run `git commit`, `git push`, `gh pr create`, or any git/GitHub write command on the target repo | github work | `github` teammate |
+| Use `Edit` or `Write` on docs, tutorials, vignettes, or examples in the target repo | scribe work | `scribe` teammate |
+| Write mathematical specifications, derive formulas, or formalize algorithms | theorist work | `theorist` teammate |
+| Use `Grep` or `Read` extensively on target repo code to debug or diagnose test failures | auditor work | `auditor` teammate |
+| Review diffs or evidence chains to decide if changes are safe to ship | skeptic work | `skeptic` teammate |
+| Read test output, error logs, or validation results to assess pass/fail | auditor work | `auditor` teammate |
+| Read git diff output to assess code safety or correctness | skeptic work | `skeptic` teammate |
+
+**Concrete rule**: `lead` may use `Read`, `Grep`, `Glob` on the target repo ONLY during step 5 (LEAD PLANNING) to write `impact.md`. After `impact.md` is written, all further target-repo interaction MUST go through dispatched teammates.
+
+**What lead IS allowed to do directly:**
+- Read/write `.statsclaw/` runtime artifacts (CONTEXT.md, packages/, runs/, status.md, etc.)
+- Explore the target repo structure during planning (step 5 only)
+- Read teammate output artifacts to decide routing
+- Update `status.md` and `locks/*`
+- Ask the user questions via `AskUserQuestion`
+- Dispatch teammates via `Agent` tool
+
+**Self-test before every tool call**: "Am I about to touch the target repo outside of planning? Am I about to do work that a teammate should do?" If yes → STOP → dispatch teammate.
+
+---
+
+## Mandatory Teammate Stages
+
+**The following teammates are NEVER optional for non-trivial requests:**
+
+1. **builder** — ALWAYS required when code changes are needed
+2. **auditor** — ALWAYS required after builder. There are ZERO exceptions. Even if you believe the code is already correct, auditor MUST run validation and produce `audit.md`.
+3. **skeptic** — ALWAYS required after auditor. There are ZERO exceptions. Even if auditor passes cleanly, skeptic MUST review the evidence chain and produce `review.md`.
+
+**The following teammates are conditional:**
+
+4. **theorist** — Required when the request involves statistical, mathematical, or algorithmic method changes. NOT required for pure bug fixes, documentation, or infrastructure changes.
+5. **scribe** — Required when public-facing docs, examples, tutorials, or vignettes are in scope. NOT required for internal-only changes.
+6. **github** — Required when the user explicitly asks to ship (commit, push, PR, issue comment).
+
+**Skipping auditor or skeptic is a protocol violation.** If you find yourself updating `status.md` past `IMPLEMENTED` without dispatching auditor, or past `VALIDATED` without dispatching skeptic, you have violated the protocol.
+
+---
+
+## How to Dispatch a Teammate
+
+When spawning a teammate via the `Agent` tool, you MUST:
+
+1. **Set `subagent_type`** to `"general-purpose"`.
+2. **Set `mode`** to `"auto"` for all teammates.
+3. **Use `isolation: "worktree"`** for any teammate that writes to the target repository (builder, scribe). This gives each writing teammate its own copy of the repo. Do NOT use worktree isolation for read-only teammates (auditor doing review, skeptic).
+4. **Include the full context in the prompt**. Teammates are separate agents — they cannot see your conversation. You MUST pass:
+   - The StatsClaw repo path and the target repo path
+   - The run directory path (e.g., `/path/to/StatsClaw/.statsclaw/runs/REQ-xxx/`)
+   - The agent definition path (e.g., `.agents/builder.md`)
+   - The key artifact contents or paths (request.md, impact.md, spec.md, etc.)
+   - The specific task and write surface
+   - The profile and validation commands when relevant
+5. **Name the agent** descriptively (e.g., `"builder"`, `"auditor"`, `"skeptic"`).
+
+### Teammate Prompt Template
+
+```
+You are the [ROLE] teammate in a StatsClaw workflow.
+
+Read your agent definition at [STATSCLAW_PATH]/.agents/[role].md and follow its rules exactly.
+
+## Context
+- StatsClaw repo: [STATSCLAW_PATH]
+- Target repo: [TARGET_PATH]
+- Run directory: [STATSCLAW_PATH]/.statsclaw/runs/[REQUEST_ID]/
+- Profile: [PROFILE]
+
+## Your Task
+[SPECIFIC TASK DESCRIPTION]
+
+## Write Surface
+[EXACT FILES/PATHS THIS TEAMMATE MAY MODIFY]
+
+## Required Inputs (read these files first)
+- [STATSCLAW_PATH]/.statsclaw/runs/[REQUEST_ID]/request.md
+- [STATSCLAW_PATH]/.statsclaw/runs/[REQUEST_ID]/impact.md
+- [OTHER ARTIFACTS AS NEEDED]
+
+## Required Output
+Write your artifact to: [STATSCLAW_PATH]/.statsclaw/runs/[REQUEST_ID]/[artifact].md
+
+## Key Rules
+- Only modify files within your assigned write surface
+- Do NOT modify status.md — lead will update it
+- Append to mailbox.md if you encounter blockers or interface changes
+- For github teammate: read credentials.md first — do NOT attempt push without PASS
+```
+
+### Parallel Dispatch Rules
+
+Dispatch multiple teammates in a SINGLE message when they are independent:
+- `theorist` + `github` (intake) — parallel OK
+- `builder` (code) + `scribe` (docs) — parallel OK if non-overlapping write surfaces
+- `auditor` MUST wait for `builder` to complete
+- `skeptic` MUST wait for `auditor` to complete
+- `github` (ship) MUST wait for `skeptic` to complete
 
 ---
 
@@ -39,121 +234,44 @@ At the start of every session:
    - create `.statsclaw/`, `.statsclaw/packages/`, `.statsclaw/runs/`, `.statsclaw/logs/`, `.statsclaw/tmp/`
    - create `.statsclaw/CONTEXT.md` from `templates/context.md`
    - create package context files under `.statsclaw/packages/` from `templates/package.md` when missing
-3. If the user message includes a target repo path, use it immediately.
-4. If the user message includes a GitHub repository URL or external repository reference, normalize it into owner, repo, and branch data when available.
-5. Materialize the target repository locally before implementation work begins. In cloud environments, this means cloning, fetching, or otherwise obtaining a usable local checkout for the target repository.
-6. If no target repo path or repository reference is given, try to infer one from available context.
-7. If there is still no clear target project, ask one concise clarification question.
-8. If the target repository cannot be fetched, cloned, checked out, or otherwise materialized locally, raise `HOLD` and do not continue into implementation, validation, or ship actions.
-9. Create or update the active project context under `.statsclaw/packages/` automatically when missing.
+3. Also read `CONTEXT.md` at the repo root if it exists (legacy compatibility — points to `packages/` for per-package context).
+4. If the user message includes a target repo path, use it immediately.
+5. If the user message includes a GitHub repository URL or external repository reference, normalize it into owner, repo, and branch data when available.
+6. Materialize the target repository locally before implementation work begins.
+7. **Verify push credentials** for the target repository immediately after materialization. Follow `skills/credential-setup/SKILL.md`:
+   - Auto-detect credentials: `GITHUB_TOKEN` env → `gh auth status` → SSH → git credential helper.
+   - If any method succeeds, configure and verify with `git ls-remote`.
+   - **Only if ALL auto-detection fails**, use `AskUserQuestion` to request a PAT or SSH key.
+   - Do NOT proceed to step 8 without confirmed access.
+8. If no target repo path or repository reference is given, try to infer one from available context.
+9. If there is still no clear target project, ask one concise clarification question.
 10. Determine the project profile from the active project context or repo markers and write it back to the local runtime when missing.
-11. If an active run is set, read the request, impact, and status artifacts for that run under `.statsclaw/runs/<request-id>/`.
-12. Hold the project path, profile, acceptance criteria, active run, and current workflow state in memory for the rest of the session.
-
-Project note: `.claude/settings.json` may enable Agent Teams at the project level. When that flag is present and supported by Claude Code, prefer Team Lead plus Teammates over single-agent sequential execution.
-
-Compatibility note: `CONTEXT.md` at the repo root exists only as a compatibility pointer. Runtime state belongs in `.statsclaw/` and is auto-managed by StatsClaw.
-
----
-
-## Product Model
-
-StatsClaw separates two classes of files:
-
-- **Versioned framework files** — `CLAUDE.md`, `.agents/`, `skills/`, `templates/`, `profiles/`, `docs/`
-- **Local runtime files** — `.statsclaw/CONTEXT.md`, `.statsclaw/packages/`, `.statsclaw/runs/`, `.statsclaw/logs/`, `.statsclaw/tmp/`
-
-Agents may read and write local runtime artifacts, but framework files should only change when improving StatsClaw itself.
-
-StatsClaw is designed for **zero-config use**:
-
-- do not require the user to run setup scripts
-- do not require the user to manually create runtime files
-- do not require the user to manually choose a profile unless detection is ambiguous
-- default to prompt-driven execution: the user tells Claude the target project path and the desired work
-- keep GitHub issue scheduling and workflow activation inside Claude-side orchestration rather than external automation
-
-Default entry rule:
-
-- when the open repository is `StatsClaw`, you MUST treat every non-trivial user request as a StatsClaw workflow run — follow the Mandatory Execution Protocol at the top of this file
-- you MUST NOT require the user to say "use StatsClaw", "start with lead", "use Agent Teams", or similar control phrasing
-- you MUST infer the workflow automatically from the request unless the user explicitly asks to bypass StatsClaw
-- trivial chat, simple factual questions, and one-off requests that do not need the workflow may still be handled directly
-- when the target repository is not `StatsClaw`, the framework repository remains control-plane only and MUST NOT become the implementation or ship target
 
 ---
 
 ## Agent Teams Model
 
-StatsClaw is Agent Teams-first. When Claude Code Agent Teams is available, you MUST use a Team Lead plus specialist Teammates. When Agent Teams is unavailable, you MUST execute each agent role sequentially following the Mandatory Execution Protocol above — reading each `.agents/<agent>.md` definition, producing the required artifact, and updating `status.md` before proceeding to the next stage. The artifact contracts and stage gates are identical regardless of execution mode.
+StatsClaw uses Agent Teams exclusively. You are the Team Lead (`lead`). You MUST use the `Agent` tool to dispatch specialist teammates. You MUST NOT perform teammate work yourself.
 
-Hard isolation rule:
+**This is not optional. There is no fallback mode. Every teammate MUST be spawned via the `Agent` tool.**
 
-- prefer one worktree per active writing teammate when the platform supports teammate worktrees
-- otherwise use lock-based write isolation under `.statsclaw/runs/<request-id>/locks/`
-- no two teammates may write overlapping surfaces at the same time
-- only `lead` may mutate `status.md` and `locks/*`
-- teammates may write only their own stage artifact plus append-only mailbox messages
+### Layer Model
 
-StatsClaw still uses five conceptual layers. The layers exist to remove duplicate work, keep ownership explicit, and make handoffs inspectable through runtime artifacts.
-
-| Layer | Agents | Responsibility |
-| --- | --- | --- |
-| **Control** | `lead` | Acts as Team Lead and owns run lifecycle, routing, retries, the shared task list, and the state machine |
-| **Planning** | `lead`, `theorist` | Owns the request contract, impact map, and any formal mathematical specification |
-| **Production** | `builder`, `scribe` | Owns code, tests, docs, examples, and tutorial changes |
-| **Assurance** | `auditor`, `skeptic` | Owns validation evidence and the final ship gate |
-| **Externalization** | `github` | Owns issue intake, PR interactions, checks, and explicit ship-facing actions |
+| Layer | Agent | Dispatched As | Responsibility |
+| --- | --- | --- | --- |
+| **Control** | `lead` | You (the main agent) | Owns run lifecycle, routing, retries, the shared task list, and the state machine |
+| **Planning** | `theorist` | `Agent` tool teammate | Owns mathematical specification |
+| **Production** | `builder` | `Agent` tool teammate (worktree) | Owns code and test implementation |
+| **Production** | `scribe` | `Agent` tool teammate (worktree) | Owns docs, examples, tutorials |
+| **Assurance** | `auditor` | `Agent` tool teammate | Owns validation evidence |
+| **Assurance** | `skeptic` | `Agent` tool teammate | Owns the final ship verdict |
+| **Externalization** | `github` | `Agent` tool teammate | Owns issue intake, PR interactions, ship actions |
 
 ### Ownership Rules
 
-Each core decision has one owner:
+Each core decision has one owner. Downstream agents must reuse upstream artifacts instead of recreating them.
 
-- `lead` owns routing, the canonical request contract, the impact map, and task assignment
-- `theorist` owns mathematical interpretation
-- `builder` owns code and test implementation
-- `scribe` owns documentation execution
-- `auditor` owns validation evidence
-- `skeptic` owns the final ship verdict
-- `github` owns external repository actions
-
-Downstream agents must reuse upstream artifacts instead of recreating them. This is a hard requirement.
-
-Agent definitions live under `.agents/`. They are fixed internal teammates with explicit read/write boundaries.
-
-Shared protocols live under `skills/`. They are reusable skills for mailbox use, lock discipline, handoffs, and other cross-agent behaviors.
-
-Templates live under `templates/` and are split into:
-
-- per-agent I/O templates such as `lead-in.md` and `lead-out.md`
-- shared runtime templates such as `context.md`, `package.md`, `status.md`, `task.md`, `mailbox.md`, and `lock.md`
-
-The per-agent output templates describe the runtime artifacts that must be produced. The shared runtime templates define the canonical shapes of the long-lived local files that keep the workflow connected across handoffs.
-
----
-
-## Target Repository Acquisition
-
-When the user asks StatsClaw to work on another repository, target-repository acquisition is mandatory.
-
-Rules:
-
-- normalize GitHub URLs and similar repository references into a concrete target repository record
-- obtain a local checkout of the target repository before assigning implementation or validation work
-- record the target repository identity and local checkout path in the active package context and run artifacts
-- if acquisition fails because of permissions, network issues, missing auth, or unsupported repository access, raise `HOLD`
-- do not silently fall back to editing the `StatsClaw` repository when acquisition fails
-
-No Run, No Write:
-
-- no agent may edit target source, tests, docs, or examples until `request.md`, `status.md`, and `impact.md` exist for the active run
-- no commit, push, branch, or PR action may occur until the target repository has been materialized locally and validated as the correct ship target
-
-Repository boundary rule:
-
-- when the user target is a repository other than `StatsClaw`, versioned `StatsClaw` files are not part of the write surface for that run
-- for such runs, `StatsClaw` may only receive local runtime updates under `.statsclaw/`
-- all target code changes, validation runs, commits, pushes, and PRs must happen in the target repository, not in `StatsClaw`
+Agent definitions live under `.agents/`. Shared protocols live under `skills/`. Templates live under `templates/`.
 
 ---
 
@@ -161,22 +279,19 @@ Repository boundary rule:
 
 Route semantically from intent. Do **not** require the user to learn trigger phrases.
 
-When this repository is the active Claude Code repository, you MUST use StatsClaw routing for any non-trivial request even if the user gives only a target path plus a short task description. This is not optional.
-
-Typical routing:
-
-| User intent | Invoke |
+| User intent | Dispatch to |
 | --- | --- |
-| any non-trivial request | `lead` |
-| scope a request, map affected surfaces, choose the workflow | `lead` |
-| formalize math, equations, estimators, algorithms, or PDFs | `theorist` |
-| change code or tests | `builder` |
-| run checks, tests, examples, docs builds, or diagnose failures | `auditor` |
-| update docs, tutorials, examples, or public guidance | `scribe` |
-| review quality, challenge completeness, assess ship risk | `skeptic` |
-| inspect issues, PRs, review comments, checks, schedules, or ship actions | `github` |
+| any non-trivial request | `lead` plans, then dispatches teammates |
+| "patrol issues" / "check issues and fix" / "auto-fix issues" / "monitor issues" | `issue-patrol` skill (lead orchestrates) |
+| formalize math, equations, estimators, algorithms, or PDFs | `theorist` teammate |
+| change code or tests | `builder` teammate |
+| run checks, tests, examples, docs builds, or diagnose failures | `auditor` teammate |
+| update docs, tutorials, examples, or public guidance | `scribe` teammate |
+| review quality, challenge completeness, assess ship risk | `skeptic` teammate |
+| inspect issues, PRs, review comments, checks, schedules, or ship actions | `github` teammate |
+| "loop" / "every Xm" / "scheduled" / "recurring" / "monitor every" | Scheduled loop — invoke `/loop` skill (see Scheduled Loop below) |
 
-When intent spans multiple categories, route to `lead` first and let the workflow continue automatically.
+**Note**: Routing is semantic. The user does NOT need to use these exact phrases. Lead interprets intent from natural language in any language.
 
 ---
 
@@ -185,31 +300,77 @@ When intent spans multiple categories, route to `lead` first and let the workflo
 For any non-trivial request, use this default flow:
 
 ```text
-lead → theorist? → builder → auditor → scribe? → skeptic → github?
+lead plans → theorist? → builder → auditor → scribe? → skeptic → github?
 ```
+
+For issue patrol requests, use this flow:
+
+```text
+lead scans issues → for each actionable issue:
+  lead plans → builder → auditor → skeptic → github (push + PR + issue comment)
+```
+
+See `skills/issue-patrol/SKILL.md` for the full protocol.
 
 Rules:
 
-- `lead` is the normal Team Lead for non-trivial requests
-- this default applies even when the user prompt is short, as long as the request is substantive enough to need workflow routing
-- if the target repository is external, `lead` must verify the target checkout and repo boundary before handing work to writing teammates
-- `theorist` is mandatory for new or changed statistical, mathematical, or algorithmic methods and optional for non-mathematical refactors
+- You (lead) plan the work, then dispatch each teammate via the `Agent` tool
+- `theorist` is mandatory for new or changed statistical, mathematical, or algorithmic methods
 - `scribe` runs only when public-facing docs, examples, tutorials, or other documented surfaces are in scope
 - `auditor` produces validation evidence; `skeptic` challenges that evidence and issues the final ship gate
-- `github` handles issue intake and all GitHub-facing actions when the user asks to ship, version, commit, push, open a PR, or post issue follow-up
+- `github` handles issue intake and all GitHub-facing actions when the user asks to ship, or automatically during issue patrol
+- When dispatched by issue-patrol, `github` MUST auto-push, create a PR, AND post a comment on the original issue
+- **auditor and skeptic are NEVER skippable** — see "Mandatory Teammate Stages" above
 
-Execution rules are **profile-aware**:
+Execution rules are **profile-aware**: use the active project profile under `profiles/` to decide repo markers, build tools, validation commands, docs conventions, and shipping conventions.
 
-- use the active project profile under `profiles/` to decide repo markers, build tools, validation commands, docs conventions, and shipping conventions
-- prefer project-context commands when explicitly provided
-- fall back to profile defaults when the project context does not override them
+---
 
-Targeted workflows:
+## Scheduled Loop (Recurring Tasks)
 
-- GitHub issue intake: `github → lead → ...`
-- diagnostics only: `lead → auditor`
-- docs only: `lead → scribe → skeptic`
-- ship only: `lead → skeptic → github`
+When the user's intent involves **recurring**, **scheduled**, or **periodic** execution, lead MUST activate the `/loop` skill via the `Skill` tool. This is a built-in Claude Code capability that runs a prompt or command on a fixed interval.
+
+### Trigger Detection
+
+Any of the following signals (in any language) indicate the user wants a scheduled loop:
+
+| Signal (any language) | Example |
+| --- | --- |
+| explicit interval | "every 5m", "every 30min", "every 10 minutes" |
+| "loop" / "recurring" / "scheduled" | "loop check fect every 10m" |
+| "monitor" / "watch" / "keep checking" | "monitor fect issues every 30min" |
+| "continuously" / "repeatedly" / "on a schedule" | "continuously check issues" |
+
+### How to Activate
+
+When lead detects a loop intent:
+
+1. **Parse the interval** from the user's prompt. Default to `10m` if no interval is specified.
+2. **Parse the inner command** — what should run on each iteration. This can be:
+   - A full workflow prompt (e.g., `"patrol fect issues on cfe"`)
+   - A validation command (e.g., `"check fect"`)
+   - Any slash command (e.g., `/commit`)
+3. **Invoke the `/loop` skill** via the `Skill` tool with the parsed interval and inner command.
+
+**Syntax**: `/loop <interval> <command-or-prompt>`
+
+### Examples
+
+| User says | Lead invokes |
+| --- | --- |
+| `"check fect issues every 30 minutes and fix"` | `/loop 30m patrol fect issues on cfe` |
+| `"loop run tests every 10m"` | `/loop 10m run tests` |
+| `"monitor fect issues every 15min"` | `/loop 15m patrol fect issues` |
+| `"loop check fect every 5m"` | `/loop 5m check fect` |
+| `"keep running tests every hour"` | `/loop 60m run tests` |
+| `"continuously check deploy status"` | `/loop 10m check deploy status` |
+
+### Rules
+
+- Lead MUST use the `Skill` tool to invoke `/loop`. Do NOT implement polling manually with `sleep` or retry loops.
+- The inner command runs in the same StatsClaw context — it can trigger the full workflow protocol on each iteration.
+- The `/loop` skill handles its own lifecycle (start, repeat, stop). Lead does not need to manage the timer.
+- If the user says "stop" / "cancel the loop", lead should inform the user to press Ctrl+C or use the appropriate stop mechanism.
 
 ---
 
@@ -217,190 +378,57 @@ Targeted workflows:
 
 Each run lives under `.statsclaw/runs/<request-id>/` and moves through explicit states:
 
-- `NEW`
-- `PLANNED`
-- `SPEC_READY`
-- `IMPLEMENTED`
-- `VALIDATED`
-- `DOCUMENTED`
-- `REVIEW_PASSED`
-- `READY_TO_SHIP`
-- `DONE`
-- `HOLD`
-- `BLOCKED`
-- `STOPPED`
+`CREDENTIALS_VERIFIED` → `NEW` → `PLANNED` → `SPEC_READY`? → `IMPLEMENTED` → `VALIDATED` → `DOCUMENTED`? → `REVIEW_PASSED` → `READY_TO_SHIP` → `DONE`
 
-The current state must be reflected in `.statsclaw/runs/<request-id>/status.md` or `status.json`.
+Also: `HOLD`, `BLOCKED`, `STOPPED`
 
----
+**`CREDENTIALS_VERIFIED` is the entry gate.** No run may be created (no `NEW` state) without first confirming push access and writing `credentials.md`. This prevents wasted work when credentials are missing.
 
-## Mandatory Runtime Persistence
-
-For every non-trivial request, runtime persistence is mandatory.
-
-This is a hard requirement, not a suggestion:
-
-1. Before substantive analysis or implementation, create or update `.statsclaw/`.
-2. Create or update an active run under `.statsclaw/runs/<request-id>/`.
-3. Write `.statsclaw/runs/<request-id>/request.md`.
-4. Write `.statsclaw/runs/<request-id>/status.md`.
-5. When planning completes, write `.statsclaw/runs/<request-id>/impact.md`.
-6. For external target repositories, record the target repository identity and local checkout path before implementation starts.
-7. When a stage produces an artifact (`github.md`, `spec.md`, `implementation.md`, `audit.md`, `docs.md`, `review.md`), write that artifact before moving to the next stage.
-8. For team-based runs, keep delegated task records under `.statsclaw/runs/<request-id>/tasks/` when more than one teammate is involved.
-9. For hard-isolation runs, create `.statsclaw/runs/<request-id>/locks/` and assign one lock per writable surface.
-10. For team-based runs, keep a shared mailbox under `.statsclaw/runs/<request-id>/mailbox.md` for interface changes, blockers, and teammate coordination.
-11. After each completed stage, update `status.md` immediately.
-12. On `HOLD`, `BLOCKED`, or `STOPPED`, update `status.md` with the blocking reason before responding to the user.
-
-If a non-trivial request does not produce runtime artifacts, the workflow is incomplete.
-
----
-
-## GitHub Schedule Semantics
-
-StatsClaw may manage recurring GitHub issue scans using Claude Code's native scheduling features when available.
-
-Rules:
-
-- If the user asks for a recurring GitHub scan schedule, store it in `.statsclaw/CONTEXT.md`.
-- Example schedule format: `daily 00:00 America/Los_Angeles`.
-- Parse schedules semantically from natural language. Examples:
-  - "每天 0 点 PT 扫描" → `daily 00:00 America/Los_Angeles`
-  - "每周一早上 9 点扫一次" → `weekly Monday 09:00 [timezone]`
-- Parse GitHub filters semantically from natural language. Examples:
-  - "只看 bug label" → `label:bug`
-  - "只看 open 的 enhancement" → `is:open label:enhancement`
-- Parse automatic solving intent semantically from natural language. Examples:
-  - "自动解决" → `GitHubAutoSolve: true`
-  - "只排队不要自动解决" → `GitHubAutoSolve: false`
-- When Claude Code native scheduling is available, prefer creating a native scheduled task instead of relying only on in-session time checks.
-- Prefer a persistent desktop scheduled task when available; otherwise use session-scoped recurring scheduling.
-- Store the resulting schedule mode and scheduled prompt in `.statsclaw/CONTEXT.md`.
-- If native scheduling is unavailable, fall back to in-session schedule enforcement.
-- When a due scan is detected, let `github` normalize the work and hand it to `lead`.
-- If an issue-driven workflow reaches completion and ship actions are requested or policy-driven, route through `github` so the changes can be pushed to a branch, a PR can be prepared, and the issue can receive a resolution comment.
-- If configuring a native Claude Code scheduled task requires platform permissions or user confirmation, ask for that once at schedule setup time rather than failing later.
-
-Important boundary:
-
-- StatsClaw is a Claude Code architecture and should use Claude Code's native scheduling features when present
-- StatsClaw should not invent fake scheduler config files if the platform schedule interface is unavailable
-- GitHub issues must not be auto-closed by the workflow; closure is a human decision
-
----
-
-## GitHub Write Boundaries
-
-When a workflow interacts with GitHub:
-
-- all code pushes, PRs, branches, and issue comments must target the **user's target repository**, not the `StatsClaw` repository
-- StatsClaw itself is only the workflow framework and must not become the repository receiving issue-fix branches or PRs
-- if GitHub write access is required and unavailable, ask the user for the necessary permissions or tokens at the beginning of the GitHub-driven workflow
-- do not defer the permissions question until after implementation work is already done
-- before any ship action, verify that the active local git checkout and remote both point to the user's target repository
-- if the active checkout still points to `StatsClaw` or another wrong repository, raise `HOLD` or `STOP`; do not commit or push
-
----
-
-## Autonomous Continuation
-
-For non-trivial requests, you MUST continue through the selected workflow without waiting for stage-by-stage confirmation.
-
-This is a hard rule that MUST NOT be violated:
-
-- do not stop after `lead`, `theorist`, `builder`, `auditor`, `scribe`, or `skeptic` just to ask "go on", "continue", or equivalent
-- do not pause merely to narrate progress
-- continue automatically unless one of the stop conditions below is reached
-
-Only pause and ask the user when:
-
-- the workflow raises `HOLD`
-- the target project path is still ambiguous
-- a destructive or shipping action requires explicit consent
-- the user explicitly asked for an intermediate checkpoint
-
-Progress updates are allowed, but they must not block continuation.
+The current state must be reflected in `.statsclaw/runs/<request-id>/status.md`. Only `lead` (you) may update `status.md`. All state transitions are subject to the precondition table in "Hard Enforcement" above.
 
 ---
 
 ## Safety Protocol
 
-Any worker may raise a workflow signal when the next step would be unsafe or ambiguous.
+Any teammate may raise a workflow signal when the next step would be unsafe or ambiguous.
 
 ### HOLD
-
-Raised by `lead`, `theorist`, `builder`, or `scribe`.
-
-Use HOLD when:
-
-- the request is ambiguous or under-scoped
-- the target repository is not yet available locally
-- the target GitHub repository cannot be fetched, cloned, or checked out correctly
-- mathematical interpretation would require invention
-- the change conflicts with existing API or package conventions
-- documentation and implementation disagree in a way that needs user choice
-
-Effect:
-
-- pause the run
-- record the concern in the run status
-- ask the user for explicit clarification before proceeding
+Raised by `lead`, `theorist`, `builder`, or `scribe`. Pauses the run. Ask the user for clarification.
 
 ### BLOCK
-
-Raised by `auditor`.
-
-Use BLOCK when:
-
-- required profile-aware validation commands fail
-- examples fail
-- docs builds fail when required
-- tutorial rendering fails when required
-- numerical results are implausible or unsupported by the spec
-
-Effect:
-
-- stop downstream work
-- route back to `builder`, `theorist`, or `scribe` as appropriate
+Raised by `auditor`. Stops downstream work. Respawn `builder`, `theorist`, or `scribe` as appropriate.
 
 ### STOP
+Raised by `skeptic`. Blocks commit, push, PR creation, or GitHub follow-up. Respawn the responsible teammate.
 
-Raised by `skeptic`.
+---
 
-Use STOP when:
+## Target Repository Boundaries
 
-- changed code paths lack meaningful test coverage
-- validation was skipped or insufficient
-- docs or tutorials do not reflect the final implementation
-- workflow artifacts contradict the actual repo state
-- a ship artifact or GitHub follow-up omits a meaningful change
+- When the user target is a repository other than `StatsClaw`, versioned `StatsClaw` files are not part of the write surface
+- All target code changes, validation runs, commits, pushes, and PRs must happen in the target repository
+- `StatsClaw` only receives local runtime updates under `.statsclaw/`
 
-Effect:
+---
 
-- block commit, push, PR creation, or GitHub follow-up
-- route back to the responsible specialist
+## Autonomous Continuation
+
+For non-trivial requests, you MUST continue through the selected workflow without waiting for stage-by-stage confirmation. Only pause when: the workflow raises `HOLD`, the target is ambiguous, a destructive action requires consent, or the user asked for a checkpoint.
 
 ---
 
 ## Principles
 
-- **Framework repo, local runtime.** Never assume user runtime state should be committed.
-- **Short prompts should work.** When StatsClaw is open, users should only need to state the target repo and the task for non-trivial workflow runs.
-- **Acquire the target first.** External repositories must exist locally before implementation, validation, or ship actions begin.
-- **Framework repo is not the target repo.** When the user's target is elsewhere, `StatsClaw` keeps only runtime state and never becomes the implementation or ship destination.
-- **Team Lead first.** Non-trivial work begins under `lead`, not ad hoc role switching.
-- **Plan once.** `lead` owns both the request contract and the impact map so downstream workers do not repeat discovery work.
-- **Agent Teams first.** Prefer a Team Lead with three to five active teammates for interdependent work; fall back only when Agent Teams is unavailable.
-- **Hard isolation first.** Prefer one worktree per writing teammate; otherwise use lock files and non-overlapping write surfaces.
-- **Mailbox over rediscovery.** Teammates should communicate interface changes and blockers through the shared mailbox instead of silently re-scanning the repo.
+- **Credentials first, work second.** Verify push access before creating a run. Ask the user for PAT/SSH if access fails. Never start a workflow that cannot ship.
+- **Team Lead dispatches, never does.** You are lead. You plan, route, and coordinate. You MUST use the `Agent` tool for all specialist work.
+- **Auditor and skeptic are never skipped.** Every non-trivial request goes through validation and review.
+- **Hard gates, not soft advice.** State transitions have preconditions. Artifact existence is verified, not assumed.
+- **Worktree isolation for writers.** Use `isolation: "worktree"` for builder and scribe teammates.
 - **Math before code.** Statistical or algorithmic method changes start with `theorist`.
 - **Produce once, challenge once.** `auditor` produces validation evidence; `skeptic` challenges it.
-- **Docs follow validated code.** `scribe` updates public-facing materials only after the validated implementation is understood.
-- **Ship actions are explicit.** Do not version, commit, push, open PRs, or post issue follow-up unless the user asked for them or the active GitHub issue-solving policy explicitly requires them.
+- **Ship actions are explicit or skill-triggered.** Do not commit, push, or open PRs unless the user asked or the issue-patrol skill is active (which implies auto-push, auto-PR, and auto-reply).
 - **Surgical scope.** Each run should modify only what the request requires.
-- **Templates are contracts.** Use `templates/` to keep handoffs structured and inspectable.
-- **Shared methods, isolated authority.** Agents may share protocol skills, but ownership and write boundaries stay agent-specific.
+- **Parallel when possible.** Dispatch independent teammates simultaneously in a single message.
 
 ---
 
@@ -413,20 +441,19 @@ Effect:
 │   └── <package>.md
 ├── runs/
 │   └── <request-id>/
+│       ├── credentials.md
 │       ├── request.md
 │       ├── status.md
 │       ├── impact.md
-│       ├── github.md
 │       ├── spec.md
 │       ├── implementation.md
 │       ├── audit.md
 │       ├── docs.md
 │       ├── review.md
+│       ├── github.md
 │       ├── mailbox.md
 │       ├── locks/
-│       │   └── <lock-id>.md
 │       └── tasks/
-│           └── <task-id>.md
 ├── logs/
 └── tmp/
 ```
@@ -438,10 +465,36 @@ Effect:
 ```text
 StatsClaw/
 ├── CLAUDE.md
-├── .agents/
-├── skills/
+├── CONTEXT.md
 ├── README.md
+├── .agents/
+│   ├── lead.md
+│   ├── theorist.md
+│   ├── builder.md
+│   ├── auditor.md
+│   ├── scribe.md
+│   ├── skeptic.md
+│   └── github.md
+├── skills/
+│   ├── isolation/SKILL.md
+│   ├── mailbox/SKILL.md
+│   ├── handoff/SKILL.md
+│   ├── issue-patrol/SKILL.md
+│   └── credential-setup/SKILL.md
 ├── profiles/
-├── docs/
-└── templates/
+│   ├── r-package.md
+│   ├── python-package.md
+│   ├── typescript-package.md
+│   └── stata-project.md
+├── templates/
+│   ├── context.md
+│   ├── package.md
+│   ├── status.md
+│   ├── algorithm-spec.md
+│   ├── diagnostic-report.md
+│   └── tutorial-template.md
+├── packages/
+├── reports/
+├── specs/
+└── docs/
 ```
