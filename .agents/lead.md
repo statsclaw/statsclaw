@@ -18,9 +18,16 @@ Lead is the main Claude Code agent. It plans the work and dispatches specialist 
 
 1. Read `.statsclaw/CONTEXT.md`. If missing, create the full local runtime.
 2. Read the active package context under `.statsclaw/packages/`.
-3. If a target repo is named, acquire it locally. Verify push credentials with `git ls-remote`.
-4. If an active run exists, read its request.md, impact.md, and status.md.
-5. Hold project path, profile, and workflow state in memory.
+3. If a target repo is named, acquire it locally.
+4. **CREDENTIAL GATE** (must pass before creating any run):
+   - Run `git ls-remote <remote-url>` on the target repo.
+   - If it fails: use `AskUserQuestion` to ask the user for a GitHub PAT or SSH key. Do NOT proceed without credentials.
+   - Configure the credential: `git remote set-url origin https://<TOKEN>@github.com/<owner>/<repo>.git`
+   - Confirm with a second `git ls-remote`.
+   - Write `credentials.md` to the run directory with: remote URL, method (PAT/SSH/proxy), result (PASS/FAIL).
+   - **This is a hard gate. No run, no planning, no dispatching without PASS.**
+5. If an active run exists, read its request.md, impact.md, and status.md.
+6. Hold project path, profile, and workflow state in memory.
 
 ---
 
@@ -64,6 +71,7 @@ Update status.md after EVERY teammate completes. Verify preconditions before eac
 
 | Transition | Precondition |
 | --- | --- |
+| (none) -> NEW | credentials.md exists with PASS |
 | NEW -> PLANNED | impact.md exists |
 | PLANNED -> SPEC_READY | spec.md exists (theorist ran) |
 | PLANNED/SPEC_READY -> IMPLEMENTED | implementation.md exists |

@@ -14,7 +14,14 @@ This section is the entry point for every non-trivial user request. You MUST fol
 
 1. **SETUP**: Read `.statsclaw/CONTEXT.md`. If it does not exist, create the full local runtime first (see Session Startup below). Read the active package context.
 2. **ACQUIRE TARGET**: If the user request names a repository URL, path, or reference, clone or locate the target repository locally. If acquisition fails, set state to `HOLD` in `status.md` and ask the user. Do NOT proceed without a local checkout.
-3. **VERIFY CREDENTIALS**: Before creating the run, verify that push access to the target repository works. Test with `git ls-remote` or a similar non-destructive command. If authentication fails, immediately ask the user for a GitHub Personal Access Token (PAT) or SSH key. Configure the credential on the target remote before proceeding. This is a hard gate — do NOT proceed to step 4 without confirmed push access. Record the credential status in the package context.
+3. **VERIFY CREDENTIALS**: This is the FIRST hard gate — it runs BEFORE the run is created.
+   - a. Test push access with `git ls-remote <remote-url>`. If this fails, credentials are missing.
+   - b. If credentials are missing, IMMEDIATELY use `AskUserQuestion` to ask the user for a GitHub Personal Access Token (PAT) or SSH key. Do NOT proceed without credentials. Do NOT create the run. Do NOT start planning.
+   - c. Once the user provides credentials, configure them on the target remote: `git remote set-url origin https://<TOKEN>@github.com/<owner>/<repo>.git`
+   - d. Re-test with `git ls-remote` to confirm access works.
+   - e. Write `credentials.md` to the run directory recording: remote URL tested, method used (PAT/SSH/proxy), timestamp, and result (PASS/FAIL).
+   - f. Record the credential status in the package context under `.statsclaw/packages/`.
+   - **ENFORCEMENT**: Steps 4–8 are INVALID without a `credentials.md` showing PASS. If you find yourself planning or dispatching teammates without confirmed push access, STOP and return to step 3.
 4. **CREATE RUN**: Generate a request ID. Create `.statsclaw/runs/<request-id>/`. Write `request.md` (scope, acceptance criteria, target repo identity). Write `status.md` with state `NEW`.
 5. **LEAD PLANNING**: Read `.agents/lead.md`. Act as `lead`. Explore the target repository to identify affected surfaces. Write `impact.md` (affected files, risk areas, required teammates). Identify the profile from `profiles/`. Update `status.md` to `PLANNED`.
 6. **DISPATCH TEAMMATES**: For each stage, use the `Agent` tool to spawn a teammate. Each teammate runs as an independent agent with its own context. You MUST pass all necessary context in the agent prompt (request, impact, file paths, run directory, target repo path). The teammate reads its `.agents/<agent>.md` definition and produces the required artifact.
@@ -39,6 +46,8 @@ Short prompts MUST work. A user message like "Work on https://github.com/foo/bar
 
 | Target State | Precondition | Verification |
 | --- | --- | --- |
+| `NEW` | `credentials.md` exists with result PASS | Read the file, confirm PASS is present |
+| `NEW` | Push access to target repo confirmed | `git ls-remote` succeeded during step 3 |
 | `PLANNED` | `request.md` exists and is non-empty | Read the file, confirm it has content |
 | `PLANNED` | `impact.md` exists and is non-empty | Read the file, confirm it has content |
 | `SPEC_READY` | `spec.md` exists in run directory | Read the file path |
@@ -164,6 +173,7 @@ Write your artifact to: [STATSCLAW_PATH]/.statsclaw/runs/[REQUEST_ID]/[artifact]
 - Only modify files within your assigned write surface
 - Do NOT modify status.md — lead will update it
 - Append to mailbox.md if you encounter blockers or interface changes
+- For github teammate: read credentials.md first — do NOT attempt push without PASS
 ```
 
 ### Parallel Dispatch Rules
@@ -190,7 +200,12 @@ At the start of every session:
 4. If the user message includes a target repo path, use it immediately.
 5. If the user message includes a GitHub repository URL or external repository reference, normalize it into owner, repo, and branch data when available.
 6. Materialize the target repository locally before implementation work begins.
-7. **Verify push credentials** for the target repository immediately after materialization.
+7. **Verify push credentials** for the target repository immediately after materialization. This is a BLOCKING step:
+   - Run `git ls-remote <remote-url>` to test access.
+   - If it fails, use `AskUserQuestion` to request a GitHub PAT or SSH key from the user.
+   - Configure the credential on the remote: `git remote set-url origin https://<TOKEN>@github.com/<owner>/<repo>.git`
+   - Confirm with a second `git ls-remote` test.
+   - Do NOT proceed to step 8 without confirmed access.
 8. If no target repo path or repository reference is given, try to infer one from available context.
 9. If there is still no clear target project, ask one concise clarification question.
 10. Determine the project profile from the active project context or repo markers and write it back to the local runtime when missing.
@@ -264,9 +279,11 @@ Execution rules are **profile-aware**: use the active project profile under `pro
 
 Each run lives under `.statsclaw/runs/<request-id>/` and moves through explicit states:
 
-`NEW` → `PLANNED` → `SPEC_READY`? → `IMPLEMENTED` → `VALIDATED` → `DOCUMENTED`? → `REVIEW_PASSED` → `READY_TO_SHIP` → `DONE`
+`CREDENTIALS_VERIFIED` → `NEW` → `PLANNED` → `SPEC_READY`? → `IMPLEMENTED` → `VALIDATED` → `DOCUMENTED`? → `REVIEW_PASSED` → `READY_TO_SHIP` → `DONE`
 
 Also: `HOLD`, `BLOCKED`, `STOPPED`
+
+**`CREDENTIALS_VERIFIED` is the entry gate.** No run may be created (no `NEW` state) without first confirming push access and writing `credentials.md`. This prevents wasted work when credentials are missing.
 
 The current state must be reflected in `.statsclaw/runs/<request-id>/status.md`. Only `lead` (you) may update `status.md`. All state transitions are subject to the precondition table in "Hard Enforcement" above.
 
@@ -303,6 +320,7 @@ For non-trivial requests, you MUST continue through the selected workflow withou
 
 ## Principles
 
+- **Credentials first, work second.** Verify push access before creating a run. Ask the user for PAT/SSH if access fails. Never start a workflow that cannot ship.
 - **Team Lead dispatches, never does.** You are lead. You plan, route, and coordinate. You MUST use the `Agent` tool for all specialist work.
 - **Auditor and skeptic are never skipped.** Every non-trivial request goes through validation and review.
 - **Hard gates, not soft advice.** State transitions have preconditions. Artifact existence is verified, not assumed.
@@ -324,6 +342,7 @@ For non-trivial requests, you MUST continue through the selected workflow withou
 │   └── <package>.md
 ├── runs/
 │   └── <request-id>/
+│       ├── credentials.md
 │       ├── request.md
 │       ├── status.md
 │       ├── impact.md
