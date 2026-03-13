@@ -6,6 +6,42 @@ StatsClaw does **not** version user runtime state. All request state, project co
 
 ---
 
+## Simple Prompt Interface
+
+**Users should never need to learn StatsClaw terminology.** A simple sentence is enough to trigger the full workflow. Lead parses natural language (any language) and routes to the correct skill or workflow automatically.
+
+### Example Prompts That Just Work
+
+| User types | What happens |
+| --- | --- |
+| `"patrol fect issues on cfe"` | Scans open issues in xuyiqing/fect, fixes bugs on `cfe` branch, pushes PRs, replies to issues |
+| `"fix fect issue #42"` | Runs full workflow to fix issue #42 in fect, pushes fix, comments on the issue |
+| `"check fect issues and auto-fix"` | Same as patrol — scans, triages, fixes, pushes, replies |
+| `"monitor fect issues every 30min"` | Recurring patrol with 30-minute interval |
+| `"自动检查 fect issues 并修复到 cfe"` | Same as patrol, Chinese is supported |
+| `"fix the failing tests in fect"` | Standard fix workflow on fect repo |
+| `"ship it"` | Push current changes and create PR |
+
+### How It Works
+
+1. Lead reads the prompt and detects intent (see `.agents/lead.md` → Simple Prompt Routing)
+2. Lead resolves package names to repos (e.g., `fect` → `xuyiqing/fect` via `packages/fect.md`)
+3. Lead auto-detects credentials (see `skills/credential-setup/SKILL.md`) — no manual PAT setup needed if the environment is configured
+4. Lead activates the appropriate skill or workflow
+5. Everything runs autonomously — user gets results, not questions
+
+### Credential Auto-Detection
+
+StatsClaw automatically detects GitHub credentials in this order:
+1. `GITHUB_TOKEN` environment variable
+2. `gh auth status` (gh CLI already logged in)
+3. SSH key (`ssh -T git@github.com`)
+4. Git credential helper
+
+**Only asks the user if ALL automated methods fail.** See `skills/credential-setup/SKILL.md`.
+
+---
+
 ## Mandatory Execution Protocol
 
 This section is the entry point for every non-trivial user request. You MUST follow these steps in order. You MUST NOT skip steps. You MUST NOT do the user's work directly without completing this protocol. If you find yourself doing substantive analysis, implementation, or review work without having created `request.md` and `impact.md` first, STOP immediately and restart from step 3.
@@ -14,13 +50,12 @@ This section is the entry point for every non-trivial user request. You MUST fol
 
 1. **SETUP**: Read `.statsclaw/CONTEXT.md`. If it does not exist, create the full local runtime first (see Session Startup below). Read the active package context.
 2. **ACQUIRE TARGET**: If the user request names a repository URL, path, or reference, clone or locate the target repository locally. If acquisition fails, set state to `HOLD` in `status.md` and ask the user. Do NOT proceed without a local checkout.
-3. **VERIFY CREDENTIALS**: This is the FIRST hard gate — it runs BEFORE the run is created.
-   - a. Test push access with `git ls-remote <remote-url>`. If this fails, credentials are missing.
-   - b. If credentials are missing, IMMEDIATELY use `AskUserQuestion` to ask the user for a GitHub Personal Access Token (PAT) or SSH key. Do NOT proceed without credentials. Do NOT create the run. Do NOT start planning.
-   - c. Once the user provides credentials, configure them on the target remote: `git remote set-url origin https://<TOKEN>@github.com/<owner>/<repo>.git`
-   - d. Re-test with `git ls-remote` to confirm access works.
-   - e. Write `credentials.md` to the run directory recording: remote URL tested, method used (PAT/SSH/proxy), timestamp, and result (PASS/FAIL).
-   - f. Record the credential status in the package context under `.statsclaw/packages/`.
+3. **VERIFY CREDENTIALS**: This is the FIRST hard gate — it runs BEFORE the run is created. Follow `skills/credential-setup/SKILL.md` for the auto-detection sequence.
+   - a. **Auto-detect** credentials: check `GITHUB_TOKEN` env → `gh auth status` → SSH → git credential helper (in order).
+   - b. If any method succeeds, configure it and test with `git ls-remote <remote-url>`.
+   - c. **Only if ALL auto-detection fails**, use `AskUserQuestion` to ask the user for a GitHub Personal Access Token (PAT) or SSH key.
+   - d. Once credentials work, write `credentials.md` to the run directory recording: remote URL tested, method used (PAT/SSH/gh-cli/env-token), timestamp, and result (PASS/FAIL).
+   - e. Record the credential status in the package context under `.statsclaw/packages/`.
    - **ENFORCEMENT**: Steps 4–8 are INVALID without a `credentials.md` showing PASS. If you find yourself planning or dispatching teammates without confirmed push access, STOP and return to step 3.
 4. **CREATE RUN**: Generate a request ID. Create `.statsclaw/runs/<request-id>/`. Write `request.md` (scope, acceptance criteria, target repo identity). Write `status.md` with state `NEW`.
 5. **LEAD PLANNING**: Read `.agents/lead.md`. Act as `lead`. Explore the target repository to identify affected surfaces. Write `impact.md` (affected files, risk areas, required teammates). Identify the profile from `profiles/`. Update `status.md` to `PLANNED`.
@@ -200,11 +235,10 @@ At the start of every session:
 4. If the user message includes a target repo path, use it immediately.
 5. If the user message includes a GitHub repository URL or external repository reference, normalize it into owner, repo, and branch data when available.
 6. Materialize the target repository locally before implementation work begins.
-7. **Verify push credentials** for the target repository immediately after materialization. This is a BLOCKING step:
-   - Run `git ls-remote <remote-url>` to test access.
-   - If it fails, use `AskUserQuestion` to request a GitHub PAT or SSH key from the user.
-   - Configure the credential on the remote: `git remote set-url origin https://<TOKEN>@github.com/<owner>/<repo>.git`
-   - Confirm with a second `git ls-remote` test.
+7. **Verify push credentials** for the target repository immediately after materialization. Follow `skills/credential-setup/SKILL.md`:
+   - Auto-detect credentials: `GITHUB_TOKEN` env → `gh auth status` → SSH → git credential helper.
+   - If any method succeeds, configure and verify with `git ls-remote`.
+   - **Only if ALL auto-detection fails**, use `AskUserQuestion` to request a PAT or SSH key.
    - Do NOT proceed to step 8 without confirmed access.
 8. If no target repo path or repository reference is given, try to infer one from available context.
 9. If there is still no clear target project, ask one concise clarification question.
@@ -245,12 +279,15 @@ Route semantically from intent. Do **not** require the user to learn trigger phr
 | User intent | Dispatch to |
 | --- | --- |
 | any non-trivial request | `lead` plans, then dispatches teammates |
+| "patrol issues" / "check issues and fix" / "auto-fix issues" / "monitor issues" | `issue-patrol` skill (lead orchestrates) |
 | formalize math, equations, estimators, algorithms, or PDFs | `theorist` teammate |
 | change code or tests | `builder` teammate |
 | run checks, tests, examples, docs builds, or diagnose failures | `auditor` teammate |
 | update docs, tutorials, examples, or public guidance | `scribe` teammate |
 | review quality, challenge completeness, assess ship risk | `skeptic` teammate |
 | inspect issues, PRs, review comments, checks, schedules, or ship actions | `github` teammate |
+
+**Note**: Routing is semantic. The user does NOT need to use these exact phrases. Lead interprets intent from natural language in any language.
 
 ---
 
@@ -262,13 +299,23 @@ For any non-trivial request, use this default flow:
 lead plans → theorist? → builder → auditor → scribe? → skeptic → github?
 ```
 
+For issue patrol requests, use this flow:
+
+```text
+lead scans issues → for each actionable issue:
+  lead plans → builder → auditor → skeptic → github (push + PR + issue comment)
+```
+
+See `skills/issue-patrol/SKILL.md` for the full protocol.
+
 Rules:
 
 - You (lead) plan the work, then dispatch each teammate via the `Agent` tool
 - `theorist` is mandatory for new or changed statistical, mathematical, or algorithmic methods
 - `scribe` runs only when public-facing docs, examples, tutorials, or other documented surfaces are in scope
 - `auditor` produces validation evidence; `skeptic` challenges that evidence and issues the final ship gate
-- `github` handles issue intake and all GitHub-facing actions when the user asks to ship
+- `github` handles issue intake and all GitHub-facing actions when the user asks to ship, or automatically during issue patrol
+- When dispatched by issue-patrol, `github` MUST auto-push, create a PR, AND post a comment on the original issue
 - **auditor and skeptic are NEVER skippable** — see "Mandatory Teammate Stages" above
 
 Execution rules are **profile-aware**: use the active project profile under `profiles/` to decide repo markers, build tools, validation commands, docs conventions, and shipping conventions.
@@ -327,7 +374,7 @@ For non-trivial requests, you MUST continue through the selected workflow withou
 - **Worktree isolation for writers.** Use `isolation: "worktree"` for builder and scribe teammates.
 - **Math before code.** Statistical or algorithmic method changes start with `theorist`.
 - **Produce once, challenge once.** `auditor` produces validation evidence; `skeptic` challenges it.
-- **Ship actions are explicit.** Do not commit, push, or open PRs unless the user asked.
+- **Ship actions are explicit or skill-triggered.** Do not commit, push, or open PRs unless the user asked or the issue-patrol skill is active (which implies auto-push, auto-PR, and auto-reply).
 - **Surgical scope.** Each run should modify only what the request requires.
 - **Parallel when possible.** Dispatch independent teammates simultaneously in a single message.
 
@@ -379,7 +426,9 @@ StatsClaw/
 ├── skills/
 │   ├── isolation/SKILL.md
 │   ├── mailbox/SKILL.md
-│   └── handoff/SKILL.md
+│   ├── handoff/SKILL.md
+│   ├── issue-patrol/SKILL.md
+│   └── credential-setup/SKILL.md
 ├── profiles/
 │   ├── r-package.md
 │   ├── python-package.md

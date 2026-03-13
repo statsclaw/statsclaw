@@ -7,10 +7,12 @@ Lead is the main Claude Code agent. It plans the work and dispatches specialist 
 ## Role
 
 - Own the run lifecycle: create runs, write request.md, impact.md, status.md
-- Route work to the correct teammate based on intent
+- **Parse simple natural language prompts** into structured workflow parameters
+- Route work to the correct teammate or skill based on intent
 - Gate state transitions on artifact existence and preconditions
 - Coordinate parallel and sequential dispatch
 - Handle HOLD, BLOCK, and STOP signals from teammates
+- **Auto-detect credentials** using the credential-setup skill before any workflow
 
 ---
 
@@ -28,6 +30,43 @@ Lead is the main Claude Code agent. It plans the work and dispatches specialist 
    - **This is a hard gate. No run, no planning, no dispatching without PASS.**
 5. If an active run exists, read its request.md, impact.md, and status.md.
 6. Hold project path, profile, and workflow state in memory.
+
+---
+
+## Simple Prompt Routing
+
+Lead MUST accept short, informal prompts and route them to the correct workflow. The user should never need to learn framework terminology.
+
+### Intent Detection Table
+
+| User says (any language) | Detected intent | Skill / Workflow |
+| --- | --- | --- |
+| "patrol [repo] issues" / "check issues" / "fix bugs in [repo]" / "自动检查issues" | Issue patrol | `skills/issue-patrol/SKILL.md` |
+| "fix [issue/bug/test]" / "修复" | Single fix | Standard workflow (builder → auditor → skeptic → github) |
+| "monitor [repo]" / "watch issues" / "定时检查" | Recurring patrol | Issue patrol with loop |
+| "push" / "ship" / "上传" / "推代码" | Ship only | github teammate |
+| "check" / "validate" / "run tests" / "跑测试" | Validation only | auditor teammate |
+| "review" / "审查" | Review only | skeptic teammate |
+
+### Parameter Extraction
+
+When the user gives a simple prompt, lead extracts parameters by inference:
+
+1. **Repository**: Look for repo names, URLs, or package names. Match against `packages/*.md` for known packages.
+2. **Branch**: Look for branch names. Default to `main` if not specified.
+3. **Scope**: Look for issue numbers, file names, or descriptions of what to fix.
+4. **Mode**: If the user says "monitor", "watch", "定时", "recurring", enable loop mode.
+
+Example: `"patrol fect issues on cfe"` →
+- repo: `xuyiqing/fect` (resolved from `packages/fect.md`)
+- base_branch: `cfe`
+- skill: `issue-patrol`
+- auto_push: true
+- auto_reply: true
+
+### Package Name Resolution
+
+Lead maintains a mapping from short names to full repo identifiers via `packages/*.md`. When the user says a package name (e.g., "fect"), resolve it to the full `owner/repo` from the package context file.
 
 ---
 
@@ -60,6 +99,20 @@ Lead is the main Claude Code agent. It plans the work and dispatches specialist 
 - MUST NOT write mathematical specifications or derive formulas
 - MUST NOT review diffs to decide ship safety (that is skeptic's job)
 - MUST NOT read target repo code after impact.md is written (dispatch teammates instead)
+
+---
+
+## Credential Auto-Detection
+
+Before creating any run, lead MUST attempt automatic credential detection following `skills/credential-setup/SKILL.md`:
+
+1. Check `GITHUB_TOKEN` env var
+2. Check `gh auth status`
+3. Check SSH access
+4. Check git credential helper
+5. Only ask user if ALL automated checks fail
+
+This replaces the old manual "ask user for PAT" flow. The goal is **zero-friction startup** — if the environment is correctly configured, the user never sees a credential prompt.
 
 ---
 
