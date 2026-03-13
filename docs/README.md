@@ -30,6 +30,8 @@ StatsClaw will auto-create the local runtime when needed:
 
 The user does not need to run setup scripts or manually fill runtime files.
 
+When `StatsClaw` itself is the open Claude Code repository, non-trivial requests should enter the StatsClaw workflow automatically. Users should not need to say "use StatsClaw", "start with lead", or any other control phrase unless they intentionally want to bypass the framework.
+
 For non-trivial requests, StatsClaw is expected to persist workflow state under `.statsclaw/runs/<request-id>/`, including `request.md`, `status.md`, `impact.md`, and stage artifacts as the work progresses.
 
 ## Product Model
@@ -73,6 +75,8 @@ github → lead → ...
 The workflow is language-agnostic. Execution details come from the active project profile and optional project-context overrides.
 
 Users do not need to explicitly name agents or write rigid trigger phrases. StatsClaw is intended to infer intent from natural language and route the work automatically.
+
+In the normal case, the user should be able to give only a target repository path plus a short task description and let StatsClaw take over from there.
 
 Profiles currently supported:
 
@@ -297,6 +301,12 @@ Typical owner:
 ## First Prompt Suggestions
 
 ```text
+Work on ~/GitHub/fect.
+Check all plot-related content.
+
+~/GitHub/fect
+Audit plotting docs and tests.
+
 Work on ~/GitHub/fect and have the Team Lead plan this request once before implementation.
 
 Inspect open GitHub issues for the active project, build an actionable queue, and route the top issue into the workflow.

@@ -132,9 +132,17 @@ StatsClaw will automatically:
 - create the active request run
 - route work through the Team Lead and teammates model
 
+If `StatsClaw` is the repository currently open in Claude Code, non-trivial requests should enter the StatsClaw workflow by default. The user does not need to say "use StatsClaw" or "start with lead"; a target path plus the task is enough.
+
 Example prompts:
 
 ```text
+Work on ~/GitHub/fect.
+Check all plot-related content.
+
+~/GitHub/fect
+Fix the failing tests and update docs.
+
 Work on ~/GitHub/fect.
 Inspect open GitHub issues, build an actionable queue, and route the top issue into the workflow.
 

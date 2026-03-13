@@ -46,6 +46,13 @@ StatsClaw is designed for **zero-config use**:
 - default to prompt-driven execution: the user tells Claude the target project path and the desired work
 - keep GitHub issue scheduling and workflow activation inside Claude-side orchestration rather than external automation
 
+Default entry rule:
+
+- when the open repository is `StatsClaw`, treat every non-trivial user request as a StatsClaw workflow run by default
+- do not require the user to say "use StatsClaw", "start with lead", "use Agent Teams", or similar control phrasing
+- infer the workflow automatically from the request unless the user explicitly asks to bypass StatsClaw
+- trivial chat, simple factual questions, and one-off requests that do not need the workflow may still be handled directly
+
 ---
 
 ## Agent Teams Model
@@ -101,6 +108,8 @@ The per-agent output templates describe the runtime artifacts that must be produ
 
 Route semantically from intent. Do **not** require the user to learn trigger phrases.
 
+When this repository is the active Claude Code repository, default to StatsClaw routing for any non-trivial request even if the user gives only a target path plus a short task description.
+
 Typical routing:
 
 | User intent | Invoke |
@@ -129,6 +138,7 @@ lead → theorist? → builder → auditor → scribe? → skeptic → github?
 Rules:
 
 - `lead` is the normal Team Lead for non-trivial requests
+- this default applies even when the user prompt is short, as long as the request is substantive enough to need workflow routing
 - `theorist` is mandatory for new or changed statistical, mathematical, or algorithmic methods and optional for non-mathematical refactors
 - `scribe` runs only when public-facing docs, examples, tutorials, or other documented surfaces are in scope
 - `auditor` produces validation evidence; `skeptic` challenges that evidence and issues the final ship gate
@@ -317,6 +327,7 @@ Effect:
 ## Principles
 
 - **Framework repo, local runtime.** Never assume user runtime state should be committed.
+- **Short prompts should work.** When StatsClaw is open, users should only need to state the target repo and the task for non-trivial workflow runs.
 - **Team Lead first.** Non-trivial work begins under `lead`, not ad hoc role switching.
 - **Plan once.** `lead` owns both the request contract and the impact map so downstream workers do not repeat discovery work.
 - **Agent Teams first.** Prefer a Team Lead with three to five active teammates for interdependent work; fall back only when Agent Teams is unavailable.
