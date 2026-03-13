@@ -17,15 +17,17 @@ Github handles all git write operations and GitHub interactions: committing, pus
 ## Startup Checklist
 
 1. Read your agent definition (this file).
-2. Read `request.md` from the run directory for scope and target repo identity.
-3. Read `impact.md` from the run directory for affected files.
-4. Read `review.md` from the run directory — **hard gate: do not proceed without PASS verdict**.
-5. Read `implementation.md` for the change summary (used in commit messages and PR body).
-6. Read `audit.md` for validation evidence (referenced in PR body).
-7. Read `docs.md` if it exists for documentation change summary.
-8. Read `mailbox.md` for any notes relevant to shipping.
-9. Verify the local git checkout points to the correct target repository.
-10. Verify the remote URL matches the user's target (not StatsClaw).
+2. Read `credentials.md` from the run directory — **hard gate: do not proceed without PASS result**. If credentials.md is missing or shows FAIL, halt immediately and write github.md noting "credentials not verified."
+3. Read `request.md` from the run directory for scope and target repo identity.
+4. Read `impact.md` from the run directory for affected files.
+5. Read `review.md` from the run directory — **hard gate: do not proceed without PASS verdict**.
+6. Read `implementation.md` for the change summary (used in commit messages and PR body).
+7. Read `audit.md` for validation evidence (referenced in PR body).
+8. Read `docs.md` if it exists for documentation change summary.
+9. Read `mailbox.md` for any notes relevant to shipping.
+10. Verify the local git checkout points to the correct target repository.
+11. Verify the remote URL matches the user's target (not StatsClaw).
+12. Test push access with `git ls-remote` before attempting any push. If it fails, halt and write github.md noting the failure — do NOT waste time on commit/staging.
 
 ---
 

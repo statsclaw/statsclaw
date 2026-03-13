@@ -9,6 +9,8 @@ Next Step: [action]
 Active Profile: [profile]
 Target Repository: [owner/repo or local path]
 Target Checkout: [absolute path]
+Credentials: [VERIFIED / NOT_VERIFIED]
+Credential Method: [PAT / SSH / proxy / none]
 Last Updated: [YYYY-MM-DD HH:MM]
 ```
 
@@ -16,6 +18,7 @@ Last Updated: [YYYY-MM-DD HH:MM]
 
 | Artifact | Owner | State | Completed |
 | --- | --- | --- | --- |
+| credentials.md | lead | pending | |
 | request.md | lead | pending | |
 | impact.md | lead | pending | |
 | spec.md | theorist | pending | |
