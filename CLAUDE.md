@@ -6,6 +6,30 @@ StatsClaw does **not** version user runtime state. All request state, project co
 
 ---
 
+## Mandatory Execution Protocol
+
+This section is the entry point for every non-trivial user request. You MUST follow these steps in order. You MUST NOT skip steps. You MUST NOT do the user's work directly without completing this protocol. If you find yourself doing substantive analysis, implementation, or review work without having created `request.md` and `impact.md` first, STOP immediately and restart from step 3.
+
+1. **SETUP**: Read `.statsclaw/CONTEXT.md`. If it does not exist, create the full local runtime first (see Session Startup below). Read the active package context.
+2. **ACQUIRE TARGET**: If the user request names a repository URL, path, or reference, clone or locate the target repository locally. If acquisition fails, set state to `HOLD` in `status.md` and ask the user. Do NOT proceed without a local checkout.
+3. **CREATE RUN**: Generate a request ID. Create `.statsclaw/runs/<request-id>/`. Write `request.md` (scope, acceptance criteria, target repo identity). Write `status.md` with state `NEW`.
+4. **LEAD PLANNING**: Read `.agents/lead.md`. Act as `lead`. Explore the target repository to identify affected surfaces. Write `impact.md` (affected files, risk areas, required teammates). Identify the profile from `profiles/`. Update `status.md` to `PLANNED`.
+5. **DISPATCH TEAMMATES**: Execute the closed-loop workflow. For each stage, read the corresponding `.agents/<agent>.md` definition and follow its rules:
+   - a. **theorist** — ONLY if the request involves statistical, mathematical, or algorithmic method changes. Read `.agents/theorist.md`. Produce `spec.md`. Update status to `SPEC_READY`.
+   - b. **builder** — Read `.agents/builder.md`. Implement code and test changes in the target repository within the write surface defined by `impact.md`. Produce `implementation.md`. Update status to `IMPLEMENTED`.
+   - c. **auditor** — Read `.agents/auditor.md`. Run validation commands from the active profile. Produce `audit.md` with exact evidence. Update status to `VALIDATED`. If validation fails, raise `BLOCK` and route back to builder.
+   - d. **scribe** — ONLY if docs, tutorials, examples, or vignettes are in scope. Read `.agents/scribe.md`. Update documentation to match the validated implementation. Produce `docs.md`. Update status to `DOCUMENTED`.
+   - e. **skeptic** — Read `.agents/skeptic.md`. Review the full evidence chain (request → impact → implementation → audit → docs). Produce `review.md` with a verdict: `PASS`, `PASS WITH NOTE`, or `STOP`. Update status to `REVIEW_PASSED` or `STOPPED`.
+   - f. **github** — ONLY if the user explicitly asked to ship, commit, push, open a PR, or post issue follow-up. Read `.agents/github.md`. Produce `github.md`.
+6. **GATE**: Update `status.md` after EVERY stage completion. Do NOT proceed past `STOP` or `BLOCK` signals. Route back to the responsible agent on failure.
+7. **AUTONOMOUS CONTINUATION**: Do NOT pause between stages to ask the user "should I continue?". Continue automatically through the full workflow until `DONE`, `HOLD`, or `STOP`.
+
+When Agent Teams is active and supported by the runtime, dispatch steps 5a–5f as parallel teammates where isolation allows. When Agent Teams is not active, execute steps 5a–5f sequentially as described above — the artifact contracts and stage gates remain identical.
+
+Short prompts MUST work. A user message like "Work on https://github.com/foo/bar. Fix the tests." is a complete, non-trivial request. It MUST trigger the full protocol above, not ad-hoc direct work.
+
+---
+
 ## Session Startup
 
 At the start of every session:
@@ -51,17 +75,17 @@ StatsClaw is designed for **zero-config use**:
 
 Default entry rule:
 
-- when the open repository is `StatsClaw`, treat every non-trivial user request as a StatsClaw workflow run by default
-- do not require the user to say "use StatsClaw", "start with lead", "use Agent Teams", or similar control phrasing
-- infer the workflow automatically from the request unless the user explicitly asks to bypass StatsClaw
+- when the open repository is `StatsClaw`, you MUST treat every non-trivial user request as a StatsClaw workflow run — follow the Mandatory Execution Protocol at the top of this file
+- you MUST NOT require the user to say "use StatsClaw", "start with lead", "use Agent Teams", or similar control phrasing
+- you MUST infer the workflow automatically from the request unless the user explicitly asks to bypass StatsClaw
 - trivial chat, simple factual questions, and one-off requests that do not need the workflow may still be handled directly
-- when the target repository is not `StatsClaw`, the framework repository remains control-plane only and must not become the implementation or ship target
+- when the target repository is not `StatsClaw`, the framework repository remains control-plane only and MUST NOT become the implementation or ship target
 
 ---
 
 ## Agent Teams Model
 
-StatsClaw is Agent Teams-first. When Claude Code Agent Teams is available, StatsClaw should prefer a Team Lead plus specialist Teammates. When Agent Teams is unavailable, StatsClaw should preserve the same contracts with sequential execution or subagent-style delegation.
+StatsClaw is Agent Teams-first. When Claude Code Agent Teams is available, you MUST use a Team Lead plus specialist Teammates. When Agent Teams is unavailable, you MUST execute each agent role sequentially following the Mandatory Execution Protocol above — reading each `.agents/<agent>.md` definition, producing the required artifact, and updating `status.md` before proceeding to the next stage. The artifact contracts and stage gates are identical regardless of execution mode.
 
 Hard isolation rule:
 
@@ -137,7 +161,7 @@ Repository boundary rule:
 
 Route semantically from intent. Do **not** require the user to learn trigger phrases.
 
-When this repository is the active Claude Code repository, default to StatsClaw routing for any non-trivial request even if the user gives only a target path plus a short task description.
+When this repository is the active Claude Code repository, you MUST use StatsClaw routing for any non-trivial request even if the user gives only a target path plus a short task description. This is not optional.
 
 Typical routing:
 
@@ -281,9 +305,9 @@ When a workflow interacts with GitHub:
 
 ## Autonomous Continuation
 
-For non-trivial requests, StatsClaw should continue through the selected workflow without waiting for stage-by-stage confirmation.
+For non-trivial requests, you MUST continue through the selected workflow without waiting for stage-by-stage confirmation.
 
-This is a hard rule:
+This is a hard rule that MUST NOT be violated:
 
 - do not stop after `lead`, `theorist`, `builder`, `auditor`, `scribe`, or `skeptic` just to ask "go on", "continue", or equivalent
 - do not pause merely to narrate progress
