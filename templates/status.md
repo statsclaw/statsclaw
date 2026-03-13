@@ -8,6 +8,18 @@ Next Step: [action]
 Active Profile: [profile]  
 Last Updated: [YYYY-MM-DD HH:MM]
 
+## Ownership Ledger
+
+- Layer: [Control / Planning / Production / Assurance / Externalization]
+- Authority: [which artifact or agent currently owns the next decision]
+
+## Active Isolation
+
+- Held locks:
+  - `[lock-id]`
+- Current write owner:
+  - `[agent or none]`
+
 ## Open Risks
 
 - [risk]

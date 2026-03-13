@@ -1,6 +1,6 @@
 # Project Context — [project-name]
 
-This file lives under `.statsclaw/packages/` in normal use and is typically created automatically by `triage`.
+This file lives under `.statsclaw/packages/` in normal use and is typically created automatically by `lead`.
 
 ---
 
@@ -10,7 +10,7 @@ This file lives under `.statsclaw/packages/` in normal use and is typically crea
 Package path: ~/path/to/project
 Package name: project
 Version: unknown
-Release channel: package registry / internal / app deployment / unknown
+Ship target: package registry / internal / app deployment / unknown
 Description: [one-sentence description]
 Project type: package / library / app / research-repo
 Primary language: R / Python / TypeScript / Stata / other
@@ -23,7 +23,8 @@ Package manager: devtools / uv / pip / npm / pnpm / yarn / stata / other
 ## Request Defaults
 
 ```yaml
-Default task type: feature / bugfix / validation / docs / release
+Default task type: feature / bugfix / validation / docs / ship
+Default workflow: agent-teams
 Documentation surface:
   - README.md
   - docs/
@@ -36,7 +37,7 @@ Validation commands:
 Lint command: [optional]
 Typecheck command: [optional]
 Docs command: [optional]
-Release command: [optional]
+Ship command: [optional]
 ```
 
 ---
@@ -53,7 +54,7 @@ Release command: [optional]
 ## Package Constraints
 
 ```yaml
-- [API conventions, numerical constraints, or release caveats]
+- [API conventions, numerical constraints, or shipping caveats]
 - [Any profile-specific docs, tooling, or tutorial requirements]
 ```
 
@@ -72,6 +73,7 @@ Release command: [optional]
 ```yaml
 Current focus: [optional]
 Open risks: [optional]
+Last lead summary: [optional]
 ```
 
 ---

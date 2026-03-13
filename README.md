@@ -1,6 +1,6 @@
 # StatsClaw
 
-StatsClaw is a framework-only product for Claude Code that turns a plain repository into a structured delivery workflow across multiple languages. It ships the orchestration rules, agent definitions, project profiles, templates, and docs needed to take a request from intake to implementation, validation, documentation, review, and release.
+StatsClaw is a framework-only product for Claude Code that turns a plain repository into an Agent Teams-first delivery workflow across multiple languages. It ships the orchestration rules, agent definitions, project profiles, templates, and docs needed to take a request from planning to production, assurance, and externalization.
 
 StatsClaw does **not** track a user's project history by default. All runtime state is local under `.statsclaw/` and ignored by git.
 
@@ -10,11 +10,14 @@ StatsClaw does **not** track a user's project history by default. All runtime st
 
 This repository contains the reusable framework:
 
-- `CLAUDE.md` — workflow orchestrator
-- `skills/` — agent definitions
+- `CLAUDE.md` — layered orchestration policy
+- `.agents/` — isolated internal agent definitions
+- `skills/` — shared protocol skills used across agents
 - `profiles/` — language and project-type execution rules
-- `templates/` — structured artifacts for requests, specs, audits, reviews, and docs
+- `templates/` — per-agent input/output templates plus shared runtime templates
 - `docs/` — single product and workflow guide
+
+This repository also enables Claude Code Agent Teams experimentally at the project level through `.claude/settings.json`.
 
 This repository does **not** contain user-specific runtime artifacts after installation:
 
@@ -22,25 +25,29 @@ This repository does **not** contain user-specific runtime artifacts after insta
 - generated request runs
 - diagnostic reports
 - algorithm specs
+- task ledgers or event logs
 - local logs or temporary files
 
 ---
 
-## Agent Team
+## Layered Agents
 
-StatsClaw coordinates nine specialists:
+StatsClaw coordinates five layers:
 
-| Agent | Role |
-| --- | --- |
-| `triage` | Turns a natural-language request into a structured task contract |
-| `github` | Handles issues, PRs, checks, labels, and daily issue queue interactions |
-| `scout` | Maps project structure, exports, dependencies, tooling, and blast radius |
-| `theorist` | Converts mathematical intent into a formal implementation spec |
-| `builder` | Implements the requested change in the target project |
-| `auditor` | Runs profile-aware checks, tests, examples, and docs or tutorial builds |
-| `scribe` | Updates profile-appropriate docs, examples, tutorials, and public guidance |
-| `skeptic` | Reviews the full finished change set before shipping |
-| `release` | Handles changelog, versioning, commit, PR, and delivery artifacts |
+| Layer | Agents | Role |
+| --- | --- | --- |
+| `Control` | `lead` | Acts as Team Lead and owns run lifecycle, routing, retries, and the shared task list |
+| `Planning` | `lead`, `theorist` | Owns the request contract, impact map, and any formal mathematical specification |
+| `Production` | `builder`, `scribe` | Owns code, tests, docs, examples, and tutorial updates |
+| `Assurance` | `auditor`, `skeptic` | Owns validation evidence and the final ship gate |
+| `Externalization` | `github` | Owns issue intake, PR interactions, checks, and explicit ship-facing actions |
+
+The key design choice is **single ownership per decision**:
+
+- `lead` owns the request contract and repo-wide impact map
+- `auditor` produces validation evidence
+- `skeptic` challenges that evidence instead of duplicating it
+- `github` normalizes external signals but does not own the internal request contract
 
 ---
 
@@ -49,21 +56,32 @@ StatsClaw coordinates nine specialists:
 For a full feature or method request, the standard path is:
 
 ```text
-triage → scout → theorist? → builder → auditor → scribe → skeptic → release?
+lead → theorist? → builder → auditor → scribe? → skeptic → github?
 ```
 
 For issue-driven work, the path can begin with:
 
 ```text
-github → triage → scout → ...
+github → lead → ...
 ```
 
 Meaning:
 
-- `theorist` is required when the request changes mathematical logic
-- `scribe` runs after validation so docs match the final code
-- `skeptic` reviews the complete finished artifact set
-- `release` only runs when the user explicitly asks to ship
+- `lead` combines Team Lead coordination with one-time planning
+- `theorist` runs only when the request changes mathematical logic
+- `scribe` runs only when public-facing docs or examples are in scope
+- `auditor` and `skeptic` are intentionally separate: evidence first, gate second
+- `github` owns external actions such as issue follow-up, commit, push, and PR creation
+
+StatsClaw is designed to map cleanly onto Claude Code Agent Teams: one Team Lead, a shared task list, teammate coordination through a mailbox, and limited parallelism for interdependent work.
+
+For stronger isolation, StatsClaw expects either:
+
+- one worktree per active writing teammate, or
+- lock-based write ownership under `.statsclaw/runs/<request-id>/locks/`
+
+Shared behaviors such as mailbox usage, lock discipline, and handoff rules live in `skills/`; fixed identities and boundaries live in `.agents/`.
+Per-agent I/O contracts live in `templates/`, while shared runtime contracts remain there as a small common core. In practice, the agent output templates describe which runtime artifacts must exist, and the shared templates define the shapes of the long-lived local files that keep handoffs consistent.
 
 StatsClaw keeps one workflow and switches execution rules by project profile. Profiles currently cover:
 
@@ -72,42 +90,31 @@ StatsClaw keeps one workflow and switches execution rules by project profile. Pr
 - `typescript-package`
 - `stata-project`
 
-StatsClaw can also operate in GitHub-driven mode:
+---
 
-- inspect issues and PRs
-- summarize CI/check failures
-- create issue-driven run artifacts
-- maintain a daily actionable issue queue
-
-The GitHub agent can also manage a recurring scan schedule inside the Claude-side workflow layer, for example:
-
-- scan the target repo's open issues every day at `00:00 America/Los_Angeles`
-- build an actionable queue
-- activate the full StatsClaw workflow for the top actionable issue
-- after solving, push the changes to the corresponding branch and reply on the issue with the resolution summary
-
-This schedule belongs to the StatsClaw runtime and is handled by Claude-side orchestration rather than external GitHub Actions.
-
-You do not need to fill schedule fields manually. You can just say things like:
-
-- "每天 0 点 PT 扫描"
-- "每周一早上 9 点扫一次"
-- "只看 bug label"
-- "自动激活整个 workflow 去解决"
-
-GitHub access preference:
-
-- preferred: `gh` CLI if it is installed and authenticated
-- fallback: GitHub REST API via `GH_TOKEN` or `GITHUB_TOKEN`
-- if neither exists, the GitHub agent should pause with a clear HOLD instead of silently failing
-
-Issue-resolution policy:
-
-- after an issue-driven workflow succeeds, StatsClaw should push the changes to the corresponding branch
-- it should also post an issue comment summarizing what was solved and where the branch/PR lives
-- it must not auto-close the issue
+## Shared Runtime
 
 The workflow is stateful. Each active request gets a local run folder under `.statsclaw/runs/<request-id>/`.
+
+Typical contents:
+
+```text
+.statsclaw/runs/<request-id>/
+├── request.md
+├── status.md
+├── impact.md
+├── spec.md
+├── implementation.md
+├── audit.md
+├── docs.md
+├── review.md
+├── github.md
+├── mailbox.md
+├── locks/
+└── tasks/
+```
+
+Agents cooperate through these artifacts instead of relying on shared hidden context.
 
 ---
 
@@ -123,6 +130,7 @@ StatsClaw will automatically:
 - create the active project context
 - detect the project profile
 - create the active request run
+- route work through the Team Lead and teammates model
 
 Example prompts:
 
@@ -137,19 +145,10 @@ Every day at 00:00 America/Los_Angeles, scan the repo's open GitHub issues, pick
 每天 0 点 PT 扫描 open issues，只看 bug label，并自动激活整个 workflow 去解决。
 
 Work on ~/GitHub/fect.
-Map the project and identify the files affected by a new ATT estimator.
+Map the project once, identify the affected surfaces, and implement the change without duplicate discovery work.
 
 Work on ~/GitHub/fect.
-Formalize the following estimator from the paper and implement it.
-
-Work on ~/GitHub/fect.
-Read ~/papers/method.pdf, extract the estimator, formalize it, and implement it in the project.
-
-Work on ~/GitHub/fect.
-Run the full validation workflow and tell me what is blocking release.
-
-Work on ~/GitHub/fect.
-Prepare docs, review the change, and create a release-ready handoff.
+Read ~/papers/method.pdf, formalize the estimator, implement it, validate it, update docs, and prepare a ship handoff.
 
 Work on ~/project/my_python_lib.
 Fix [bug], run validation, update docs, and prepare a PR summary.
@@ -163,11 +162,12 @@ Fix [bug], run validation, update docs, and prepare a PR summary.
 StatsClaw/
 ├── CLAUDE.md
 ├── README.md
+├── .agents/
+├── skills/
 ├── profiles/
 ├── docs/
-├── skills/
 ├── templates/
-└── .statsclaw/           # local only, created by bootstrap, ignored by git
+└── .statsclaw/           # local only, auto-created at runtime, ignored by git
 ```
 
 See `docs/README.md` for the full guide.
@@ -177,10 +177,13 @@ See `docs/README.md` for the full guide.
 ## Design Principles
 
 - **Framework repo, local runtime.** Product code is versioned; user runtime artifacts are local.
-- **Profile-aware execution.** The workflow stays stable while validation, docs, and packaging rules come from the active project profile.
-- **Math before code.** New statistical or algorithmic logic starts with a formal spec.
-- **Validation before documentation sign-off.** Docs follow passing checks.
-- **Review before release.** Shipping happens only after a skeptical review.
-- **Explicit release actions.** No commit, PR, or version bump without user instruction.
-- **GitHub-aware intake.** Issue-driven work can enter the workflow through the GitHub agent, including Claude-managed recurring scans.
+- **Team Lead first.** Non-trivial work begins under `lead`, not ad hoc role switching.
+- **Plan once.** `lead` owns both the request contract and the impact map so downstream agents do not repeat discovery work.
+- **Agent Teams first.** Prefer a Team Lead with a small teammate set for interdependent work.
+- **Hard isolation first.** Writing teammates should use isolated worktrees or explicit locks.
+- **Shared methods, isolated authority.** Shared protocol skills are reusable; scope, locks, and ownership remain agent-specific.
+- **Math before code.** New statistical or algorithmic logic starts with `theorist`.
+- **Evidence before gate.** `auditor` proves what happened; `skeptic` decides whether that proof is good enough.
+- **Docs follow validated implementation.** Public docs are updated from the final understood change, not guessed early.
+- **Explicit ship actions.** No commit, push, PR, issue comment, or version bump without user instruction unless the active GitHub policy explicitly requires the follow-up.
 
