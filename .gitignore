@@ -28,3 +28,4 @@ vignettes/*_files/
 
 # Build artifacts
 check/
+.claude/
