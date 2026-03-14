@@ -2,6 +2,8 @@
 
 Lead is the main Claude Code agent. It plans the work and dispatches specialist teammates via the Agent tool. It NEVER performs specialist work itself.
 
+**Lead's authoritative reference is `CLAUDE.md`.** This file contains only lead-specific behaviors not covered there: prompt routing, parameter extraction, uploaded file handling, and the theorist comprehension loop.
+
 ---
 
 ## Role
@@ -9,61 +11,10 @@ Lead is the main Claude Code agent. It plans the work and dispatches specialist 
 - Own the run lifecycle: create runs, write request.md, impact.md, status.md
 - **Parse simple natural language prompts** into structured workflow parameters
 - Route work to the correct teammate or skill based on intent
-- Gate state transitions on artifact existence and preconditions
-- Coordinate the **two-pipeline architecture**: code pipeline and test pipeline
-- Dispatch theorist first, then dispatch builder and auditor **in parallel** from theorist's dual output
-- Converge both pipelines at skeptic for cross-comparison
-- Handle HOLD, BLOCK, and STOP signals from teammates
-- **Auto-detect credentials** using the credential-setup skill before any workflow
-
----
-
-## Two-Pipeline Architecture
-
-Lead orchestrates two fully isolated execution pipelines:
-
-```
-                    theorist
-                   /        \
-        spec.md  /            \  test-spec.md
-               /                \
-          builder              auditor
-      (code pipeline)     (test pipeline)
-               \                /
-                \              /
-                   skeptic
-              (convergence gate)
-                     |
-                   github
-```
-
-**Key dispatch rules:**
-1. Theorist runs FIRST — produces both `spec.md` and `test-spec.md`
-2. Builder and auditor run IN PARALLEL — each receives only its own spec
-3. Builder gets `spec.md` only — NEVER `test-spec.md`
-4. Auditor gets `test-spec.md` only — NEVER `spec.md`
-5. Skeptic runs AFTER BOTH complete — reads ALL artifacts from both pipelines
-6. Skeptic is the ONLY agent that sees both pipelines' artifacts
-
----
-
-## Startup Checklist
-
-1. Read `.statsclaw/CONTEXT.md`. If missing, create the full local runtime.
-2. Read the active package context under `.statsclaw/packages/`.
-3. If a target repo is named, acquire it locally.
-4. **CREDENTIAL GATE** (must pass before creating any run):
-   - Follow `skills/credential-setup/SKILL.md` for the full auto-detection sequence:
-     1. Check `GITHUB_TOKEN` environment variable
-     2. Check `gh auth status` (gh CLI already logged in)
-     3. Check SSH access (`ssh -T git@github.com`)
-     4. Check git credential helper
-   - If any method succeeds, configure it and verify with `git ls-remote <remote-url>`.
-   - **Only if ALL auto-detection methods fail**, use `AskUserQuestion` to ask the user for a GitHub PAT or SSH key.
-   - Write `credentials.md` to the run directory with: remote URL, method (PAT/SSH/env-token/gh-cli), result (PASS/FAIL).
-   - **This is a hard gate. No run, no planning, no dispatching without PASS.**
-5. If an active run exists, read its request.md, impact.md, and status.md.
-6. Hold project path, profile, and workflow state in memory.
+- Gate state transitions on artifact existence and preconditions (see CLAUDE.md → Hard Enforcement)
+- Coordinate the two-pipeline architecture (see CLAUDE.md → Agent Teams Model)
+- Handle HOLD, BLOCK, and STOP signals (see CLAUDE.md → Signal Handling)
+- **Auto-detect credentials** using `skills/credential-setup/SKILL.md` before any workflow
 
 ---
 
@@ -139,38 +90,7 @@ Lead maintains a mapping from short names to full repo identifiers via `.statscl
 
 ---
 
-## Credential Auto-Detection
-
-Before creating any run, lead MUST attempt automatic credential detection following `skills/credential-setup/SKILL.md`:
-
-1. Check `GITHUB_TOKEN` env var
-2. Check `gh auth status`
-3. Check SSH access
-4. Check git credential helper
-5. Only ask user if ALL automated checks fail
-
-This replaces the old manual "ask user for PAT" flow. The goal is **zero-friction startup** — if the environment is correctly configured, the user never sees a credential prompt.
-
----
-
-## Required Duties
-
-### State Machine
-
-Update status.md after EVERY teammate completes. Verify preconditions before each transition:
-
-| Transition | Precondition |
-| --- | --- |
-| (none) -> NEW | credentials.md exists with PASS |
-| NEW -> PLANNED | impact.md exists |
-| PLANNED -> SPEC_READY | comprehension.md, spec.md, AND test-spec.md all exist (theorist ran) |
-| SPEC_READY -> PIPELINES_COMPLETE | implementation.md AND audit.md exist (parallel pipelines complete) |
-| PIPELINES_COMPLETE -> REVIEW_PASSED | review.md exists with PASS or PASS WITH NOTE |
-| REVIEW_PASSED -> DONE | github.md exists (if ship requested) |
-
-Note: Because builder and auditor run in parallel, the state transitions reflect both completing before skeptic can run.
-
-### Uploaded File Detection
+## Uploaded File Detection
 
 **When the user's prompt references or attaches files** (PDF, Word, .txt, .tex, images with formulas, paper excerpts), lead MUST:
 
@@ -179,7 +99,9 @@ Note: Because builder and auditor run in parallel, the state transitions reflect
 3. **Pass ALL file paths** in the theorist dispatch prompt. List each file explicitly so theorist can read them.
 4. **Note in request.md** that uploaded reference materials are part of the requirements.
 
-### Theorist Comprehension Loop
+---
+
+## Theorist Comprehension Loop
 
 When theorist raises **HOLD with comprehension questions**, lead MUST:
 
@@ -191,55 +113,6 @@ When theorist raises **HOLD with comprehension questions**, lead MUST:
 6. Advance to `SPEC_READY` when theorist's `comprehension.md` shows `FULLY UNDERSTOOD` or `UNDERSTOOD WITH ASSUMPTIONS`.
 
 **This loop is the exception to "autonomous continuation"** — lead MUST pause and ask the user when theorist has comprehension questions.
-
-### Dispatch Rules
-
-- Use Agent tool with `subagent_type: "general-purpose"` and `mode: "auto"`
-- Use `isolation: "worktree"` for builder and scribe (writing teammates)
-- **Dispatch builder and auditor in PARALLEL** after theorist completes
-- Pass only `spec.md` to builder — NEVER pass `test-spec.md`
-- Pass only `test-spec.md` to auditor — NEVER pass `spec.md`
-- Dispatch skeptic only AFTER both builder and auditor complete
-- Pass ALL artifacts to skeptic (it is the convergence point)
-- Follow the teammate prompt template from CLAUDE.md
-
-### Pipeline Isolation Enforcement
-
-Before dispatching each teammate, verify:
-- Builder prompt does NOT mention test-spec.md
-- Auditor prompt does NOT mention spec.md or implementation.md
-- Skeptic prompt includes ALL artifacts from both pipelines
-
-### Signal Handling
-
-Three signals, three exclusive owners, three distinct responses:
-
-| Signal | Owner | Meaning | Lead Action |
-| --- | --- | --- | --- |
-| **HOLD** | theorist, builder, scribe | Need user input | Ask user via `AskUserQuestion`, re-dispatch teammate with answer |
-| **BLOCK** | auditor only | Validation failed | Respawn responsible upstream teammate, re-dispatch auditor |
-| **STOP** | skeptic only | Quality gate failed | Respawn per skeptic's routing table, re-run pipeline(s) |
-
-- **Max retries**: 3 respawns per teammate per signal. After 3, escalate to HOLD and ask user.
-- **HOLD does NOT auto-resolve** — only the user can unblock it.
-- **BLOCK and STOP auto-resolve** — lead respawns without asking the user (unless max retries exhausted).
-
-### Autonomous Continuation
-
-- Do NOT pause between stages to ask the user "should I continue?"
-- Continue automatically through the full workflow until DONE, HOLD, or STOP
-- Only pause for: HOLD signals, ambiguous target, destructive actions needing consent
-
----
-
-## Templates
-
-- `templates/context.md` — runtime context
-- `templates/package.md` — package context
-- `templates/status.md` — run status
-- `templates/credentials.md` — credential verification
-- `templates/mailbox.md` — team mailbox
-- `templates/lock.md` — write surface lock
 
 ---
 

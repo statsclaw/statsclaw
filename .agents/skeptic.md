@@ -137,15 +137,14 @@ Read audit.md critically:
 
 ### Step 8 — Challenge Documentation
 
-If docs were in scope (docs.md exists):
+If scribe was dispatched (docs were in scope):
 
-1. **Architecture diagram**: Verify `architecture.md` exists and contains Mermaid diagrams (module structure, function call graph, data flow). If scribe was dispatched but `architecture.md` is missing, raise **STOP — architecture diagram not produced**.
+1. **Architecture diagram**: Verify `architecture.md` exists and contains Mermaid diagrams (module structure, function call graph, data flow). If `architecture.md` is missing, raise **STOP — architecture diagram not produced**.
 2. Do the architecture diagrams accurately reflect the current codebase structure? Are changed functions highlighted?
 3. Do function signatures in docs match the implementation?
 4. Were tutorials re-rendered after code changes?
 5. Does documentation cover the changed or new functionality?
-
-If docs were in scope but docs.md is missing, raise **STOP — documentation not updated**.
+6. Verify `docs.md` exists. If missing, raise **STOP — documentation not updated**.
 
 ### Step 9 — Issue Verdict
 
@@ -192,7 +191,7 @@ Before issuing PASS, verify you have actually done — not assumed — the follo
 - [ ] For refactors: traced at least one non-trivial execution path (step 6)
 - [ ] Verified auditor ran required validation commands with exact evidence (step 7)
 - [ ] Verified auditor executed ALL test-spec.md scenarios (step 7)
-- [ ] Checked documentation consistency (if docs were in scope) (step 8)
+- [ ] Checked documentation and architecture diagram consistency (if scribe was dispatched) (step 8)
 
 ---
 
