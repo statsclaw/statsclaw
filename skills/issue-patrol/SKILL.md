@@ -103,7 +103,7 @@ Write `patrol-report.md` summarizing:
 
 ### Phase 5 — Loop (Optional)
 
-If `loop_interval > 0`, wait and repeat from Phase 2. Use the `/loop` skill or `sleep` + re-invoke pattern.
+If `loop_interval > 0`, repeat from Phase 2. Use the `/loop` skill via the `Skill` tool — do NOT implement polling with `sleep`.
 
 ---
 
