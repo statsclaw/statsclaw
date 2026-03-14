@@ -24,6 +24,7 @@ Each teammate produces specific output artifacts per run stage:
 
 | Teammate | Artifact(s) | Path | Pipeline |
 | --- | --- | --- | --- |
+| theorist | `comprehension.md` | `.statsclaw/runs/<request-id>/comprehension.md` | Comprehension record |
 | theorist | `spec.md` | `.statsclaw/runs/<request-id>/spec.md` | → Code Pipeline |
 | theorist | `test-spec.md` | `.statsclaw/runs/<request-id>/test-spec.md` | → Test Pipeline |
 | builder | `implementation.md` | `.statsclaw/runs/<request-id>/implementation.md` | Code Pipeline output |
@@ -49,7 +50,7 @@ A clear status indicator:
 
 | Teammate | Possible Verdicts |
 | --- | --- |
-| theorist | `SPEC_COMPLETE` (both specs produced), `HOLD` (ambiguity needs user input) |
+| theorist | `SPEC_COMPLETE` (comprehension verified, both specs produced), `HOLD` (comprehension incomplete, questions for user) |
 | builder | `IMPLEMENTED`, `HOLD` (spec unclear or conflict found) |
 | auditor | `PASS` (all checks green), `BLOCK` (failures found) |
 | scribe | `DOCUMENTED`, `HOLD` (implementation unclear) |

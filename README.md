@@ -94,6 +94,7 @@ ship it
 │   ├── request.md          # scope and acceptance criteria
 │   ├── status.md           # state machine
 │   ├── impact.md           # affected files and risk areas
+│   ├── comprehension.md    # comprehension verification (from theorist, mandatory)
 │   ├── spec.md             # code pipeline input (from theorist)
 │   ├── test-spec.md        # test pipeline input (from theorist)
 │   ├── implementation.md   # code pipeline output (from builder)

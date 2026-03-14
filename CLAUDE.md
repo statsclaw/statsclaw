@@ -49,7 +49,7 @@ This section is the entry point for every non-trivial user request. You MUST fol
 4. **CREATE RUN**: Generate a request ID. Create `.statsclaw/runs/<request-id>/`. Write `request.md` (scope, acceptance criteria, target repo identity). Write `status.md` with state `NEW`.
 5. **LEAD PLANNING**: Read `.agents/lead.md`. Act as `lead`. Explore the target repository to identify affected surfaces. Write `impact.md` (affected files, risk areas, required teammates). Identify the profile from `profiles/`. Update `status.md` to `PLANNED`.
 6. **DISPATCH TEAMMATES (Two-Pipeline Architecture)**: See "Agent Teams Model" below for the architecture. Dispatch per the selected workflow:
-   - a. **theorist** — ALWAYS dispatched for non-trivial requests. Produces `spec.md` (code pipeline) and `test-spec.md` (test pipeline). Update status to `SPEC_READY`.
+   - a. **theorist** — ALWAYS dispatched for non-trivial requests. **MANDATORY when the user uploads files** (PDF, Word, txt, tex, images with formulas) — these contain primary source material that theorist must deeply comprehend before any specs are produced. Pass ALL uploaded file paths in the dispatch prompt. Theorist produces `comprehension.md` (verification of understanding), `spec.md` (code pipeline), and `test-spec.md` (test pipeline). **If theorist raises HOLD with comprehension questions, lead MUST forward them to the user via `AskUserQuestion` and re-dispatch theorist with the answers. Iterate until theorist confirms FULLY UNDERSTOOD.** Update status to `SPEC_READY`.
    - b. **builder + auditor IN PARALLEL** — After theorist completes, dispatch BOTH in the SAME message. Builder gets `spec.md` ONLY. Auditor gets `test-spec.md` ONLY. Update status to `PIPELINES_COMPLETE` after BOTH complete.
    - c. **scribe** — ONLY if docs are in scope. Dispatch with `isolation: "worktree"`. Produces `docs.md`. Update status to `DOCUMENTED`.
    - d. **skeptic** — ALWAYS dispatched after both pipelines complete. Reads ALL artifacts. Produces `review.md` with verdict. Update status to `REVIEW_PASSED` or `STOPPED`.
@@ -71,7 +71,7 @@ Short prompts MUST work. A user message like "Work on https://github.com/foo/bar
 | `NEW` | `credentials.md` exists with result PASS | Read the file, confirm PASS is present |
 | `NEW` | Push access to target repo confirmed | `git ls-remote` succeeded during step 3 |
 | `PLANNED` | `request.md` and `impact.md` exist and are non-empty | Read the files |
-| `SPEC_READY` | `spec.md` AND `test-spec.md` both exist | Read both file paths |
+| `SPEC_READY` | `comprehension.md`, `spec.md`, AND `test-spec.md` all exist | Read all three file paths |
 | `SPEC_READY` | Theorist was dispatched via `Agent` tool | Agent tool call must exist in conversation |
 | `PIPELINES_COMPLETE` | `implementation.md` and `audit.md` exist | Read both file paths |
 | `PIPELINES_COMPLETE` | Builder dispatched with `isolation: "worktree"`, auditor dispatched | Agent tool calls must exist |
@@ -358,6 +358,7 @@ For non-trivial requests, you MUST continue through the selected workflow withou
 │       ├── request.md
 │       ├── status.md
 │       ├── impact.md
+│       ├── comprehension.md  # comprehension verification (from theorist, mandatory)
 │       ├── spec.md           # code pipeline input (from theorist)
 │       ├── test-spec.md      # test pipeline input (from theorist)
 │       ├── implementation.md # code pipeline output (from builder)
