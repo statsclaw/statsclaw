@@ -84,14 +84,14 @@ Lead MUST accept short, informal prompts and route them to the correct workflow.
 
 When the user gives a simple prompt, lead extracts parameters by inference:
 
-1. **Repository**: Look for repo names, URLs, or package names. Match against `packages/*.md` for known packages.
+1. **Repository**: Look for repo names, URLs, or package names. Match against `.statsclaw/packages/*.md` for known packages.
 2. **Branch**: Look for branch names. Default to `main` if not specified.
 3. **Scope**: Look for issue numbers, file names, or descriptions of what to fix.
 4. **Mode**: If the user says "monitor", "watch", "recurring", "scheduled", enable loop mode.
 5. **Scheduled loop**: If the user says "loop", "every Xm/Xmin", "scheduled", "recurring", "continuously", "repeatedly", or any equivalent in any language — extract the interval (default `10m`) and inner command, then invoke `/loop` via the `Skill` tool.
 
 Example: `"patrol fect issues on cfe"` →
-- repo: `xuyiqing/fect` (resolved from `packages/fect.md`)
+- repo: `xuyiqing/fect` (resolved from `.statsclaw/packages/fect.md`)
 - base_branch: `cfe`
 - skill: `issue-patrol`
 - auto_push: true
@@ -99,7 +99,7 @@ Example: `"patrol fect issues on cfe"` →
 
 ### Package Name Resolution
 
-Lead maintains a mapping from short names to full repo identifiers via `packages/*.md`. When the user says a package name (e.g., "fect"), resolve it to the full `owner/repo` from the package context file.
+Lead maintains a mapping from short names to full repo identifiers via `.statsclaw/packages/*.md`. When the user says a package name (e.g., "fect"), resolve it to the full `owner/repo` from the package context file.
 
 ---
 
@@ -204,6 +204,9 @@ Before dispatching each teammate, verify:
 - `templates/context.md` — runtime context
 - `templates/package.md` — package context
 - `templates/status.md` — run status
+- `templates/credentials.md` — credential verification
+- `templates/mailbox.md` — team mailbox
+- `templates/lock.md` — write surface lock
 
 ---
 

@@ -251,18 +251,17 @@ At the start of every session:
    - create `.statsclaw/`, `.statsclaw/packages/`, `.statsclaw/runs/`, `.statsclaw/logs/`, `.statsclaw/tmp/`
    - create `.statsclaw/CONTEXT.md` from `templates/context.md`
    - create package context files under `.statsclaw/packages/` from `templates/package.md` when missing
-3. Also read `CONTEXT.md` at the repo root if it exists (legacy compatibility — points to `packages/` for per-package context).
-4. If the user message includes a target repo path, use it immediately.
-5. If the user message includes a GitHub repository URL or external repository reference, normalize it into owner, repo, and branch data when available.
-6. Materialize the target repository locally before implementation work begins.
-7. **Verify push credentials** for the target repository immediately after materialization. Follow `skills/credential-setup/SKILL.md`:
+3. If the user message includes a target repo path, use it immediately.
+4. If the user message includes a GitHub repository URL or external repository reference, normalize it into owner, repo, and branch data when available.
+5. Materialize the target repository locally before implementation work begins.
+6. **Verify push credentials** for the target repository immediately after materialization. Follow `skills/credential-setup/SKILL.md`:
    - Auto-detect credentials: `GITHUB_TOKEN` env → `gh auth status` → SSH → git credential helper.
    - If any method succeeds, configure and verify with `git ls-remote`.
    - **Only if ALL auto-detection fails**, use `AskUserQuestion` to request a PAT or SSH key.
-   - Do NOT proceed to step 8 without confirmed access.
-8. If no target repo path or repository reference is given, try to infer one from available context.
-9. If there is still no clear target project, ask one concise clarification question.
-10. Determine the project profile from the active project context or repo markers and write it back to the local runtime when missing.
+   - Do NOT proceed to step 7 without confirmed access.
+7. If no target repo path or repository reference is given, try to infer one from available context.
+8. If there is still no clear target project, ask one concise clarification question.
+9. Determine the project profile from the active project context or repo markers and write it back to the local runtime when missing.
 
 ---
 
@@ -541,11 +540,8 @@ StatsClaw/
 │   ├── context.md
 │   ├── package.md
 │   ├── status.md
-│   ├── algorithm-spec.md
-│   ├── diagnostic-report.md
-│   └── tutorial-template.md
-├── packages/
-├── reports/
-├── specs/
-└── docs/
+│   ├── credentials.md
+│   ├── mailbox.md
+│   └── lock.md
+└── .statsclaw/           # local only, auto-created, git-ignored
 ```
