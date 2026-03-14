@@ -76,7 +76,8 @@ Skeptic is uniquely positioned to see both sides. Its primary value is detecting
 
 Check that theorist's specs are grounded in verified understanding:
 - Does `comprehension.md` exist? If not: **STOP — theorist did not verify comprehension**
-- Does `comprehension.md` show final verdict `FULLY UNDERSTOOD`? If not: **STOP — specs produced with incomplete understanding**
+- Does `comprehension.md` show final verdict `FULLY UNDERSTOOD` or `UNDERSTOOD WITH ASSUMPTIONS`? If neither: **STOP — specs produced with incomplete understanding**
+- If verdict is `UNDERSTOOD WITH ASSUMPTIONS`: are the assumptions reasonable and explicitly stated? If assumptions are unsound: **STOP — assumptions not justified**
 - If uploaded reference files were part of the request, does `comprehension.md` reference each file? If files are missing: **STOP — source material not fully internalized**
 - Do the formulas restated in `comprehension.md` match those in `spec.md`? If discrepancies exist: flag as STOP or PASS WITH NOTE
 

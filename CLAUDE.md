@@ -280,15 +280,33 @@ When the user's intent involves recurring or periodic execution, lead MUST activ
 
 ## Signal Handling
 
-| Signal | Raised by | Meaning | Lead response |
-| --- | --- | --- | --- |
-| **HOLD** | theorist, builder, scribe | Ambiguous requirement, need user input | Pause run. Ask user via `AskUserQuestion`. Resume after clarification. |
-| **BLOCK** | auditor | Validation failed | Read `audit.md`. Respawn responsible teammate (usually builder). Re-dispatch auditor after fix. |
-| **STOP** | skeptic | Change is unsafe to ship | Read `review.md`. Respawn responsible teammate per skeptic's routing. Re-run from appropriate pipeline stage. |
+StatsClaw uses exactly **three** workflow signals. Each signal has one exclusive owner, one meaning, and one response. They never overlap.
 
-**Max retries**: A teammate may be respawned up to **3 times** for the same issue. After 3 failures, set status to `HOLD` and ask the user for guidance.
+| Signal | Exclusive Owner | When Raised | Status Set To | Lead Response |
+| --- | --- | --- | --- | --- |
+| **HOLD** | theorist, builder, scribe | Cannot proceed without user input: undefined symbol, ambiguous spec, conflicting API, unclear requirement | `HOLD` | Pause run. Forward the specific question to user via `AskUserQuestion`. Re-dispatch the same teammate with the answer. |
+| **BLOCK** | auditor (only) | Validation failed: tests fail, checks produce errors/warnings, numerical results outside tolerance | `BLOCKED` | Read `audit.md` failure details. Respawn the responsible upstream teammate (usually builder). After fix, re-dispatch auditor. |
+| **STOP** | skeptic (only) | Quality gate failed: pipelines diverge, isolation breached, coverage gaps, unsafe to ship | `STOPPED` | Read `review.md` routing. Respawn the teammate skeptic identifies. Re-run affected pipeline(s), then re-dispatch skeptic. |
 
-**Signal propagation**: HOLD → ask user → resume. BLOCK → respawn → re-validate → skeptic. STOP → respawn → re-run pipelines → skeptic.
+### Key Distinctions
+
+- **HOLD** = "I need information from the user." Only the user can unblock this.
+- **BLOCK** = "The code is broken." Another teammate (builder/theorist) must fix it. The user is NOT asked.
+- **STOP** = "The change is not safe to ship." Skeptic routes to the responsible teammate. The user is NOT asked.
+
+### Rules
+
+- **Max retries**: A teammate may be respawned up to **3 times** for the same signal. After 3 failures, escalate to `HOLD` and ask the user.
+- **No signal nesting**: A BLOCK cannot trigger a STOP, and vice versa. Each signal is handled independently.
+- **Autonomous continuation**: Lead does NOT pause between stages except for HOLD. BLOCK and STOP are handled by respawning — no user interaction needed unless max retries are exhausted.
+
+### Signal Flow
+
+```
+HOLD:   teammate → lead → AskUserQuestion → user answers → lead re-dispatches teammate
+BLOCK:  auditor → lead → respawn builder/theorist → re-dispatch auditor → continue
+STOP:   skeptic → lead → respawn per routing table → re-run pipeline(s) → re-dispatch skeptic
+```
 
 ---
 
@@ -298,7 +316,10 @@ Each run moves through explicit states:
 
 `CREDENTIALS_VERIFIED` → `NEW` → `PLANNED` → `SPEC_READY` → `PIPELINES_COMPLETE` → `DOCUMENTED`? → `REVIEW_PASSED` → `READY_TO_SHIP` → `DONE`
 
-Also: `HOLD`, `BLOCKED`, `STOPPED`
+Interrupt states (can occur at any point):
+- `HOLD` — waiting for user input (only unblocked by user response)
+- `BLOCKED` — validation failed (unblocked by respawning upstream teammate)
+- `STOPPED` — quality gate failed (unblocked by respawning per skeptic routing)
 
 - `SPEC_READY` requires BOTH `spec.md` and `test-spec.md`
 - `PIPELINES_COMPLETE` requires BOTH `implementation.md` and `audit.md`
