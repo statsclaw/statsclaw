@@ -2,19 +2,26 @@
 
 Request ID: [request-id]
 
-Use this file as the shared message log for the Team Lead and teammates.
-
-Append-only rule: teammates add new messages but do not rewrite or delete earlier entries.
+Append-only: teammates add new messages at the end. Never edit or delete existing entries.
 
 ## Message Format
 
-- From: [lead / theorist / builder / scribe / auditor / skeptic / github]
-- To: [lead / theorist / builder / scribe / auditor / skeptic / github / all]
-- Type: [handoff / question / interface-change / warning / unblock / note]
-- Summary: [one-line message]
-- Action Needed: [optional]
-- Lock Impact: [optional lock id or `none`]
+```markdown
+---
+**Timestamp:** YYYY-MM-DD HH:MM UTC
+**From:** <agent-name>
+**Type:** INFO | HOLD_REQUEST | INTERFACE_CHANGE
+**Subject:** <one-line summary>
+
+<message body — as concise as possible>
+```
+
+| Type | Meaning |
+| --- | --- |
+| `INFO` | Non-blocking observation or note for downstream teammates |
+| `HOLD_REQUEST` | Cannot continue without user input — corresponds to HOLD signal |
+| `INTERFACE_CHANGE` | Function signature, file path, or API surface changed |
 
 ## Messages
 
-- [YYYY-MM-DD HH:MM] From: [agent] | To: [agent] | Type: [type] | Summary: [message]
+_No messages yet._

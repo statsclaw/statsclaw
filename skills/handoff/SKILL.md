@@ -117,7 +117,7 @@ After each teammate returns, lead MUST:
 
 1. **Read the output artifact** in full.
 2. **Check the verdict.** If the verdict is `HOLD`, `BLOCK`, or `STOP`, do NOT dispatch the next downstream teammate.
-3. **Check the mailbox** for any `BLOCKER` or `INTERFACE_CHANGE` messages.
+3. **Check the mailbox** for any `HOLD_REQUEST` or `INTERFACE_CHANGE` messages.
 4. **Verify pipeline isolation** — confirm no cross-pipeline artifacts were referenced.
 5. **Update `status.md`** to reflect the completed stage.
 6. **Dispatch the next teammate** with only the artifacts allowed by pipeline rules.

@@ -10,7 +10,7 @@ Active Profile: [profile]
 Target Repository: [owner/repo or local path]
 Target Checkout: [absolute path]
 Credentials: [VERIFIED / NOT_VERIFIED]
-Credential Method: [PAT / SSH / proxy / none]
+Credential Method: [PAT / SSH / gh-cli / env-token]
 Last Updated: [YYYY-MM-DD HH:MM]
 ```
 

@@ -27,7 +27,7 @@ A short prompt like `"patrol fect issues on cfe"` is sufficient.
 3. **Prioritize** — Orders actionable issues by severity (crashes > test failures > warnings > minor bugs)
 4. **Fix Loop** — For each actionable issue, runs the full StatsClaw workflow:
    - Creates a fix branch from the specified base branch
-   - Dispatches builder → auditor → skeptic → github
+   - Dispatches theorist → [builder ∥ auditor] → skeptic → github
    - Pushes the fix and opens a PR
    - Posts a comment on the original issue linking the PR and summarizing the fix
 5. **Report** — Produces a patrol report summarizing all actions taken
@@ -152,7 +152,7 @@ Please review the PR and let us know if the fix addresses your concern.
 - **Never force-push** — always use regular push.
 - **Skip ambiguous issues** — if the issue doesn't clearly describe a bug, skip it and log why.
 - **One branch per issue** — never mix fixes for different issues in the same branch.
-- **Respect the full workflow** — every fix goes through builder → auditor → skeptic. No shortcuts.
+- **Respect the full workflow** — every fix goes through theorist → [builder ∥ auditor] → skeptic. No shortcuts.
 - **Credential gate** — do not attempt any GitHub operations without verified credentials.
 
 ---
