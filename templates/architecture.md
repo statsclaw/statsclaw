@@ -10,25 +10,37 @@
 
 ## Module Structure
 
+<!--
+  LAYOUT RULES:
+  - Max 3 nodes per horizontal row
+  - Subgraphs MUST stack vertically (use ~~~ invisible edges)
+  - If >20 nodes total, split into multiple diagrams (one per layer)
+  - Diagram MUST be taller than it is wide when rendered
+-->
+
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
 graph TD
     subgraph API["API Layer"]
-        A1["module/file — public entry point"]
+        A1["module — entry point"]
     end
 
     subgraph Core["Core Logic"]
-        C1["module/file — primary algorithm"]
-        C2["module/file — secondary algorithm"]
+        C1["module — primary algo"]
+        C2["module — secondary algo"]
     end
 
     subgraph Data["Data Layer"]
-        D1["module/file — data ingestion/validation"]
+        D1["module — data validation"]
     end
 
     subgraph Utils["Utilities"]
-        U1["module/file — shared helpers"]
+        U1["module — shared helpers"]
     end
+
+    API ~~~ Core
+    Core ~~~ Data
+    Data ~~~ Utils
 
     A1 --> C1
     A1 --> C2
@@ -39,7 +51,7 @@ graph TD
     style A1 fill:#1e90ff,stroke:#1565c0,color:#fff
 ```
 
-> Nodes with blue fill indicate modules modified in this run.
+> Blue fill = modified in this run. Subgraphs are stacked vertically by layer.
 
 ### Module Reference
 
@@ -54,11 +66,19 @@ graph TD
 
 ## Function Call Graph
 
+<!--
+  LAYOUT RULES:
+  - Max 3 nodes per horizontal row
+  - If a node has >3 children, use invisible routing nodes to split into rows
+  - Keep the graph narrow and tall
+-->
+
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
 graph TD
-    pub1["public_function()"] --> int1["internal_helper()"]
-    pub1 --> int2["another_helper()"]
+    pub1["public_func()"]
+    pub1 --> int1["helper_a()"]
+    pub1 --> int2["helper_b()"]
     int1 --> leaf1["low_level_op()"]
     int2 --> leaf1
 
@@ -66,32 +86,39 @@ graph TD
     style int1 fill:#1e90ff,stroke:#1565c0,color:#fff
 ```
 
-> Shows call chains for functions affected by this run. Blue nodes = changed. Trace from public entry points down to leaf operations.
+> Blue nodes = changed. Trace from public entry points down to leaf operations. Max 3 nodes per row.
 
 ### Function Reference
 
 | Function | Defined In | Called By | Calls | Changed | Purpose |
 | --- | --- | --- | --- | --- | --- |
-| `public_function()` | `[file]` | user / exported | `internal_helper`, `another_helper` | yes / no | [one-line purpose] |
-| `internal_helper()` | `[file]` | `public_function` | `low_level_op` | yes / no | [one-line purpose] |
+| `public_func()` | `[file]` | user / exported | `helper_a`, `helper_b` | yes / no | [one-line] |
+| `helper_a()` | `[file]` | `public_func` | `low_level_op` | yes / no | [one-line] |
 
 ---
 
 ## Data Flow
 
+<!--
+  LAYOUT RULES:
+  - MUST be a single vertical chain (graph TD)
+  - NEVER horizontal (graph LR)
+  - Branches rejoin quickly (max 2 nodes wide)
+-->
+
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
 graph TD
-    Input["User Input\n(data, params)"] --> Validate["Input Validation"]
+    Input["User Input"] --> Validate["Validation"]
     Validate --> Process["Core Processing"]
-    Process --> Transform["Transform / Compute"]
+    Process --> Transform["Compute"]
     Transform --> Output["Result Object"]
-    Output --> Display["Print / Plot / Return"]
+    Output --> Display["Return / Print"]
 
     style Process fill:#1e90ff,stroke:#1565c0,color:#fff
 ```
 
-> Top-to-bottom flow showing how data moves through the system from input to output. Blue nodes = changed in this run.
+> Vertical chain from input to output. Blue nodes = changed in this run.
 
 ---
 
