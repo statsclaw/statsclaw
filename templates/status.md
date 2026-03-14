@@ -14,19 +14,38 @@ Credential Method: [PAT / SSH / proxy / none]
 Last Updated: [YYYY-MM-DD HH:MM]
 ```
 
+## State Machine (Two-Pipeline Architecture)
+
+```
+CREDENTIALS_VERIFIED → NEW → PLANNED → SPEC_READY → PIPELINES_COMPLETE → DOCUMENTED? → REVIEW_PASSED → READY_TO_SHIP → DONE
+```
+
+- `SPEC_READY` requires BOTH `spec.md` AND `test-spec.md` from theorist
+- `PIPELINES_COMPLETE` requires BOTH `implementation.md` (builder) AND `audit.md` (auditor)
+- Builder and auditor run in parallel after SPEC_READY
+
 ## Ownership Ledger
 
-| Artifact | Owner | State | Completed |
-| --- | --- | --- | --- |
-| credentials.md | lead | pending | |
-| request.md | lead | pending | |
-| impact.md | lead | pending | |
-| spec.md | theorist | pending | |
-| implementation.md | builder | pending | |
-| audit.md | auditor | pending | |
-| docs.md | scribe | pending | |
-| review.md | skeptic | pending | |
-| github.md | github | pending | |
+| Artifact | Owner | Pipeline | State | Completed |
+| --- | --- | --- | --- | --- |
+| credentials.md | lead | — | pending | |
+| request.md | lead | — | pending | |
+| impact.md | lead | — | pending | |
+| spec.md | theorist | → Code | pending | |
+| test-spec.md | theorist | → Test | pending | |
+| implementation.md | builder | Code | pending | |
+| audit.md | auditor | Test | pending | |
+| docs.md | scribe | Code | pending | |
+| review.md | skeptic | Convergence | pending | |
+| github.md | github | — | pending | |
+
+## Pipeline Isolation Status
+
+| Check | Status |
+| --- | --- |
+| Builder received only spec.md (not test-spec.md) | pending |
+| Auditor received only test-spec.md (not spec.md) | pending |
+| Skeptic received ALL artifacts from both pipelines | pending |
 
 ## Active Isolation
 
