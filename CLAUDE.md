@@ -77,7 +77,7 @@ Short prompts MUST work. A user message like "Work on https://github.com/foo/bar
 | `PIPELINES_COMPLETE` | Builder dispatched with `isolation: "worktree"`, auditor dispatched | Agent tool calls must exist |
 | `PIPELINES_COMPLETE` | Pipeline isolation verified | Builder prompt has no test-spec.md; auditor prompt has no spec.md |
 | `PIPELINES_COMPLETE` | Lead did NOT run any validation command directly | Self-check: no Bash calls to R CMD check, pytest, npm test, etc. |
-| `DOCUMENTED` | `docs.md` exists in run directory | Read the file path |
+| `DOCUMENTED` | `architecture.md` and `docs.md` exist in run directory | Read both file paths |
 | `REVIEW_PASSED` | `review.md` exists with verdict `PASS` or `PASS WITH NOTE` | Read the file, check verdict |
 | `REVIEW_PASSED` | Skeptic was dispatched via `Agent` tool | Agent tool call must exist |
 | `READY_TO_SHIP` | Status is `REVIEW_PASSED` | Read current status |
@@ -362,6 +362,7 @@ For non-trivial requests, you MUST continue through the selected workflow withou
 │       ├── test-spec.md      # test pipeline input (from theorist)
 │       ├── implementation.md # code pipeline output (from builder)
 │       ├── audit.md          # test pipeline output (from auditor)
+│       ├── architecture.md  # system architecture diagram (from scribe, mandatory)
 │       ├── docs.md
 │       ├── review.md
 │       ├── github.md

@@ -129,9 +129,11 @@ Read audit.md critically:
 
 If docs were in scope (docs.md exists):
 
-1. Do function signatures in docs match the implementation?
-2. Were tutorials re-rendered after code changes?
-3. Does documentation cover the changed or new functionality?
+1. **Architecture diagram**: Verify `architecture.md` exists and contains Mermaid diagrams (module structure, function call graph, data flow). If scribe was dispatched but `architecture.md` is missing, raise **STOP — architecture diagram not produced**.
+2. Do the architecture diagrams accurately reflect the current codebase structure? Are changed functions highlighted?
+3. Do function signatures in docs match the implementation?
+4. Were tutorials re-rendered after code changes?
+5. Does documentation cover the changed or new functionality?
 
 If docs were in scope but docs.md is missing, raise **STOP — documentation not updated**.
 

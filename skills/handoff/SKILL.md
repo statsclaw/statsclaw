@@ -28,6 +28,7 @@ Each teammate produces specific output artifacts per run stage:
 | theorist | `test-spec.md` | `.statsclaw/runs/<request-id>/test-spec.md` | → Test Pipeline |
 | builder | `implementation.md` | `.statsclaw/runs/<request-id>/implementation.md` | Code Pipeline output |
 | auditor | `audit.md` | `.statsclaw/runs/<request-id>/audit.md` | Test Pipeline output |
+| scribe | `architecture.md` | `.statsclaw/runs/<request-id>/architecture.md` | Architecture (mandatory) |
 | scribe | `docs.md` | `.statsclaw/runs/<request-id>/docs.md` | Code Pipeline (docs) |
 | skeptic | `review.md` | `.statsclaw/runs/<request-id>/review.md` | Convergence output |
 | github | `github.md` | `.statsclaw/runs/<request-id>/github.md` | Externalization output |

@@ -98,6 +98,7 @@ ship it
 │   ├── test-spec.md        # test pipeline input (from theorist)
 │   ├── implementation.md   # code pipeline output (from builder)
 │   ├── audit.md            # test pipeline output (from auditor)
+│   ├── architecture.md     # system architecture diagram (from scribe, mandatory)
 │   ├── docs.md             # documentation changes (from scribe)
 │   ├── review.md           # convergence verdict (from skeptic)
 │   ├── github.md           # ship actions (from github)
