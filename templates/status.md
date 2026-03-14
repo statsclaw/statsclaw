@@ -20,9 +20,14 @@ Last Updated: [YYYY-MM-DD HH:MM]
 CREDENTIALS_VERIFIED → NEW → PLANNED → SPEC_READY → PIPELINES_COMPLETE → DOCUMENTED? → REVIEW_PASSED → READY_TO_SHIP → DONE
 ```
 
-- `SPEC_READY` requires BOTH `spec.md` AND `test-spec.md` from theorist
+- `SPEC_READY` requires `comprehension.md`, `spec.md`, AND `test-spec.md` from theorist
 - `PIPELINES_COMPLETE` requires BOTH `implementation.md` (builder) AND `audit.md` (auditor)
 - Builder and auditor run in parallel after SPEC_READY
+
+Interrupt states:
+- `HOLD` — waiting for user input (only user can unblock)
+- `BLOCKED` — auditor validation failed (respawn upstream teammate)
+- `STOPPED` — skeptic quality gate failed (respawn per routing)
 
 ## Ownership Ledger
 

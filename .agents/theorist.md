@@ -141,23 +141,35 @@ Based on the self-test:
 
 **FULLY UNDERSTOOD** — All questions answered with confidence. No undefined symbols, no ambiguous steps, no missing assumptions. Proceed to Step 1.
 
-**PARTIALLY UNDERSTOOD** — Some questions could not be answered. Theorist MUST raise **HOLD** and ask the user specific questions. The HOLD protocol is:
+**PARTIALLY UNDERSTOOD** — Some questions could not be answered. Theorist MUST raise **HOLD** and ask the user targeted questions designed to elicit exactly the missing information.
 
-1. **Identify exactly what is unclear** — not vague ("I don't understand the method") but specific ("In equation (3), the symbol $\hat\Sigma$ is used but never defined — is this the sample covariance matrix or the residual covariance? And what is the dimension: $N \times N$ or $T \times T$?")
+#### Question Design Rules
 
-2. **Formulate the minimum set of questions** that, if answered, would make comprehension complete. Rules:
-   - Each question must be **specific and concrete** — answerable in one sentence or one formula
-   - Questions must be **independent** — answering one should not make another redundant
-   - Questions must be **necessary** — if the answer is derivable from the source material, do not ask
-   - Aim for the **smallest possible number** of questions (typically 1–5)
+The goal is to **guide the user to a complete answer in one round**. Theorist must design questions that make it easy for the user to provide precisely what is needed.
 
-3. **Write the questions to mailbox.md** with type `BLOCKER` and append to `comprehension.md`
+1. **Be specific, not vague** — not "I don't understand the method" but "In equation (3), the symbol $\hat\Sigma$ is used but never defined — is this the sample covariance matrix or the residual covariance? And what is the dimension: $N \times N$ or $T \times T$?"
 
-4. **Raise HOLD** — theorist stops here. Lead will forward the questions to the user via `AskUserQuestion`.
+2. **Offer options when possible** — instead of open-ended questions, provide concrete choices: "Does convergence here mean (a) $\|x_{k+1} - x_k\| < \epsilon$, (b) $|f(x_{k+1}) - f(x_k)| < \epsilon$, or (c) something else?" This makes the user's job easy and prevents miscommunication.
 
-5. **After user answers**: Lead re-dispatches theorist with the user's answers appended to the dispatch prompt. Theorist re-runs the comprehension self-test (0c) incorporating the new information.
+3. **Show your current understanding** — before each question, state what you DO understand, so the user only needs to fill in the gap: "I understand that $\hat\beta$ is the OLS estimator and $V$ is the variance. What I'm missing is: how is $V$ estimated — using HC1, HC2, or cluster-robust?"
 
-6. **Iterate until FULLY UNDERSTOOD** — there is no limit on the number of HOLD rounds. It is better to ask 3 rounds of 2 questions each than to produce specs based on guesswork. **Producing specs with incomplete comprehension is the worst possible outcome** — it wastes builder, auditor, and skeptic cycles on incorrect work.
+4. **Group related gaps** — if multiple unknowns are related, combine them: "Equations (4) and (5) both use $W$. Could you clarify: (a) is $W$ a fixed weight matrix or data-dependent, and (b) what are its dimensions?"
+
+5. **Keep it minimal** — aim for the **fewest questions** that would give theorist full understanding. Typically 1–4 questions per round.
+
+#### HOLD Protocol
+
+1. Write questions to mailbox.md with type `HOLD_REQUEST` and append to `comprehension.md`
+2. Raise **HOLD** — theorist stops here. Lead forwards questions to the user.
+3. After user answers, lead re-dispatches theorist with the answers. Theorist re-runs comprehension self-test (0c).
+
+#### Max Rounds
+
+Theorist may raise HOLD up to **3 rounds**. After 3 rounds:
+- If remaining gaps are minor and can be resolved by a reasonable default assumption, state the assumption explicitly in `comprehension.md`, mark verdict as `UNDERSTOOD WITH ASSUMPTIONS`, and proceed.
+- If remaining gaps are fundamental (the core method cannot be specified), raise a final HOLD explaining what is still missing and why specs cannot be produced. Lead will set status to `HOLD` and present the situation to the user.
+
+The 3-round limit prevents endless back-and-forth while ensuring theorist makes a genuine effort to understand.
 
 #### 0e. Write Comprehension Record
 
@@ -166,8 +178,10 @@ Save `comprehension.md` to the run directory with:
 - Restated core requirement (from self-test question 1)
 - All formulas restated and verified (from self-test question 2)
 - Any questions asked and user answers received
-- Final comprehension verdict: FULLY UNDERSTOOD
+- Final comprehension verdict: `FULLY UNDERSTOOD` or `UNDERSTOOD WITH ASSUMPTIONS`
+- If `UNDERSTOOD WITH ASSUMPTIONS`: list each assumption explicitly with rationale
 - Timestamp
+- Number of HOLD rounds used (0–3)
 
 **This artifact serves as evidence that theorist did the work.** Skeptic may reference it during review.
 

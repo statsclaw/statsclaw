@@ -184,12 +184,13 @@ Note: Because builder and auditor run in parallel, the state transitions reflect
 When theorist raises **HOLD with comprehension questions**, lead MUST:
 
 1. Read theorist's `comprehension.md` and `mailbox.md` to extract the specific questions.
-2. Forward ALL questions to the user via `AskUserQuestion`. Present them clearly — include any formulas or symbols theorist is asking about.
+2. Forward ALL questions to the user via `AskUserQuestion`. Present them clearly — include any formulas or symbols theorist is asking about. When theorist provides multiple-choice options, present those options to the user.
 3. After the user answers, **re-dispatch theorist** with the original context PLUS the user's answers appended to the dispatch prompt.
-4. **Iterate** — if theorist raises HOLD again with new questions, repeat steps 1–3. There is no limit on rounds. Partial understanding must never proceed to spec production.
-5. Only advance to `SPEC_READY` when theorist confirms `FULLY UNDERSTOOD` in `comprehension.md`.
+4. If theorist raises HOLD again, repeat steps 1–3.
+5. **Max 3 rounds.** After 3 HOLD rounds, theorist must either proceed with explicit assumptions (`UNDERSTOOD WITH ASSUMPTIONS`) or declare the task unspecifiable. Lead does NOT allow a 4th round.
+6. Advance to `SPEC_READY` when theorist's `comprehension.md` shows `FULLY UNDERSTOOD` or `UNDERSTOOD WITH ASSUMPTIONS`.
 
-**This loop is the exception to "autonomous continuation"** — lead MUST pause and ask the user when theorist has comprehension questions. This is not a "should I continue?" pause — it is a mandatory information-gathering step.
+**This loop is the exception to "autonomous continuation"** — lead MUST pause and ask the user when theorist has comprehension questions.
 
 ### Dispatch Rules
 
@@ -211,10 +212,17 @@ Before dispatching each teammate, verify:
 
 ### Signal Handling
 
-- **HOLD (comprehension)**: If from theorist with comprehension questions — extract questions, ask user, re-dispatch theorist with answers. Iterate until FULLY UNDERSTOOD.
-- **HOLD (other)**: Pause the run. Record in status.md. Ask the user for clarification.
-- **BLOCK**: Stop downstream work. Respawn the responsible teammate with failure context.
-- **STOP**: Block all ship actions. Respawn the responsible teammate per skeptic's routing.
+Three signals, three exclusive owners, three distinct responses:
+
+| Signal | Owner | Meaning | Lead Action |
+| --- | --- | --- | --- |
+| **HOLD** | theorist, builder, scribe | Need user input | Ask user via `AskUserQuestion`, re-dispatch teammate with answer |
+| **BLOCK** | auditor only | Validation failed | Respawn responsible upstream teammate, re-dispatch auditor |
+| **STOP** | skeptic only | Quality gate failed | Respawn per skeptic's routing table, re-run pipeline(s) |
+
+- **Max retries**: 3 respawns per teammate per signal. After 3, escalate to HOLD and ask user.
+- **HOLD does NOT auto-resolve** — only the user can unblock it.
+- **BLOCK and STOP auto-resolve** — lead respawns without asking the user (unless max retries exhausted).
 
 ### Autonomous Continuation
 
