@@ -1,4 +1,4 @@
-# Builder Output
+# Builder Output (Code Pipeline)
 
 Use this template to define what `builder` must produce after implementation.
 
@@ -12,9 +12,15 @@ Use this template to define what `builder` must produce after implementation.
 
 - changed files and why
 - behavior changes
-- test updates
+- unit tests written (based on spec.md, NOT test-spec.md)
+- design choices and rationale
 - unresolved implementation risks
+
+## Pipeline Isolation Rules
+
+- implementation.md MUST NOT reference test-spec.md
+- unit tests are based on spec.md only — they complement (not duplicate) auditor's independent validation
 
 ## Success Condition
 
-`auditor` can validate the change without rediscovering intent or file ownership.
+`skeptic` can cross-compare implementation.md against audit.md to verify that the code pipeline and test pipeline converged independently.

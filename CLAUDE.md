@@ -62,17 +62,21 @@ This section is the entry point for every non-trivial user request. You MUST fol
    - **ENFORCEMENT**: Steps 4–8 are INVALID without a `credentials.md` showing PASS. If you find yourself planning or dispatching teammates without confirmed push access, STOP and return to step 3.
 4. **CREATE RUN**: Generate a request ID. Create `.statsclaw/runs/<request-id>/`. Write `request.md` (scope, acceptance criteria, target repo identity). Write `status.md` with state `NEW`.
 5. **LEAD PLANNING**: Read `.agents/lead.md`. Act as `lead`. Explore the target repository to identify affected surfaces. Write `impact.md` (affected files, risk areas, required teammates). Identify the profile from `profiles/`. Update `status.md` to `PLANNED`.
-6. **DISPATCH TEAMMATES**: For each stage, use the `Agent` tool to spawn a teammate. Each teammate runs as an independent agent with its own context. You MUST pass all necessary context in the agent prompt (request, impact, file paths, run directory, target repo path). The teammate reads its `.agents/<agent>.md` definition and produces the required artifact.
-   - a. **theorist** — ONLY if the request involves statistical, mathematical, or algorithmic method changes. Spawn via `Agent` tool. Teammate produces `spec.md`. Update status to `SPEC_READY`.
-   - b. **builder** — Spawn via `Agent` tool with `isolation: "worktree"`. Teammate implements code and test changes in the target repository within the write surface defined by `impact.md`. Teammate produces `implementation.md`. Update status to `IMPLEMENTED`.
-   - c. **auditor** — Spawn via `Agent` tool. Teammate runs validation commands from the active profile. Teammate produces `audit.md` with exact evidence. Update status to `VALIDATED`. If validation fails, raise `BLOCK` and respawn builder.
-   - d. **scribe** — ONLY if docs, tutorials, examples, or vignettes are in scope. Spawn via `Agent` tool with `isolation: "worktree"`. Teammate updates documentation. Teammate produces `docs.md`. Update status to `DOCUMENTED`.
-   - e. **skeptic** — Spawn via `Agent` tool. Teammate reviews the full evidence chain (request → impact → implementation → audit → docs). Teammate produces `review.md` with a verdict: `PASS`, `PASS WITH NOTE`, or `STOP`. Update status to `REVIEW_PASSED` or `STOPPED`.
-   - f. **github** — ONLY if the user explicitly asked to ship, commit, push, open a PR, or post issue follow-up. Spawn via `Agent` tool. Teammate produces `github.md`.
+6. **DISPATCH TEAMMATES (Two-Pipeline Architecture)**: StatsClaw uses two fully isolated pipelines — a **code pipeline** and a **test pipeline** — that converge at the skeptic. Theorist is the bridge that feeds both pipelines independently.
+   - a. **theorist** — ALWAYS dispatched for non-trivial requests. Spawn via `Agent` tool. Teammate analyzes requirements from a mathematician/statistician/computer scientist perspective and produces TWO artifacts: `spec.md` (implementation spec for builder) and `test-spec.md` (test scenarios for auditor). Update status to `SPEC_READY`.
+   - b. **builder + auditor IN PARALLEL** — After theorist completes, dispatch BOTH in the SAME message:
+     - **builder** (Code Pipeline): Spawn via `Agent` tool with `isolation: "worktree"`. Pass `spec.md` ONLY — NEVER pass `test-spec.md`. Teammate implements code and unit tests. Produces `implementation.md`.
+     - **auditor** (Test Pipeline): Spawn via `Agent` tool. Pass `test-spec.md` ONLY — NEVER pass `spec.md` or `implementation.md`. Teammate designs and runs validation scenarios independently. Produces `audit.md`. If validation fails, raise `BLOCK` and respawn builder.
+     - Update status to `PIPELINES_COMPLETE` only after BOTH complete.
+   - c. **scribe** — ONLY if docs, tutorials, examples, or vignettes are in scope. Spawn via `Agent` tool with `isolation: "worktree"`. Teammate updates documentation. Teammate produces `docs.md`. Update status to `DOCUMENTED`.
+   - d. **skeptic** (Convergence Point) — Spawn via `Agent` tool. Pass ALL artifacts from BOTH pipelines. Teammate cross-compares code pipeline output (spec.md + implementation.md) against test pipeline output (test-spec.md + audit.md). Verifies convergence and pipeline isolation. Produces `review.md` with verdict: `PASS`, `PASS WITH NOTE`, or `STOP`. Update status to `REVIEW_PASSED` or `STOPPED`.
+   - e. **github** — ONLY if the user explicitly asked to ship, commit, push, open a PR, or post issue follow-up. Spawn via `Agent` tool. Teammate produces `github.md`.
+
+   **CRITICAL PIPELINE ISOLATION**: Lead MUST enforce that builder never receives test-spec.md and auditor never receives spec.md or implementation.md. This isolation is the foundation of adversarial verification.
 7. **GATE**: Update `status.md` after EVERY teammate completes. Read the teammate's output artifact. Do NOT proceed past `STOP` or `BLOCK` signals. Respawn the responsible teammate on failure.
 8. **AUTONOMOUS CONTINUATION**: Do NOT pause between stages to ask the user "should I continue?". Continue automatically through the full workflow until `DONE`, `HOLD`, or `STOP`.
 
-**Parallelism rule**: When two teammates have no data dependency (e.g., builder and scribe write non-overlapping surfaces, or theorist and github operate independently), dispatch them in the SAME message using multiple `Agent` tool calls. Sequential dispatch is only required when a downstream teammate needs the output artifact of an upstream teammate.
+**Parallelism rule**: The primary parallelism opportunity is the two-pipeline dispatch: builder and auditor run IN PARALLEL after theorist completes, each with its own isolated spec. Additional parallel dispatch is allowed when teammates have no data dependency (e.g., builder and scribe write non-overlapping surfaces). Sequential dispatch is only required when a downstream teammate needs the output artifact of an upstream teammate.
 
 Short prompts MUST work. A user message like "Work on https://github.com/foo/bar. Fix the tests." is a complete, non-trivial request. It MUST trigger the full protocol above, not ad-hoc direct work.
 
@@ -88,13 +92,15 @@ Short prompts MUST work. A user message like "Work on https://github.com/foo/bar
 | `NEW` | Push access to target repo confirmed | `git ls-remote` succeeded during step 3 |
 | `PLANNED` | `request.md` exists and is non-empty | Read the file, confirm it has content |
 | `PLANNED` | `impact.md` exists and is non-empty | Read the file, confirm it has content |
-| `SPEC_READY` | `spec.md` exists in run directory | Read the file path |
+| `SPEC_READY` | `spec.md` AND `test-spec.md` both exist in run directory | Read both file paths |
 | `SPEC_READY` | Theorist teammate was dispatched via `Agent` tool | Agent tool call must exist in conversation |
-| `IMPLEMENTED` | `implementation.md` exists in run directory | Read the file path |
-| `IMPLEMENTED` | Builder teammate was dispatched via `Agent` tool with `isolation: "worktree"` | Agent tool call must exist in conversation |
-| `VALIDATED` | `audit.md` exists in run directory | Read the file path |
-| `VALIDATED` | Auditor teammate was dispatched via `Agent` tool | Agent tool call must exist in conversation |
-| `VALIDATED` | Lead did NOT run any validation command directly | Self-check: no Bash calls to R CMD check, pytest, npm test, etc. by lead |
+| `PIPELINES_COMPLETE` | `implementation.md` exists in run directory | Read the file path |
+| `PIPELINES_COMPLETE` | `audit.md` exists in run directory | Read the file path |
+| `PIPELINES_COMPLETE` | Builder teammate was dispatched via `Agent` tool with `isolation: "worktree"` | Agent tool call must exist in conversation |
+| `PIPELINES_COMPLETE` | Auditor teammate was dispatched via `Agent` tool | Agent tool call must exist in conversation |
+| `PIPELINES_COMPLETE` | Lead did NOT pass `test-spec.md` to builder | Self-check: builder dispatch prompt must not reference test-spec.md |
+| `PIPELINES_COMPLETE` | Lead did NOT pass `spec.md` or `implementation.md` to auditor | Self-check: auditor dispatch prompt must not reference spec.md or implementation.md |
+| `PIPELINES_COMPLETE` | Lead did NOT run any validation command directly | Self-check: no Bash calls to R CMD check, pytest, npm test, etc. by lead |
 | `DOCUMENTED` | `docs.md` exists in run directory | Read the file path |
 | `REVIEW_PASSED` | `review.md` exists in run directory with verdict `PASS` or `PASS WITH NOTE` | Read the file, check verdict line |
 | `REVIEW_PASSED` | Skeptic teammate was dispatched via `Agent` tool | Agent tool call must exist in conversation |
@@ -142,7 +148,7 @@ Before EVERY tool call, `lead` MUST check whether the action belongs to a teamma
 - Ask the user questions via `AskUserQuestion`
 - Dispatch teammates via `Agent` tool
 
-**Self-test before every tool call**: "Am I about to touch the target repo outside of planning? Am I about to do work that a teammate should do?" If yes → STOP → dispatch teammate.
+**Self-test before every tool call**: "Am I about to touch the target repo outside of planning? Am I about to do work that a teammate should do? Am I about to pass the wrong spec to a teammate (spec.md to auditor, or test-spec.md to builder)?" If yes → STOP → correct the action.
 
 ---
 
@@ -150,17 +156,17 @@ Before EVERY tool call, `lead` MUST check whether the action belongs to a teamma
 
 **The following teammates are NEVER optional for non-trivial requests:**
 
-1. **builder** — ALWAYS required when code changes are needed
-2. **auditor** — ALWAYS required after builder. There are ZERO exceptions. Even if you believe the code is already correct, auditor MUST run validation and produce `audit.md`.
-3. **skeptic** — ALWAYS required after auditor. There are ZERO exceptions. Even if auditor passes cleanly, skeptic MUST review the evidence chain and produce `review.md`.
+1. **theorist** — ALWAYS required. Theorist is the bridge that feeds both pipelines. Even for bug fixes, theorist analyzes the requirement and produces both `spec.md` (what to build) and `test-spec.md` (what to verify). This ensures builder and auditor work from independent specifications.
+2. **builder** — ALWAYS required when code changes are needed. Works exclusively from `spec.md`.
+3. **auditor** — ALWAYS required, dispatched IN PARALLEL with builder. Works exclusively from `test-spec.md`. There are ZERO exceptions.
+4. **skeptic** — ALWAYS required after BOTH pipelines complete. Cross-compares both pipelines' outputs. There are ZERO exceptions.
 
 **The following teammates are conditional:**
 
-4. **theorist** — Required when the request involves statistical, mathematical, or algorithmic method changes. NOT required for pure bug fixes, documentation, or infrastructure changes.
 5. **scribe** — Required when public-facing docs, examples, tutorials, or vignettes are in scope. NOT required for internal-only changes.
 6. **github** — Required when the user explicitly asks to ship (commit, push, PR, issue comment).
 
-**Skipping auditor or skeptic is a protocol violation.** If you find yourself updating `status.md` past `IMPLEMENTED` without dispatching auditor, or past `VALIDATED` without dispatching skeptic, you have violated the protocol.
+**Skipping theorist, auditor, or skeptic is a protocol violation.** If you find yourself dispatching builder without theorist first, or dispatching skeptic without both builder and auditor completing, you have violated the protocol.
 
 ---
 
@@ -216,12 +222,23 @@ Write your artifact to: [STATSCLAW_PATH]/.statsclaw/runs/[REQUEST_ID]/[artifact]
 
 ### Parallel Dispatch Rules
 
-Dispatch multiple teammates in a SINGLE message when they are independent:
-- `theorist` + `github` (intake) — parallel OK
-- `builder` (code) + `scribe` (docs) — parallel OK if non-overlapping write surfaces
-- `auditor` MUST wait for `builder` to complete
-- `skeptic` MUST wait for `auditor` to complete
+The two-pipeline architecture creates a natural parallelism point:
+
+**Mandatory parallel dispatch:**
+- `builder` (code pipeline) + `auditor` (test pipeline) — MUST be dispatched in the SAME message after theorist completes. This is the core of the two-pipeline architecture.
+
+**Additional parallel opportunities:**
+- `builder` + `scribe` — parallel OK if non-overlapping write surfaces (scribe gets dispatched alongside builder, not after)
+
+**Sequential dependencies:**
+- `theorist` MUST complete before builder and auditor (it produces their inputs)
+- `skeptic` MUST wait for BOTH builder AND auditor to complete
 - `github` (ship) MUST wait for `skeptic` to complete
+
+**Pipeline isolation during dispatch:**
+- Builder prompt receives `spec.md` path — NEVER `test-spec.md`
+- Auditor prompt receives `test-spec.md` path — NEVER `spec.md` or `implementation.md`
+- Skeptic prompt receives ALL artifacts from both pipelines
 
 ---
 
@@ -255,17 +272,42 @@ StatsClaw uses Agent Teams exclusively. You are the Team Lead (`lead`). You MUST
 
 **This is not optional. There is no fallback mode. Every teammate MUST be spawned via the `Agent` tool.**
 
-### Layer Model
+### Layer Model (Two-Pipeline Architecture)
 
-| Layer | Agent | Dispatched As | Responsibility |
-| --- | --- | --- | --- |
-| **Control** | `lead` | You (the main agent) | Owns run lifecycle, routing, retries, the shared task list, and the state machine |
-| **Planning** | `theorist` | `Agent` tool teammate | Owns mathematical specification |
-| **Production** | `builder` | `Agent` tool teammate (worktree) | Owns code and test implementation |
-| **Production** | `scribe` | `Agent` tool teammate (worktree) | Owns docs, examples, tutorials |
-| **Assurance** | `auditor` | `Agent` tool teammate | Owns validation evidence |
-| **Assurance** | `skeptic` | `Agent` tool teammate | Owns the final ship verdict |
-| **Externalization** | `github` | `Agent` tool teammate | Owns issue intake, PR interactions, ship actions |
+```
+                       ┌─────────────┐
+                       │    lead     │  Control Layer
+                       └──────┬──────┘
+                              │
+                       ┌──────┴──────┐
+                       │  theorist   │  Analysis Layer (bridge)
+                       └──┬──────┬───┘
+                          │      │
+              spec.md ────┘      └──── test-spec.md
+                          │      │
+                ┌─────────┴┐    ┌┴──────────┐
+                │  builder  │    │  auditor   │  Parallel Execution
+                │  (code)   │    │  (test)    │  (isolated pipelines)
+                └─────────┬┘    └┬──────────┘
+                          │      │
+                       ┌──┴──────┴───┐
+                       │   skeptic   │  Convergence Layer
+                       └──────┬──────┘
+                              │
+                       ┌──────┴──────┐
+                       │   github    │  Externalization Layer
+                       └─────────────┘
+```
+
+| Layer | Agent | Pipeline | Dispatched As | Responsibility |
+| --- | --- | --- | --- | --- |
+| **Control** | `lead` | — | You (the main agent) | Owns run lifecycle, routing, retries, pipeline isolation enforcement |
+| **Analysis** | `theorist` | Bridge | `Agent` tool teammate | Analyzes requirements; produces `spec.md` AND `test-spec.md` |
+| **Code Pipeline** | `builder` | Code | `Agent` tool teammate (worktree) | Implements code and unit tests from `spec.md` only |
+| **Test Pipeline** | `auditor` | Test | `Agent` tool teammate | Runs independent validation from `test-spec.md` only |
+| **Production** | `scribe` | Code | `Agent` tool teammate (worktree) | Owns docs, examples, tutorials |
+| **Convergence** | `skeptic` | Both | `Agent` tool teammate | Cross-compares both pipelines; owns the final ship verdict |
+| **Externalization** | `github` | — | `Agent` tool teammate | Owns issue intake, PR interactions, ship actions |
 
 ### Ownership Rules
 
@@ -295,19 +337,22 @@ Route semantically from intent. Do **not** require the user to learn trigger phr
 
 ---
 
-## Closed-Loop Workflow
+## Closed-Loop Workflow (Two-Pipeline Architecture)
 
 For any non-trivial request, use this default flow:
 
 ```text
-lead plans → theorist? → builder → auditor → scribe? → skeptic → github?
+lead plans → theorist → [builder ∥ auditor] → scribe? → skeptic → github?
+                           (parallel, isolated)        (convergence)
 ```
+
+The `∥` symbol means **parallel dispatch**. Builder and auditor run simultaneously, each with its own spec from theorist. They never see each other's inputs or outputs.
 
 For issue patrol requests, use this flow:
 
 ```text
 lead scans issues → for each actionable issue:
-  lead plans → builder → auditor → skeptic → github (push + PR + issue comment)
+  lead plans → theorist → [builder ∥ auditor] → skeptic → github (push + PR + issue comment)
 ```
 
 See `skills/issue-patrol/SKILL.md` for the full protocol.
@@ -315,12 +360,14 @@ See `skills/issue-patrol/SKILL.md` for the full protocol.
 Rules:
 
 - You (lead) plan the work, then dispatch each teammate via the `Agent` tool
-- `theorist` is mandatory for new or changed statistical, mathematical, or algorithmic methods
+- `theorist` is ALWAYS mandatory — it is the bridge that feeds both pipelines
+- Builder receives `spec.md` only; auditor receives `test-spec.md` only — pipeline isolation is enforced by lead
+- Builder and auditor are dispatched IN PARALLEL after theorist completes
 - `scribe` runs only when public-facing docs, examples, tutorials, or other documented surfaces are in scope
-- `auditor` produces validation evidence; `skeptic` challenges that evidence and issues the final ship gate
+- `skeptic` is the convergence point — it reads ALL artifacts from BOTH pipelines and cross-compares
 - `github` handles issue intake and all GitHub-facing actions when the user asks to ship, or automatically during issue patrol
 - When dispatched by issue-patrol, `github` MUST auto-push, create a PR, AND post a comment on the original issue
-- **auditor and skeptic are NEVER skippable** — see "Mandatory Teammate Stages" above
+- **theorist, auditor, and skeptic are NEVER skippable** — see "Mandatory Teammate Stages" above
 
 Execution rules are **profile-aware**: use the active project profile under `profiles/` to decide repo markers, build tools, validation commands, docs conventions, and shipping conventions.
 
@@ -378,7 +425,9 @@ When lead detects a loop intent:
 
 Each run lives under `.statsclaw/runs/<request-id>/` and moves through explicit states:
 
-`CREDENTIALS_VERIFIED` → `NEW` → `PLANNED` → `SPEC_READY`? → `IMPLEMENTED` → `VALIDATED` → `DOCUMENTED`? → `REVIEW_PASSED` → `READY_TO_SHIP` → `DONE`
+`CREDENTIALS_VERIFIED` → `NEW` → `PLANNED` → `SPEC_READY` → `PIPELINES_COMPLETE` → `DOCUMENTED`? → `REVIEW_PASSED` → `READY_TO_SHIP` → `DONE`
+
+Note: `SPEC_READY` requires BOTH `spec.md` and `test-spec.md`. `PIPELINES_COMPLETE` requires BOTH `implementation.md` (from builder) and `audit.md` (from auditor), produced in parallel.
 
 Also: `HOLD`, `BLOCKED`, `STOPPED`
 
@@ -421,14 +470,15 @@ For non-trivial requests, you MUST continue through the selected workflow withou
 
 - **Credentials first, work second.** Verify push access before creating a run. Ask the user for PAT/SSH if access fails. Never start a workflow that cannot ship.
 - **Team Lead dispatches, never does.** You are lead. You plan, route, and coordinate. You MUST use the `Agent` tool for all specialist work.
-- **Auditor and skeptic are never skipped.** Every non-trivial request goes through validation and review.
-- **Hard gates, not soft advice.** State transitions have preconditions. Artifact existence is verified, not assumed.
+- **Two pipelines, fully isolated.** The code pipeline (builder) and test pipeline (auditor) never see each other's specifications. Theorist is the bridge; skeptic is the convergence point.
+- **Theorist first, always.** Every non-trivial request starts with theorist producing dual specs. No builder or auditor dispatch without theorist completing first.
+- **Adversarial verification by design.** Builder implements from `spec.md`; auditor validates from `test-spec.md`. Neither sees the other's input. If both converge on the same result independently, confidence is high.
+- **Skeptic cross-compares, not just reviews.** Skeptic reads ALL artifacts from both pipelines and verifies convergence, not just individual correctness.
+- **Hard gates, not soft advice.** State transitions have preconditions. Artifact existence is verified, not assumed. Pipeline isolation is verified, not assumed.
 - **Worktree isolation for writers.** Use `isolation: "worktree"` for builder and scribe teammates.
-- **Math before code.** Statistical or algorithmic method changes start with `theorist`.
-- **Produce once, challenge once.** `auditor` produces validation evidence; `skeptic` challenges it.
 - **Ship actions are explicit or skill-triggered.** Do not commit, push, or open PRs unless the user asked or the issue-patrol skill is active (which implies auto-push, auto-PR, and auto-reply).
 - **Surgical scope.** Each run should modify only what the request requires.
-- **Parallel when possible.** Dispatch independent teammates simultaneously in a single message.
+- **Parallel when possible.** Builder and auditor are ALWAYS dispatched in parallel. Additional parallel dispatch for independent teammates.
 
 ---
 
@@ -445,9 +495,10 @@ For non-trivial requests, you MUST continue through the selected workflow withou
 │       ├── request.md
 │       ├── status.md
 │       ├── impact.md
-│       ├── spec.md
-│       ├── implementation.md
-│       ├── audit.md
+│       ├── spec.md           # code pipeline input (from theorist)
+│       ├── test-spec.md      # test pipeline input (from theorist)
+│       ├── implementation.md # code pipeline output (from builder)
+│       ├── audit.md          # test pipeline output (from auditor)
 │       ├── docs.md
 │       ├── review.md
 │       ├── github.md
