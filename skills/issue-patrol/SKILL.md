@@ -82,12 +82,13 @@ For each actionable issue (in priority order):
 1. Create a sub-run: `.statsclaw/runs/PATROL-<timestamp>/issue-<number>/`
 2. Write `request.md` scoped to this specific issue
 3. Write `impact.md` based on the issue description and codebase exploration
-4. Create a fix branch: `<branch_prefix>-issue-<number>-<short-desc>` from `<base_branch>`
-5. Run the standard workflow: builder → auditor → skeptic
-6. If skeptic PASS:
-   - Dispatch github to push, create PR, and comment on the issue
+4. Run the full workflow: theorist → [builder ∥ auditor] → skeptic
+   - Theorist produces `spec.md` and `test-spec.md` for the issue
+   - Builder and auditor are dispatched in parallel with isolated specs
+5. If skeptic PASS:
+   - Dispatch github to create fix branch (`<branch_prefix>-issue-<number>-<short-desc>` from `<base_branch>`), push, create PR, and comment on the issue
    - The github agent MUST post a comment on the issue (see github agent's Issue Auto-Reply section)
-7. If skeptic STOP:
+6. If skeptic STOP:
    - Log the failure in the patrol report
    - Move to the next issue
 

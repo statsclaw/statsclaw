@@ -53,11 +53,14 @@ Lead orchestrates two fully isolated execution pipelines:
 2. Read the active package context under `.statsclaw/packages/`.
 3. If a target repo is named, acquire it locally.
 4. **CREDENTIAL GATE** (must pass before creating any run):
-   - Run `git ls-remote <remote-url>` on the target repo.
-   - If it fails: use `AskUserQuestion` to ask the user for a GitHub PAT or SSH key. Do NOT proceed without credentials.
-   - Configure the credential: `git remote set-url origin https://<TOKEN>@github.com/<owner>/<repo>.git`
-   - Confirm with a second `git ls-remote`.
-   - Write `credentials.md` to the run directory with: remote URL, method (PAT/SSH/proxy), result (PASS/FAIL).
+   - Follow `skills/credential-setup/SKILL.md` for the full auto-detection sequence:
+     1. Check `GITHUB_TOKEN` environment variable
+     2. Check `gh auth status` (gh CLI already logged in)
+     3. Check SSH access (`ssh -T git@github.com`)
+     4. Check git credential helper
+   - If any method succeeds, configure it and verify with `git ls-remote <remote-url>`.
+   - **Only if ALL auto-detection methods fail**, use `AskUserQuestion` to ask the user for a GitHub PAT or SSH key.
+   - Write `credentials.md` to the run directory with: remote URL, method (PAT/SSH/env-token/gh-cli), result (PASS/FAIL).
    - **This is a hard gate. No run, no planning, no dispatching without PASS.**
 5. If an active run exists, read its request.md, impact.md, and status.md.
 6. Hold project path, profile, and workflow state in memory.
@@ -161,8 +164,8 @@ Update status.md after EVERY teammate completes. Verify preconditions before eac
 | (none) -> NEW | credentials.md exists with PASS |
 | NEW -> PLANNED | impact.md exists |
 | PLANNED -> SPEC_READY | spec.md AND test-spec.md both exist (theorist ran) |
-| SPEC_READY -> IMPLEMENTED + VALIDATED | implementation.md AND audit.md exist (parallel pipelines complete) |
-| IMPLEMENTED + VALIDATED -> REVIEW_PASSED | review.md exists with PASS or PASS WITH NOTE |
+| SPEC_READY -> PIPELINES_COMPLETE | implementation.md AND audit.md exist (parallel pipelines complete) |
+| PIPELINES_COMPLETE -> REVIEW_PASSED | review.md exists with PASS or PASS WITH NOTE |
 | REVIEW_PASSED -> DONE | github.md exists (if ship requested) |
 
 Note: Because builder and auditor run in parallel, the state transitions reflect both completing before skeptic can run.
