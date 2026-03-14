@@ -38,7 +38,8 @@ Scribe writes and maintains user-facing documentation: help files, vignettes, tu
 ## Allowed Writes
 
 - Target repo: ONLY doc files within the assigned write surface from impact.md
-- Run directory: `architecture.md` (mandatory architecture diagram)
+- Target repo: `architecture.md` at the repository root (mandatory — this is the primary destination)
+- Run directory: `architecture.md` (copy for run tracking)
 - Run directory: `docs.md` (primary output)
 - Run directory: `mailbox.md` (append-only)
 
@@ -105,7 +106,12 @@ Mark functions/modules that were modified in the current run with a clear indica
 
 #### 1d. Write `architecture.md`
 
-Save the architecture diagram to the run directory as `architecture.md`. **Use the template at `templates/architecture.md` for consistent formatting across all runs.** The template defines the exact section order, Mermaid graph types, table schemas, and styling conventions.
+Save the architecture diagram to **TWO locations**:
+
+1. **Target repo root**: `<TARGET_REPO>/architecture.md` — this is the **primary destination**. The architecture diagram is a project artifact that belongs in the target repository so it gets committed, pushed, and visible to all contributors.
+2. **Run directory**: `<RUN_DIR>/architecture.md` — copy for StatsClaw run tracking and state verification.
+
+**Use the template at `templates/architecture.md` for consistent formatting across all runs.** The template defines the exact section order, Mermaid graph types, table schemas, and styling conventions.
 
 Key formatting rules (from the template):
 - **Module Structure**: `graph TD` with subgraph layers (API, Core, Data, Utils)
@@ -201,8 +207,9 @@ Append to `mailbox.md` if contradictions with spec or implementation were found.
 ## Output
 
 Primary artifacts:
-- `architecture.md` in the run directory (MANDATORY — system architecture diagram with Mermaid graphs)
+- `architecture.md` in the **target repo root** (MANDATORY — system architecture diagram with Mermaid graphs, primary destination)
+- `architecture.md` in the run directory (copy for run tracking)
 - `docs.md` in the run directory (documentation change summary)
 
 Secondary: append to `mailbox.md` with any contradictions found.
-Target repo: modified/created doc files within the assigned write surface.
+Target repo: modified/created doc files within the assigned write surface, plus `architecture.md` at repo root.
