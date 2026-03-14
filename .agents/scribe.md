@@ -105,13 +105,15 @@ Mark functions/modules that were modified in the current run with a clear indica
 
 #### 1d. Write `architecture.md`
 
-Save the architecture diagram to the run directory as `architecture.md`. This artifact contains:
-- System architecture overview (one paragraph)
-- Module structure diagram (Mermaid)
-- Function call graph (Mermaid), with changed nodes highlighted
-- Data flow diagram (Mermaid)
-- Module/function reference table
-- Notes on architectural patterns observed (e.g., strategy pattern, pipeline, event-driven)
+Save the architecture diagram to the run directory as `architecture.md`. **Use the template at `templates/architecture.md` for consistent formatting across all runs.** The template defines the exact section order, Mermaid graph types, table schemas, and styling conventions.
+
+Key formatting rules (from the template):
+- **Module Structure**: `graph TD` with subgraph layers (API, Core, Data, Utils)
+- **Function Call Graph**: `graph TD` tracing public → internal → leaf
+- **Data Flow**: `graph LR` showing input → processing → output
+- **Changed nodes**: always highlighted with `style NODE fill:#f9f,stroke:#333`
+- **Reference tables**: every diagram has a companion table below it
+- **Overview**: one paragraph summarizing purpose, language, framework, and key dependencies
 
 **Quality bar**: A reader who has never seen the codebase should be able to understand the overall structure, find any function, and trace how a request flows through the system just from this diagram.
 
