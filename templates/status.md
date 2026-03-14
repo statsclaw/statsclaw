@@ -35,6 +35,7 @@ CREDENTIALS_VERIFIED → NEW → PLANNED → SPEC_READY → PIPELINES_COMPLETE �
 | test-spec.md | theorist | → Test | pending | |
 | implementation.md | builder | Code | pending | |
 | audit.md | auditor | Test | pending | |
+| architecture.md | scribe | Architecture | pending | |
 | docs.md | scribe | Code | pending | |
 | review.md | skeptic | Convergence | pending | |
 | github.md | github | — | pending | |

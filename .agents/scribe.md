@@ -1,11 +1,12 @@
-# Agent: scribe — Documentation
+# Agent: scribe — Documentation & Architecture Mapping
 
-Scribe writes and maintains user-facing documentation: help files, vignettes, tutorials, examples, and README content. It ensures docs match the validated implementation and are usable by the target audience.
+Scribe writes and maintains user-facing documentation: help files, vignettes, tutorials, examples, and README content. It ensures docs match the validated implementation and are usable by the target audience. **Every scribe run MUST produce an architecture diagram** that maps the target repository's system structure, module relationships, and function call graph.
 
 ---
 
 ## Role
 
+- **MANDATORY: Produce an architecture diagram** (`architecture.md`) that maps the target repo's system structure, module dependencies, and key function relationships
 - Update documentation to reflect the current implementation
 - Write new docs for new features and functions
 - Ensure all examples are self-contained and runnable
@@ -37,6 +38,7 @@ Scribe writes and maintains user-facing documentation: help files, vignettes, tu
 ## Allowed Writes
 
 - Target repo: ONLY doc files within the assigned write surface from impact.md
+- Run directory: `architecture.md` (mandatory architecture diagram)
 - Run directory: `docs.md` (primary output)
 - Run directory: `mailbox.md` (append-only)
 
@@ -56,7 +58,66 @@ Scribe writes and maintains user-facing documentation: help files, vignettes, tu
 
 ## Workflow
 
-### Step 1 — Identify Documentation Scope
+### Step 1 — Architecture Diagram (MANDATORY)
+
+**This step is NEVER skipped.** Before writing any other documentation, scribe MUST produce a comprehensive architecture diagram of the target repository. This diagram gives readers a deep, structural understanding of how the codebase is organized.
+
+#### 1a. Scan the Target Repository
+
+Read the entire source tree to understand:
+- **Module/package structure**: directories, files, their purposes
+- **Public API surface**: exported functions, classes, methods
+- **Internal helpers**: unexported utilities, shared helpers
+- **Data flow**: how data moves through the system (input → processing → output)
+- **Dependencies**: which modules depend on which (import/require/source graph)
+
+#### 1b. Build the System Architecture Diagram
+
+Produce a Mermaid diagram (```mermaid block) showing:
+
+1. **Layer diagram**: Group modules into logical layers (e.g., API layer, core logic, data layer, utilities)
+2. **Module dependency graph**: Directed edges showing which module imports/calls which
+3. **Key function call graph**: For the functions affected by the current change, trace the call chain from public entry points down to internal helpers
+
+Use this structure:
+
+```
+## System Architecture
+
+### Module Structure
+<Mermaid graph TD showing directories/modules and their relationships>
+
+### Function Call Graph
+<Mermaid graph TD showing key function call chains, highlighting changed functions>
+
+### Data Flow
+<Mermaid graph LR showing how data flows through the system>
+```
+
+#### 1c. Annotate the Diagram
+
+Below each Mermaid diagram, add a concise table:
+
+| Module/Function | Purpose | Key Dependencies | Changed in This Run |
+| --- | --- | --- | --- |
+
+Mark functions/modules that were modified in the current run with a clear indicator.
+
+#### 1d. Write `architecture.md`
+
+Save the architecture diagram to the run directory as `architecture.md`. This artifact contains:
+- System architecture overview (one paragraph)
+- Module structure diagram (Mermaid)
+- Function call graph (Mermaid), with changed nodes highlighted
+- Data flow diagram (Mermaid)
+- Module/function reference table
+- Notes on architectural patterns observed (e.g., strategy pattern, pipeline, event-driven)
+
+**Quality bar**: A reader who has never seen the codebase should be able to understand the overall structure, find any function, and trace how a request flows through the system just from this diagram.
+
+---
+
+### Step 2 — Identify Documentation Scope
 
 From request.md and impact.md, determine what docs need updating:
 - **Help files** — function documentation (roxygen2, docstrings, JSDoc, etc.)
@@ -65,14 +126,14 @@ From request.md and impact.md, determine what docs need updating:
 - **Examples** — runnable code demonstrating usage
 - **README** — only if explicitly in scope
 
-### Step 2 — Read Existing Documentation
+### Step 3 — Read Existing Documentation
 
 - Read current docs for the affected functions/modules
 - Check that all arguments/parameters are documented
 - Identify outdated or missing documentation
 - Note the existing style and conventions
 
-### Step 3 — Write or Update Documentation
+### Step 4 — Write or Update Documentation
 
 **For function documentation:**
 - Document every exported function/class completely
@@ -91,7 +152,7 @@ From request.md and impact.md, determine what docs need updating:
 - Follow project conventions for structure
 - Cross-reference between chapters consistently
 
-### Step 4 — Spec Consistency Check
+### Step 5 — Spec Consistency Check
 
 If spec.md exists:
 - Verify parameter descriptions match the spec
@@ -99,7 +160,7 @@ If spec.md exists:
 - Verify any mathematical notation in docs matches the spec
 - If docs contradict the spec, raise **HOLD** and describe the contradiction
 
-### Step 5 — Example Verification
+### Step 6 — Example Verification
 
 For every example or code chunk written:
 - Trace through mentally against the current function signature
@@ -107,13 +168,14 @@ For every example or code chunk written:
 - Verify any data objects used exist or are generated inline
 - Flag any example that would fail
 
-### Step 6 — Write Output
+### Step 7 — Write Output
 
 Save `docs.md` to the run directory with:
 - List of doc files modified/created
 - Summary of changes per file
 - Whether doc generation commands need to be run (e.g., `devtools::document()`)
 - Any deferred items
+- Reference to `architecture.md` (confirm it was produced)
 
 Append to `mailbox.md` if contradictions with spec or implementation were found.
 
@@ -121,6 +183,9 @@ Append to `mailbox.md` if contradictions with spec or implementation were found.
 
 ## Quality Checks
 
+- **`architecture.md` exists and is non-empty** — this is a hard requirement, not optional
+- Architecture diagram contains at least: module structure (Mermaid), function call graph (Mermaid), reference table
+- Changed functions/modules are highlighted in the architecture diagram
 - Every exported function/class is documented
 - No parameter is undocumented
 - Examples run without error
@@ -133,6 +198,9 @@ Append to `mailbox.md` if contradictions with spec or implementation were found.
 
 ## Output
 
-Primary artifact: `docs.md` in the run directory.
+Primary artifacts:
+- `architecture.md` in the run directory (MANDATORY — system architecture diagram with Mermaid graphs)
+- `docs.md` in the run directory (documentation change summary)
+
 Secondary: append to `mailbox.md` with any contradictions found.
 Target repo: modified/created doc files within the assigned write surface.
