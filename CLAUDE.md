@@ -316,59 +316,559 @@ Agent definitions live under `.agents/`. Shared protocols live under `skills/`. 
 
 ---
 
+## Workflow Catalog
+
+This section documents **every workflow variant** in StatsClaw: what triggers each one, which agents participate, what artifacts flow between them, and what state transitions occur.
+
+**Notation**: `∥` = parallel dispatch (same message). `→` = sequential dependency. `?` = conditional.
+
+---
+
+### Workflow 1: Standard Full Workflow (Code Change)
+
+**Trigger**: Any non-trivial request that requires code changes (bug fix, new feature, refactor, method implementation).
+
+**Example prompts**: `"fix the failing tests in fect"`, `"implement the twoway estimator"`, `"refactor the plot module"`
+
+**Agent sequence**:
+
+```text
+lead → theorist → [builder ∥ auditor] → skeptic
+```
+
+**Detailed agent cooperation**:
+
+```text
+                              ┌──────────────────────────────────────────────┐
+                              │  LEAD (Control)                             │
+                              │  1. Setup: read CONTEXT.md, package context │
+                              │  2. Acquire target repo                     │
+                              │  3. Verify credentials → credentials.md     │
+                              │  4. Create run → request.md, status.md      │
+                              │  5. Plan → impact.md                        │
+                              │  6. Dispatch teammates (below)              │
+                              │  7. Gate each transition                    │
+                              │  8. Continue autonomously                   │
+                              └──────────────┬─────────────────────────────┘
+                                             │
+                              ┌──────────────┴─────────────────────────────┐
+                              │  THEORIST (Analysis / Bridge)              │
+                              │                                            │
+                              │  Reads: request.md, impact.md              │
+                              │  Reads: target repo source (read-only)     │
+                              │                                            │
+                              │  Step 1: Parse requirements                │
+                              │  Step 2: Decompose into computational steps│
+                              │  Step 3: Identify constraints & edge cases │
+                              │  Step 4: Challenge gate (HOLD if ambiguous)│
+                              │  Step 5: Write spec.md (code pipeline)     │
+                              │  Step 6: Write test-spec.md (test pipeline)│
+                              │  Step 7: Cross-consistency check           │
+                              │  Step 8: Append handoff to mailbox.md      │
+                              │                                            │
+                              │  Produces: spec.md, test-spec.md           │
+                              └───────┬──────────────────────┬─────────────┘
+                                      │                      │
+                           spec.md ───┘                      └─── test-spec.md
+                                      │                      │
+                    ┌─────────────────┴─────┐   ┌──────────┴──────────────────┐
+                    │  BUILDER (Code)        │   │  AUDITOR (Test)              │
+                    │  isolation: worktree   │   │  no worktree (read-only)     │
+                    │                        │   │                              │
+                    │  Reads: spec.md        │   │  Reads: test-spec.md         │
+                    │  Reads: request.md     │   │  Reads: request.md           │
+                    │  Reads: impact.md      │   │  Reads: impact.md            │
+                    │  Reads: mailbox.md     │   │  Reads: mailbox.md           │
+                    │  NEVER: test-spec.md   │   │  NEVER: spec.md              │
+                    │  NEVER: audit.md       │   │  NEVER: implementation.md    │
+                    │                        │   │                              │
+                    │  Step 1: Read code     │   │  Step 1: Parse test scenarios│
+                    │  Step 2: Challenge gate │   │  Step 2: Run primary check   │
+                    │  Step 3: Implement     │   │  Step 3: Execute scenarios   │
+                    │  Step 4: Write tests   │   │  Step 4: Edge case scenarios │
+                    │  Step 5: Smoke check   │   │  Step 5: Benchmark compare  │
+                    │  Step 6: Write output  │   │  Step 6: Examples/docs build │
+                    │                        │   │  Step 7: Write verdict       │
+                    │  Produces:             │   │  Step 8: Route failures      │
+                    │   implementation.md    │   │  Step 9: Write output        │
+                    │   code changes         │   │                              │
+                    │   unit tests           │   │  Produces: audit.md          │
+                    │                        │   │  Verdict: PASS or BLOCK      │
+                    └───────────┬────────────┘   └──────────────┬───────────────┘
+                                │                               │
+                                │   BOTH must complete          │
+                                │   before skeptic              │
+                                └───────────┬───────────────────┘
+                                            │
+                              ┌─────────────┴──────────────────────────────┐
+                              │  SKEPTIC (Convergence)                     │
+                              │                                            │
+                              │  Reads: ALL artifacts from BOTH pipelines  │
+                              │   - spec.md + implementation.md (code)     │
+                              │   - test-spec.md + audit.md (test)         │
+                              │   - request.md, impact.md, docs.md?        │
+                              │                                            │
+                              │  Step 1: Verify pipeline isolation         │
+                              │  Step 2: Cross-compare specifications      │
+                              │  Step 3: Verify convergence                │
+                              │  Step 4: Challenge test coverage           │
+                              │  Step 5: Challenge structural refactors    │
+                              │  Step 6: Challenge validation evidence     │
+                              │  Step 7: Challenge documentation           │
+                              │  Step 8: Issue verdict                     │
+                              │                                            │
+                              │  Produces: review.md                       │
+                              │  Verdict: PASS / PASS WITH NOTE / STOP     │
+                              └────────────────────────────────────────────┘
+```
+
+**State transitions**:
+
+```text
+CREDENTIALS_VERIFIED → NEW → PLANNED → SPEC_READY → PIPELINES_COMPLETE → REVIEW_PASSED → DONE
+```
+
+**Artifacts produced** (in order):
+
+| Step | Agent | Artifact | Description |
+| --- | --- | --- | --- |
+| 3 | lead | `credentials.md` | Push access verification (PASS/FAIL) |
+| 4 | lead | `request.md` | Scope, acceptance criteria, target repo |
+| 4 | lead | `status.md` | State machine tracking |
+| 5 | lead | `impact.md` | Affected files, risk areas, teammate assignments |
+| 6a | theorist | `spec.md` | Implementation spec for builder (code pipeline) |
+| 6a | theorist | `test-spec.md` | Test scenarios for auditor (test pipeline) |
+| 6b | builder | `implementation.md` | Change summary, files modified, unit tests |
+| 6b | builder | code + tests | Actual changes in target repo (worktree) |
+| 6b | auditor | `audit.md` | Validation evidence, exact output, verdict |
+| 6d | skeptic | `review.md` | Convergence analysis, ship verdict |
+
+**Pipeline isolation enforcement**:
+
+| Agent | Receives | Never receives |
+| --- | --- | --- |
+| builder | spec.md | test-spec.md, audit.md |
+| auditor | test-spec.md | spec.md, implementation.md |
+| skeptic | ALL artifacts | — (reads everything) |
+
+---
+
+### Workflow 2: Full Workflow with Documentation
+
+**Trigger**: Non-trivial request where public-facing docs, examples, tutorials, or vignettes are in scope.
+
+**Example prompts**: `"implement the new estimator and update docs"`, `"fix the plot function and update the tutorial"`
+
+**Agent sequence**:
+
+```text
+lead → theorist → [builder ∥ auditor ∥ scribe] → skeptic
+```
+
+**Difference from Workflow 1**: Scribe runs in parallel with builder (both in worktrees, non-overlapping write surfaces). Scribe reads `implementation.md` after builder completes if needed, or runs from `spec.md` if dispatched in parallel.
+
+**Scribe cooperation details**:
+
+```text
+SCRIBE (Documentation)
+isolation: worktree
+
+Reads: request.md, impact.md, implementation.md, spec.md, audit.md, mailbox.md
+Reads: target repo docs (current state)
+
+Step 1: Identify documentation scope
+Step 2: Read existing documentation
+Step 3: Write or update documentation
+Step 4: Spec consistency check (match spec.md)
+Step 5: Example verification
+Step 6: Write output
+
+Produces: docs.md
+         doc file changes in target repo (worktree)
+```
+
+**Parallel dispatch options**:
+
+| Option | When | Notes |
+| --- | --- | --- |
+| `[builder ∥ auditor]` then `scribe` | Scribe needs implementation.md | Scribe dispatched after builder completes |
+| `[builder ∥ auditor ∥ scribe]` | Write surfaces don't overlap | All three run in parallel |
+
+**State transitions**:
+
+```text
+... → PIPELINES_COMPLETE → DOCUMENTED → REVIEW_PASSED → ...
+```
+
+---
+
+### Workflow 3: Full Workflow with Ship
+
+**Trigger**: Non-trivial request where the user explicitly asks to commit, push, open a PR, or ship.
+
+**Example prompts**: `"fix the bug and ship it"`, `"implement this and open a PR"`
+
+**Agent sequence**:
+
+```text
+lead → theorist → [builder ∥ auditor] → scribe? → skeptic → github
+```
+
+**Github cooperation details**:
+
+```text
+GITHUB (Externalization)
+
+Reads: credentials.md (hard gate: must show PASS)
+Reads: review.md (hard gate: must show PASS or PASS WITH NOTE)
+Reads: request.md, implementation.md, audit.md, docs.md?
+
+Step 1: Verify ship gate (review.md verdict)
+Step 2: Verify repository identity (remote URL = target, not StatsClaw)
+Step 3: Create branch (if needed)
+Step 4: Stage and commit (only files from implementation.md + docs.md)
+Step 5: Push (git push -u origin <branch>)
+Step 6: Create PR (via gh pr create)
+Step 7: Issue auto-reply (if request came from an issue)
+Step 8: Write output
+
+Produces: github.md (branch, SHA, push status, PR URL)
+```
+
+**Hard gates before github can act**:
+
+| Gate | Verification |
+| --- | --- |
+| Credentials | `credentials.md` shows PASS |
+| Review | `review.md` shows PASS or PASS WITH NOTE |
+| Repo identity | `git remote get-url origin` matches target, not StatsClaw |
+
+**State transitions**:
+
+```text
+... → REVIEW_PASSED → READY_TO_SHIP → DONE
+```
+
+---
+
+### Workflow 4: Issue Patrol (Multi-Issue Scan + Fix)
+
+**Trigger**: User asks to scan, monitor, patrol, or auto-fix issues in a repository.
+
+**Example prompts**: `"patrol fect issues on cfe"`, `"check fect issues and auto-fix"`, `"auto-fix bugs in xuyiqing/fect"`
+
+**Agent sequence** (per issue):
+
+```text
+lead scans issues → for each actionable issue:
+  lead plans → theorist → [builder ∥ auditor] → skeptic → github
+```
+
+**Full cooperation flow**:
+
+```text
+┌─────────────────────────────────────────────────────────────────────┐
+│ LEAD — Phase 1: Setup                                               │
+│   Parse prompt → extract repo, base_branch, labels, max_issues      │
+│   Verify credentials (standard gate)                                │
+│   Clone or locate target repo                                       │
+│   Create patrol run: .statsclaw/runs/PATROL-<timestamp>/            │
+│   Write request.md with patrol parameters                           │
+├─────────────────────────────────────────────────────────────────────┤
+│ LEAD — Phase 2: Scan & Triage                                       │
+│   gh issue list --repo <owner/repo> --state open --json ...         │
+│   Classify each issue:                                              │
+│     Actionable: bug, error, crash, test failure                     │
+│     Non-actionable: feature request, question, too vague            │
+│   Prioritize: crashes > test failures > warnings > minor bugs       │
+│   Write patrol-triage.md                                            │
+├─────────────────────────────────────────────────────────────────────┤
+│ LEAD — Phase 3: Fix Loop (for each actionable issue)                │
+│                                                                     │
+│   ┌─────────────────────────────────────────────────────────────┐   │
+│   │ Issue #N                                                     │   │
+│   │                                                             │   │
+│   │ 1. Create sub-run: .../PATROL-<ts>/issue-<N>/              │   │
+│   │ 2. Write request.md scoped to this issue                   │   │
+│   │ 3. Write impact.md from issue description + codebase       │   │
+│   │ 4. Create fix branch: claude/fix-issue-<N>-<desc>          │   │
+│   │ 5. Dispatch theorist → spec.md + test-spec.md              │   │
+│   │ 6. Dispatch [builder ∥ auditor] in parallel                │   │
+│   │ 7. Dispatch skeptic → review.md                            │   │
+│   │ 8. If PASS: dispatch github (push + PR + issue comment)    │   │
+│   │    If STOP: log failure, move to next issue                │   │
+│   └─────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+│   Repeat for each actionable issue                                  │
+├─────────────────────────────────────────────────────────────────────┤
+│ LEAD — Phase 4: Report                                              │
+│   Write patrol-report.md:                                           │
+│     Total issues scanned, actionable vs non-actionable              │
+│     Issues fixed (with PR links)                                    │
+│     Issues failed (with reasons)                                    │
+│     Issues skipped (with reasons)                                   │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Key differences from standard workflow**:
+- Github is **always dispatched** (not conditional) — patrol implies auto-push, auto-PR, auto-reply
+- Each issue gets its **own sub-run** with its own set of artifacts
+- Skeptic STOP for one issue **does not block** other issues
+- Branch per issue: `claude/fix-issue-<N>-<short-desc>`
+
+**Github auto-reply** on each issue:
+
+```markdown
+## Automated Fix Available
+A fix for this issue has been pushed to branch `<branch>` and a PR has been opened: #<pr-number>
+### Summary of Changes
+<from implementation.md>
+### Validation
+<from audit.md>
+Please review the PR and let us know if the fix addresses your concern.
+---
+*This comment was generated by StatsClaw automated issue patrol.*
+```
+
+---
+
+### Workflow 5: Single Issue Fix
+
+**Trigger**: User names a specific issue to fix.
+
+**Example prompts**: `"fix fect issue #42"`, `"fix issue 17 in xuyiqing/fect on cfe branch"`
+
+**Agent sequence**:
+
+```text
+lead → theorist → [builder ∥ auditor] → skeptic → github
+```
+
+Same as Workflow 3 (Full Workflow with Ship), except:
+- `request.md` scope is derived from the issue body (`gh issue view <N>`)
+- Github posts a comment on the original issue linking the PR
+- Branch name follows patrol convention: `claude/fix-issue-<N>-<desc>`
+
+---
+
+### Workflow 6: Validation Only
+
+**Trigger**: User asks only to check, validate, or run tests — no code changes needed.
+
+**Example prompts**: `"check fect"`, `"run tests on fect"`, `"validate the build"`
+
+**Agent sequence**:
+
+```text
+lead → auditor
+```
+
+**Cooperation details**:
+
+```text
+LEAD:
+  1. Setup, acquire target, verify credentials
+  2. Create run → request.md (scope: validation only)
+  3. Write impact.md (affected surfaces)
+  4. Dispatch auditor with profile validation commands
+
+AUDITOR:
+  Reads: request.md, impact.md, profile
+  Runs: all profile validation commands (R CMD check, pytest, etc.)
+  Produces: audit.md with full evidence and PASS/BLOCK verdict
+```
+
+**Notes**:
+- No theorist needed (no spec to produce — just running existing tests)
+- No builder needed (no code changes)
+- No skeptic needed (no code change to review)
+- Lead reads audit.md and reports results to user
+
+**State transitions**:
+
+```text
+CREDENTIALS_VERIFIED → NEW → PLANNED → PIPELINES_COMPLETE → DONE
+```
+
+---
+
+### Workflow 7: Ship Only
+
+**Trigger**: User asks to push existing changes that have already been reviewed.
+
+**Example prompts**: `"ship it"`, `"push and open a PR"`, `"deploy the changes"`
+
+**Agent sequence**:
+
+```text
+lead → skeptic → github
+```
+
+**Cooperation details**:
+
+```text
+LEAD:
+  1. Verify credentials
+  2. Verify a previous run exists with implementation.md and audit.md
+  3. Dispatch skeptic to verify the change is safe
+
+SKEPTIC:
+  Reads: all prior artifacts from the existing run
+  Produces: review.md with verdict
+
+GITHUB (if PASS):
+  Reads: credentials.md, review.md, implementation.md
+  Commits, pushes, creates PR
+  Produces: github.md
+```
+
+**State transitions**:
+
+```text
+... (existing run) → REVIEW_PASSED → READY_TO_SHIP → DONE
+```
+
+---
+
+### Workflow 8: Review Only
+
+**Trigger**: User asks to review or assess existing changes without shipping.
+
+**Example prompts**: `"review the changes"`, `"is this safe to ship?"`, `"audit the code quality"`
+
+**Agent sequence**:
+
+```text
+lead → skeptic
+```
+
+**Cooperation details**:
+
+```text
+LEAD:
+  1. Verify a previous run exists with implementation.md and audit.md
+  2. Dispatch skeptic
+
+SKEPTIC:
+  Reads: all artifacts from existing run
+  Produces: review.md with verdict (PASS / PASS WITH NOTE / STOP)
+```
+
+Lead reports the verdict to the user. No ship action unless user explicitly asks.
+
+---
+
+### Workflow 9: Scheduled Loop (Recurring)
+
+**Trigger**: User wants any workflow to run on a recurring interval.
+
+**Example prompts**: `"monitor fect issues every 30min"`, `"loop run tests every 10m"`, `"keep checking deploy status"`
+
+**Activation**: Lead invokes the `/loop` skill via the `Skill` tool.
+
+```text
+lead detects loop intent → Skill("/loop <interval> <inner-command>")
+```
+
+**The `/loop` skill wraps any inner workflow**:
+
+| User says | Inner workflow | Interval |
+| --- | --- | --- |
+| `"patrol fect issues every 30min"` | Workflow 4 (Issue Patrol) | 30m |
+| `"loop run tests every 10m"` | Workflow 6 (Validation Only) | 10m |
+| `"monitor fect every 5m"` | Workflow 6 (Validation Only) | 5m |
+| `"loop check fect every 10m"` | Workflow 6 (Validation Only) | 10m |
+| `"keep running tests every hour"` | Workflow 6 (Validation Only) | 60m |
+
+Each iteration triggers the full inner workflow protocol.
+
+---
+
+### Workflow Summary Table
+
+| # | Name | Trigger | Agent Sequence | Mandatory Agents | Conditional Agents |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Standard | Code change, no ship | lead → theorist → [builder ∥ auditor] → skeptic | theorist, builder, auditor, skeptic | — |
+| 2 | With Docs | Code change + docs | lead → theorist → [builder ∥ auditor ∥ scribe] → skeptic | theorist, builder, auditor, skeptic | scribe |
+| 3 | With Ship | Code change + ship | lead → theorist → [builder ∥ auditor] → skeptic → github | theorist, builder, auditor, skeptic | scribe, github |
+| 4 | Issue Patrol | Scan + fix multiple issues | lead scans → per issue: theorist → [builder ∥ auditor] → skeptic → github | theorist, builder, auditor, skeptic, github | scribe |
+| 5 | Single Issue | Fix one named issue | lead → theorist → [builder ∥ auditor] → skeptic → github | theorist, builder, auditor, skeptic, github | scribe |
+| 6 | Validation | Run tests only | lead → auditor | auditor | — |
+| 7 | Ship Only | Push reviewed changes | lead → skeptic → github | skeptic, github | — |
+| 8 | Review Only | Assess without shipping | lead → skeptic | skeptic | — |
+| 9 | Scheduled Loop | Recurring execution | lead → `/loop` → inner workflow | (depends on inner) | — |
+
+---
+
+### Inter-Agent Data Flow (All Workflows)
+
+This table shows exactly what each agent reads and writes. **No agent communicates directly with another** — all data flows through artifacts in the run directory, mediated by lead.
+
+| From → To | Artifact | Content | Pipeline |
+| --- | --- | --- | --- |
+| lead → all | `request.md` | Scope, acceptance criteria, target repo | Shared |
+| lead → all | `impact.md` | Affected files, risk areas, write surfaces | Shared |
+| theorist → builder | `spec.md` | Implementation specification (algorithm steps, API, constraints) | Code |
+| theorist → auditor | `test-spec.md` | Test scenarios (expected behaviors, edge cases, benchmarks) | Test |
+| theorist → lead | `mailbox.md` (append) | Handoff notes for both pipelines | Shared |
+| builder → skeptic | `implementation.md` | Files changed, design choices, unit tests written | Code |
+| builder → github | code + tests | Actual file changes (in worktree) | Code |
+| builder → lead | `mailbox.md` (append) | Interface changes, blockers | Shared |
+| auditor → skeptic | `audit.md` | Validation evidence, exact output, verdict | Test |
+| auditor → lead | `mailbox.md` (append) | Failure routing (BLOCK) | Shared |
+| scribe → skeptic | `docs.md` | Doc changes summary | Code |
+| scribe → github | doc files | Actual doc changes (in worktree) | Code |
+| skeptic → github | `review.md` | Convergence analysis, ship verdict | Convergence |
+| skeptic → lead | `mailbox.md` (append) | STOP routing | Shared |
+| github → lead | `github.md` | Branch, SHA, push status, PR URL, issue comments | Ship |
+| lead → lead | `status.md` | State machine (ONLY lead writes) | Control |
+| lead → lead | `credentials.md` | Push access verification | Control |
+
+---
+
+### Signal Handling Across Workflows
+
+When a teammate raises a signal, lead responds:
+
+| Signal | Raised by | Meaning | Lead response |
+| --- | --- | --- | --- |
+| **HOLD** | theorist, builder, scribe | Ambiguous requirement, conflicting API, need user input | Pause run. Set `status.md` to `HOLD`. Ask user via `AskUserQuestion`. |
+| **BLOCK** | auditor | Validation failed | Stop downstream. Read `audit.md` for failure details. Respawn builder (if code bug), theorist (if spec bug), or scribe (if doc bug). |
+| **STOP** | skeptic | Change is unsafe to ship | Block all ship actions. Read `review.md` for routing. Respawn the agent skeptic identifies (builder, theorist, auditor, or scribe). |
+
+**Signal propagation**:
+
+```text
+HOLD:
+  theorist → lead → user (ask question) → lead → resume theorist
+  builder → lead → user (ask question) → lead → resume builder
+
+BLOCK:
+  auditor → lead → respawn builder/theorist/scribe → re-dispatch auditor → skeptic
+
+STOP:
+  skeptic → lead → respawn responsible agent → re-dispatch [builder ∥ auditor] → skeptic
+```
+
+---
+
 ## Routing
 
 Route semantically from intent. Do **not** require the user to learn trigger phrases.
 
-| User intent | Dispatch to |
-| --- | --- |
-| any non-trivial request | `lead` plans, then dispatches teammates |
-| "patrol issues" / "check issues and fix" / "auto-fix issues" / "monitor issues" | `issue-patrol` skill (lead orchestrates) |
-| formalize math, equations, estimators, algorithms, or PDFs | `theorist` teammate |
-| change code or tests | `builder` teammate |
-| run checks, tests, examples, docs builds, or diagnose failures | `auditor` teammate |
-| update docs, tutorials, examples, or public guidance | `scribe` teammate |
-| review quality, challenge completeness, assess ship risk | `skeptic` teammate |
-| inspect issues, PRs, review comments, checks, schedules, or ship actions | `github` teammate |
-| "loop" / "every Xm" / "scheduled" / "recurring" / "monitor every" | Scheduled loop — invoke `/loop` skill (see Scheduled Loop below) |
+| User intent | Workflow | Dispatch to |
+| --- | --- | --- |
+| any non-trivial code request | Workflow 1–3 | Full pipeline |
+| "patrol issues" / "check issues and fix" / "auto-fix issues" / "monitor issues" | Workflow 4 | `issue-patrol` skill |
+| "fix issue #N" / "fix the bug in issue N" | Workflow 5 | Single issue fix |
+| "check" / "validate" / "run tests" | Workflow 6 | auditor only |
+| "ship it" / "push" / "deploy" / "open a PR" | Workflow 7 | skeptic → github |
+| "review" / "is this safe?" / "audit the changes" | Workflow 8 | skeptic only |
+| "loop" / "every Xm" / "scheduled" / "recurring" / "monitor every" | Workflow 9 | `/loop` skill wrapping inner workflow |
+| formalize math, equations, estimators, algorithms | Workflow 1 | theorist-first pipeline |
+| update docs, tutorials, examples | Workflow 2 | pipeline with scribe |
 
 **Note**: Routing is semantic. The user does NOT need to use these exact phrases. Lead interprets intent from natural language in any language.
-
----
-
-## Closed-Loop Workflow (Two-Pipeline Architecture)
-
-For any non-trivial request, use this default flow:
-
-```text
-lead plans → theorist → [builder ∥ auditor] → scribe? → skeptic → github?
-                           (parallel, isolated)        (convergence)
-```
-
-The `∥` symbol means **parallel dispatch**. Builder and auditor run simultaneously, each with its own spec from theorist. They never see each other's inputs or outputs.
-
-For issue patrol requests, use this flow:
-
-```text
-lead scans issues → for each actionable issue:
-  lead plans → theorist → [builder ∥ auditor] → skeptic → github (push + PR + issue comment)
-```
-
-See `skills/issue-patrol/SKILL.md` for the full protocol.
-
-Rules:
-
-- You (lead) plan the work, then dispatch each teammate via the `Agent` tool
-- `theorist` is ALWAYS mandatory — it is the bridge that feeds both pipelines
-- Builder receives `spec.md` only; auditor receives `test-spec.md` only — pipeline isolation is enforced by lead
-- Builder and auditor are dispatched IN PARALLEL after theorist completes
-- `scribe` runs only when public-facing docs, examples, tutorials, or other documented surfaces are in scope
-- `skeptic` is the convergence point — it reads ALL artifacts from BOTH pipelines and cross-compares
-- `github` handles issue intake and all GitHub-facing actions when the user asks to ship, or automatically during issue patrol
-- When dispatched by issue-patrol, `github` MUST auto-push, create a PR, AND post a comment on the original issue
-- **theorist, auditor, and skeptic are NEVER skippable** — see "Mandatory Teammate Stages" above
-
-Execution rules are **profile-aware**: use the active project profile under `profiles/` to decide repo markers, build tools, validation commands, docs conventions, and shipping conventions.
 
 ---
 
@@ -515,7 +1015,6 @@ For non-trivial requests, you MUST continue through the selected workflow withou
 ```text
 StatsClaw/
 ├── CLAUDE.md
-├── CONTEXT.md
 ├── README.md
 ├── .agents/
 │   ├── lead.md

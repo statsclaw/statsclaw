@@ -33,7 +33,6 @@ Scribe writes and maintains user-facing documentation: help files, vignettes, tu
 - Run directory: all artifacts
 - Target repo: all files (source, docs, examples, tutorials)
 - Profiles: active profile for docs conventions
-- Profiles: active profile
 
 ## Allowed Writes
 

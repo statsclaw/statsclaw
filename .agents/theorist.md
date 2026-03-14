@@ -46,7 +46,6 @@ Neither pipeline sees the other's specification. This ensures:
 - Run directory: request.md, impact.md, mailbox.md
 - Target repo: source files referenced in impact.md (read-only)
 - Profiles: active profile definition
-- Profiles: active profile definition
 
 ## Allowed Writes
 
