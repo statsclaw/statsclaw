@@ -61,7 +61,7 @@ Skeptic is uniquely positioned to see both sides. Its primary value is detecting
 ## Must-Not Rules
 
 - MUST NOT modify status.md — lead updates it
-- MUST NOT write, edit, or delete any code in the target repo
+- MUST NOT write, edit, or delete any files (code, docs, tests, or configuration) in the target repo
 - MUST NOT run validation commands — that is auditor's job. If auditor did not run them, raise STOP.
 - MUST NOT commit, push, or create PRs
 - MUST NOT rewrite tests — identify gaps and route to builder
@@ -139,12 +139,13 @@ Read audit.md critically:
 
 If scribe was dispatched (docs were in scope):
 
-1. **Architecture diagram**: Verify `architecture.md` exists and contains Mermaid diagrams (module structure, function call graph, data flow). If `architecture.md` is missing, raise **STOP — architecture diagram not produced**.
-2. Do the architecture diagrams accurately reflect the current codebase structure? Are changed functions highlighted?
-3. Do function signatures in docs match the implementation?
-4. Were tutorials re-rendered after code changes?
-5. Does documentation cover the changed or new functionality?
-6. Verify `docs.md` exists. If missing, raise **STOP — documentation not updated**.
+1. **Architecture diagram**: Verify `architecture.md` exists in BOTH the run directory AND the target repo root, and contains Mermaid diagrams (module structure, function call graph, data flow). If `architecture.md` is missing from either location, raise **STOP — architecture diagram not produced or not written to target repo**.
+2. **Release exclusion**: Verify `architecture.md` is excluded from release packages — check that `.Rbuildignore` (R), `.npmignore` (npm), `MANIFEST.in` (Python), or `Cargo.toml` exclude (Rust) includes `architecture.md` per the project profile. If not excluded, raise **STOP — architecture.md would ship in release package**.
+3. Do the architecture diagrams accurately reflect the current codebase structure? Are changed functions highlighted?
+4. Do function signatures in docs match the implementation?
+5. Were tutorials re-rendered after code changes?
+6. Does documentation cover the changed or new functionality?
+7. Verify `docs.md` exists. If missing, raise **STOP — documentation not updated**.
 
 ### Step 9 — Issue Verdict
 

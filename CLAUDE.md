@@ -39,21 +39,21 @@ This section is the entry point for every non-trivial user request. You MUST fol
 
 1. **SETUP**: Read `.statsclaw/CONTEXT.md`. If it does not exist, create the full local runtime first (see Session Startup below). Read the active package context.
 2. **ACQUIRE TARGET**: If the user request names a repository URL, path, or reference, clone or locate the target repository locally. If acquisition fails, set state to `HOLD` in `status.md` and ask the user. Do NOT proceed without a local checkout.
-3. **VERIFY CREDENTIALS**: This is the FIRST hard gate — it runs BEFORE the run is created. Follow `skills/credential-setup/SKILL.md` for the auto-detection sequence.
+3. **CREATE RUN**: Generate a request ID. Create `.statsclaw/runs/<request-id>/`. Write `request.md` (scope, acceptance criteria, target repo identity). Write `status.md` with state `NEW`.
+4. **VERIFY CREDENTIALS**: Follow `skills/credential-setup/SKILL.md` for the auto-detection sequence.
    - a. **Auto-detect** credentials: check `GITHUB_TOKEN` env → `gh auth status` → SSH → git credential helper (in order).
-   - b. If any method succeeds, configure it and test with `git ls-remote <remote-url>`.
+   - b. If any method succeeds, configure it and test with a **write-access probe**: attempt `git push --dry-run` or fall back to `git ls-remote <remote-url>` (note: `git ls-remote` only confirms read access; write access is fully confirmed on the first real push).
    - c. **Only if ALL auto-detection fails**, use `AskUserQuestion` to ask the user for a GitHub Personal Access Token (PAT) or SSH key.
-   - d. Once credentials work, write `credentials.md` to the run directory recording: remote URL tested, method used (PAT/SSH/gh-cli/env-token), timestamp, and result (PASS/FAIL).
+   - d. Once credentials work, write `credentials.md` to the run directory recording: remote URL tested, method used (PAT/SSH/gh-cli/env-token), timestamp, and result (PASS/FAIL). Update `status.md` to `CREDENTIALS_VERIFIED`.
    - e. Record the credential status in the package context under `.statsclaw/packages/`.
-   - **ENFORCEMENT**: Steps 4–8 are INVALID without a `credentials.md` showing PASS. If you find yourself planning or dispatching teammates without confirmed push access, STOP and return to step 3.
-4. **CREATE RUN**: Generate a request ID. Create `.statsclaw/runs/<request-id>/`. Write `request.md` (scope, acceptance criteria, target repo identity). Write `status.md` with state `NEW`.
+   - **ENFORCEMENT**: Steps 5–9 are INVALID without a `credentials.md` showing PASS. If you find yourself planning or dispatching teammates without confirmed push access, STOP and return to step 4.
 5. **LEAD PLANNING**: Read `.agents/lead.md`. Act as `lead`. Explore the target repository to identify affected surfaces. Write `impact.md` (affected files, risk areas, required teammates). Identify the profile from `profiles/`. Update `status.md` to `PLANNED`.
 6. **DISPATCH TEAMMATES (Two-Pipeline Architecture)**: See "Agent Teams Model" below for the architecture. Dispatch per the selected workflow:
    - a. **theorist** — ALWAYS dispatched for non-trivial requests. **MANDATORY when the user uploads files** (PDF, Word, txt, tex, images with formulas) — these contain primary source material that theorist must deeply comprehend before any specs are produced. Pass ALL uploaded file paths in the dispatch prompt. Theorist produces `comprehension.md` (verification of understanding), `spec.md` (code pipeline), and `test-spec.md` (test pipeline). **If theorist raises HOLD with comprehension questions, lead MUST forward them to the user via `AskUserQuestion` and re-dispatch theorist with the answers. Iterate until theorist confirms FULLY UNDERSTOOD.** Update status to `SPEC_READY`.
    - b. **builder + auditor IN PARALLEL** — After theorist completes, dispatch BOTH in the SAME message. Builder gets `spec.md` ONLY. Auditor gets `test-spec.md` ONLY. Update status to `PIPELINES_COMPLETE` after BOTH complete.
-   - c. **scribe** — ONLY if docs are in scope. Dispatch with `isolation: "worktree"`. Produces `docs.md`. Update status to `DOCUMENTED`.
-   - d. **skeptic** — ALWAYS dispatched after both pipelines complete. Reads ALL artifacts. Produces `review.md` with verdict. Update status to `REVIEW_PASSED` or `STOPPED`.
-   - e. **github** — ONLY if the user asked to ship. Produces `github.md`.
+   - c. **scribe** — ONLY if docs are in scope. Dispatch **AFTER builder completes** (scribe reads `implementation.md`). Dispatch with `isolation: "worktree"`. Produces `architecture.md` (mandatory, written to BOTH target repo root AND run directory) and `docs.md`. Update status to `DOCUMENTED`.
+   - d. **skeptic** — ALWAYS dispatched after both pipelines complete (and scribe, if dispatched). Reads ALL artifacts. Produces `review.md` with verdict. Update status to `REVIEW_PASSED` or `STOPPED`.
+   - e. **github** — ONLY if the user asked to ship, or issue-patrol is active. Produces `github.md`.
    - **PIPELINE ISOLATION**: builder NEVER receives `test-spec.md`. Auditor NEVER receives `spec.md` or `implementation.md`. See `skills/isolation/SKILL.md`.
 7. **GATE**: Update `status.md` after EVERY teammate completes. Read the output artifact. Do NOT proceed past `STOP` or `BLOCK` signals. Respawn the responsible teammate on failure (max 3 retries per teammate before `HOLD`).
 8. **AUTONOMOUS CONTINUATION**: Do NOT pause between stages to ask the user "should I continue?". Continue automatically through the full workflow until `DONE`, `HOLD`, or `STOP`.
@@ -68,8 +68,8 @@ Short prompts MUST work. A user message like "Work on https://github.com/foo/bar
 
 | Target State | Precondition | Verification |
 | --- | --- | --- |
-| `NEW` | `credentials.md` exists with result PASS | Read the file, confirm PASS is present |
-| `NEW` | Push access to target repo confirmed | `git ls-remote` succeeded during step 3 |
+| `CREDENTIALS_VERIFIED` | `credentials.md` exists with result PASS | Read the file, confirm PASS is present |
+| `CREDENTIALS_VERIFIED` | Access to target repo confirmed | `git push --dry-run` or `git ls-remote` succeeded during step 4 |
 | `PLANNED` | `request.md` and `impact.md` exist and are non-empty | Read the files |
 | `SPEC_READY` | `comprehension.md`, `spec.md`, AND `test-spec.md` all exist | Read all three file paths |
 | `SPEC_READY` | Theorist was dispatched via `Agent` tool | Agent tool call must exist in conversation |
@@ -77,7 +77,8 @@ Short prompts MUST work. A user message like "Work on https://github.com/foo/bar
 | `PIPELINES_COMPLETE` | Builder dispatched with `isolation: "worktree"`, auditor dispatched | Agent tool calls must exist |
 | `PIPELINES_COMPLETE` | Pipeline isolation verified | Builder prompt has no test-spec.md; auditor prompt has no spec.md |
 | `PIPELINES_COMPLETE` | Lead did NOT run any validation command directly | Self-check: no Bash calls to R CMD check, pytest, npm test, etc. |
-| `DOCUMENTED` | `architecture.md` and `docs.md` exist in run directory | Read both file paths |
+| `DOCUMENTED` | `architecture.md` exists in BOTH run directory AND target repo root; `docs.md` exists in run directory | Read all file paths |
+| `DOCUMENTED` | `architecture.md` excluded from release packages | Verify `.Rbuildignore` / `.npmignore` / etc. updated per profile |
 | `REVIEW_PASSED` | `review.md` exists with verdict `PASS` or `PASS WITH NOTE` | Read the file, check verdict |
 | `REVIEW_PASSED` | Skeptic was dispatched via `Agent` tool | Agent tool call must exist |
 | `READY_TO_SHIP` | Status is `REVIEW_PASSED` | Read current status |
@@ -102,6 +103,8 @@ Before EVERY tool call, `lead` MUST check whether the action belongs to a teamma
 | Write mathematical specifications or derive formulas | `theorist` |
 | Debug test failures by reading target repo code extensively | `auditor` |
 | Review diffs or evidence chains to decide ship safety | `skeptic` |
+| Read target repo source files after `impact.md` is written | the relevant teammate |
+| Create branches, tags, or releases on target repo | `github` |
 
 **Concrete rule**: `lead` may use `Read`, `Grep`, `Glob` on the target repo ONLY during step 5 (LEAD PLANNING) to write `impact.md`. After `impact.md` is written, all further target-repo interaction MUST go through dispatched teammates.
 
@@ -134,13 +137,17 @@ Read your agent definition at [STATSCLAW_PATH]/.agents/[role].md and follow its 
 ## Your Task
 [SPECIFIC TASK DESCRIPTION]
 
+## Uploaded Files (theorist only, if any)
+[LIST OF FILE PATHS THE USER UPLOADED — theorist MUST read all of them]
+
 ## Write Surface
 [EXACT FILES/PATHS THIS TEAMMATE MAY MODIFY]
 
 ## Required Inputs (read these files first)
 - [STATSCLAW_PATH]/.statsclaw/runs/[REQUEST_ID]/request.md
 - [STATSCLAW_PATH]/.statsclaw/runs/[REQUEST_ID]/impact.md
-- [OTHER ARTIFACTS AS NEEDED]
+- [STATSCLAW_PATH]/.statsclaw/runs/[REQUEST_ID]/comprehension.md  # for skeptic
+- [OTHER ARTIFACTS AS NEEDED — spec.md for builder, test-spec.md for auditor, etc.]
 
 ## Required Output
 Write your artifact to: [STATSCLAW_PATH]/.statsclaw/runs/[REQUEST_ID]/[artifact].md
@@ -152,13 +159,13 @@ Write your artifact to: [STATSCLAW_PATH]/.statsclaw/runs/[REQUEST_ID]/[artifact]
 - For github teammate: read credentials.md first — do NOT attempt push without PASS
 ```
 
+**Note**: When dispatching builder or scribe, include `isolation: "worktree"` in the `Agent` tool call.
+
 ### Dispatch Rules
 
 **Mandatory parallel dispatch**: builder + auditor — MUST be dispatched in the SAME message after theorist completes.
 
-**Additional parallel**: builder + scribe if non-overlapping write surfaces.
-
-**Sequential**: theorist → (builder ∥ auditor) → skeptic → github.
+**Sequential**: theorist → (builder ∥ auditor) → scribe (if needed, reads `implementation.md`) → skeptic → github.
 
 **Pipeline isolation at dispatch**: builder gets `spec.md` path (NEVER `test-spec.md`). Auditor gets `test-spec.md` path (NEVER `spec.md`). Skeptic gets ALL artifacts.
 
@@ -222,10 +229,10 @@ Each agent's full workflow, allowed reads/writes, and must-not rules are defined
 | # | Name | Trigger | Agent Sequence |
 | --- | --- | --- | --- |
 | 1 | Standard | Code change, no ship | `lead → theorist → [builder ∥ auditor] → skeptic` |
-| 2 | With Docs | Code change + docs | `lead → theorist → [builder ∥ auditor ∥ scribe] → skeptic` |
+| 2 | With Docs | Code change + docs | `lead → theorist → [builder ∥ auditor] → scribe → skeptic` |
 | 3 | With Ship | Code change + ship | `lead → theorist → [builder ∥ auditor] → skeptic → github` |
 | 4 | Issue Patrol | Scan + fix multiple issues | `lead scans → per issue: theorist → [builder ∥ auditor] → skeptic → github` |
-| 5 | Single Issue | Fix one named issue | `lead → theorist → [builder ∥ auditor] → skeptic → github` |
+| 5 | Single Issue | Fix one named issue | `lead → theorist → [builder ∥ auditor] → skeptic → github` (ship is implicit — fixing an issue implies pushing the fix) |
 | 6 | Validation | Run tests only | `lead → auditor` |
 | 7 | Ship Only | Push reviewed changes | `lead → skeptic → github` |
 | 8 | Review Only | Assess without shipping | `lead → skeptic` |
@@ -235,8 +242,11 @@ Each agent's full workflow, allowed reads/writes, and must-not rules are defined
 
 - **Workflows 1–5**: Standard two-pipeline flow. See `skills/handoff/SKILL.md` for artifact flow between agents.
 - **Workflow 4**: See `skills/issue-patrol/SKILL.md` for patrol phases (scan, triage, fix loop, report).
-- **Workflow 6**: No theorist, builder, or skeptic. Auditor runs profile validation commands directly.
+- **Workflow 6**: Lightweight — no theorist, builder, or skeptic. Auditor runs profile validation commands directly. State jumps directly from `PLANNED` to `PIPELINES_COMPLETE` (auditor-only).
+- **Workflows 7–8**: Lightweight — skip the full pipeline. These are for already-completed work that needs shipping or review. State model requirements for `SPEC_READY` and `PIPELINES_COMPLETE` are waived; skeptic reads whatever artifacts are available.
 - **Workflow 9**: Lead invokes `/loop` via `Skill` tool. See "Scheduled Loop" below.
+
+**Lightweight workflow rule**: Workflows 6, 7, and 8 are exceptions to the "mandatory teammates" rule. They serve specific, limited purposes (validation-only, ship-only, review-only) and intentionally skip the full two-pipeline flow.
 
 ---
 
@@ -284,7 +294,7 @@ StatsClaw uses exactly **three** workflow signals. Each signal has one exclusive
 
 | Signal | Exclusive Owner | When Raised | Status Set To | Lead Response |
 | --- | --- | --- | --- | --- |
-| **HOLD** | theorist, builder, scribe | Cannot proceed without user input: undefined symbol, ambiguous spec, conflicting API, unclear requirement | `HOLD` | Pause run. Forward the specific question to user via `AskUserQuestion`. Re-dispatch the same teammate with the answer. |
+| **HOLD** | theorist, builder, scribe, github | Cannot proceed without user input: undefined symbol, ambiguous spec, conflicting API, unclear requirement, permission/access issue | `HOLD` | Pause run. Forward the specific question to user via `AskUserQuestion`. Re-dispatch the same teammate with the answer. |
 | **BLOCK** | auditor (only) | Validation failed: tests fail, checks produce errors/warnings, numerical results outside tolerance | `BLOCKED` | Read `audit.md` failure details. Respawn the responsible upstream teammate (usually builder). After fix, re-dispatch auditor. |
 | **STOP** | skeptic (only) | Quality gate failed: pipelines diverge, isolation breached, coverage gaps, unsafe to ship | `STOPPED` | Read `review.md` routing. Respawn the teammate skeptic identifies. Re-run affected pipeline(s), then re-dispatch skeptic. |
 
@@ -360,7 +370,7 @@ For non-trivial requests, you MUST continue through the selected workflow withou
 - **Adversarial verification by design.** Independent convergence proves correctness.
 - **Hard gates, not soft advice.** State transitions have preconditions; artifacts are verified, not assumed.
 - **Worktree isolation for writers.** `isolation: "worktree"` for builder and scribe.
-- **Ship actions are explicit.** Do not push unless the user asked or issue-patrol is active.
+- **Ship actions are explicit.** Do not push unless the user asked, issue-patrol is active, or a single-issue fix was requested (workflow 5 — fixing an issue implies pushing the fix).
 - **Surgical scope.** Each run modifies only what the request requires.
 - **Parallel when possible.** Builder and auditor are ALWAYS dispatched in parallel.
 
@@ -384,13 +394,17 @@ For non-trivial requests, you MUST continue through the selected workflow withou
 │       ├── test-spec.md      # test pipeline input (from theorist)
 │       ├── implementation.md # code pipeline output (from builder)
 │       ├── audit.md          # test pipeline output (from auditor)
-│       ├── architecture.md  # system architecture diagram (from scribe, mandatory)
+│       ├── architecture.md   # run-directory copy (from scribe); primary copy goes to target repo root
 │       ├── docs.md
 │       ├── review.md
 │       ├── github.md
 │       ├── mailbox.md
-│       ├── locks/
-│       └── tasks/
+│       └── locks/
+│   └── PATROL-<timestamp>/   # patrol runs only (workflow 4)
+│       ├── request.md
+│       ├── patrol-triage.md   # issue classification (from lead)
+│       ├── patrol-report.md   # patrol summary (from lead)
+│       └── issue-<number>/    # sub-run per issue, same structure as <request-id>/
 ├── logs/
 └── tmp/
 ```
@@ -431,6 +445,7 @@ StatsClaw/
 │   ├── status.md
 │   ├── credentials.md
 │   ├── mailbox.md
-│   └── lock.md
+│   ├── lock.md
+│   └── architecture.md
 └── .statsclaw/           # local only, auto-created, git-ignored
 ```
