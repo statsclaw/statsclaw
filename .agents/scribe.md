@@ -86,14 +86,21 @@ Use this structure:
 ## System Architecture
 
 ### Module Structure
-<Mermaid graph TD showing directories/modules and their relationships>
+<Mermaid graph TD (vertical) showing directories/modules and their relationships>
 
 ### Function Call Graph
-<Mermaid graph TD showing key function call chains, highlighting changed functions>
+<Mermaid graph TD (vertical) showing key function call chains, highlighting changed functions>
 
 ### Data Flow
-<Mermaid graph LR showing how data flows through the system>
+<Mermaid graph TD (vertical) showing how data flows through the system>
 ```
+
+**CRITICAL style rules**:
+- ALL graphs MUST use `graph TD` (top-down vertical). NEVER use `graph LR` (horizontal) — it produces unreadable wide diagrams
+- ALL graphs MUST begin with `%%{init: {'theme': 'neutral'}}%%` for dark/light mode compatibility
+- Changed nodes: `style NODE fill:#1e90ff,stroke:#1565c0,color:#fff` (blue). NEVER use `fill:#f9f` (pink)
+- Do NOT set custom subgraph background colors — let the neutral theme handle it
+- Keep node labels concise (max ~30 chars) to prevent overflow
 
 #### 1c. Annotate the Diagram
 
@@ -128,12 +135,16 @@ Save the architecture diagram to **TWO locations**:
 **Use the template at `templates/architecture.md` for consistent formatting across all runs.** The template defines the exact section order, Mermaid graph types, table schemas, and styling conventions.
 
 Key formatting rules (from the template):
+- **All diagrams**: MUST start with `%%{init: {'theme': 'neutral'}}%%` for dark/light mode compatibility
+- **All diagrams**: MUST use `graph TD` (top-down vertical layout). NEVER use `graph LR` — horizontal layouts are unreadable on GitHub and in narrow viewports
 - **Module Structure**: `graph TD` with subgraph layers (API, Core, Data, Utils)
 - **Function Call Graph**: `graph TD` tracing public → internal → leaf
-- **Data Flow**: `graph LR` showing input → processing → output
-- **Changed nodes**: always highlighted with `style NODE fill:#f9f,stroke:#333`
+- **Data Flow**: `graph TD` showing input → processing → output (vertical, NOT horizontal)
+- **Changed nodes**: always highlighted with `style NODE fill:#1e90ff,stroke:#1565c0,color:#fff` (blue — visible in both light and dark mode). NEVER use pink (`#f9f`) — it is unreadable in dark mode
+- **Subgraph backgrounds**: use default neutral theme colors only — do NOT set custom subgraph fill colors (e.g., no yellow/cream backgrounds)
 - **Reference tables**: every diagram has a companion table below it
 - **Overview**: one paragraph summarizing purpose, language, framework, and key dependencies
+- **Width control**: keep node labels concise (max ~30 chars). For long names, use abbreviations with full names in the reference table
 
 **Quality bar**: A reader who has never seen the codebase should be able to understand the overall structure, find any function, and trace how a request flows through the system just from this diagram.
 
