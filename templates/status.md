@@ -31,6 +31,7 @@ CREDENTIALS_VERIFIED → NEW → PLANNED → SPEC_READY → PIPELINES_COMPLETE �
 | credentials.md | lead | — | pending | |
 | request.md | lead | — | pending | |
 | impact.md | lead | — | pending | |
+| comprehension.md | theorist | Comprehension | pending | |
 | spec.md | theorist | → Code | pending | |
 | test-spec.md | theorist | → Test | pending | |
 | implementation.md | builder | Code | pending | |

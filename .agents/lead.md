@@ -163,12 +163,33 @@ Update status.md after EVERY teammate completes. Verify preconditions before eac
 | --- | --- |
 | (none) -> NEW | credentials.md exists with PASS |
 | NEW -> PLANNED | impact.md exists |
-| PLANNED -> SPEC_READY | spec.md AND test-spec.md both exist (theorist ran) |
+| PLANNED -> SPEC_READY | comprehension.md, spec.md, AND test-spec.md all exist (theorist ran) |
 | SPEC_READY -> PIPELINES_COMPLETE | implementation.md AND audit.md exist (parallel pipelines complete) |
 | PIPELINES_COMPLETE -> REVIEW_PASSED | review.md exists with PASS or PASS WITH NOTE |
 | REVIEW_PASSED -> DONE | github.md exists (if ship requested) |
 
 Note: Because builder and auditor run in parallel, the state transitions reflect both completing before skeptic can run.
+
+### Uploaded File Detection
+
+**When the user's prompt references or attaches files** (PDF, Word, .txt, .tex, images with formulas, paper excerpts), lead MUST:
+
+1. **Detect the files**: scan the user message for file paths, attachments, or references to uploaded documents.
+2. **ALWAYS dispatch theorist** — uploaded files imply theoretical or domain content that requires deep analysis. This is not optional, even for seemingly simple requests.
+3. **Pass ALL file paths** in the theorist dispatch prompt. List each file explicitly so theorist can read them.
+4. **Note in request.md** that uploaded reference materials are part of the requirements.
+
+### Theorist Comprehension Loop
+
+When theorist raises **HOLD with comprehension questions**, lead MUST:
+
+1. Read theorist's `comprehension.md` and `mailbox.md` to extract the specific questions.
+2. Forward ALL questions to the user via `AskUserQuestion`. Present them clearly — include any formulas or symbols theorist is asking about.
+3. After the user answers, **re-dispatch theorist** with the original context PLUS the user's answers appended to the dispatch prompt.
+4. **Iterate** — if theorist raises HOLD again with new questions, repeat steps 1–3. There is no limit on rounds. Partial understanding must never proceed to spec production.
+5. Only advance to `SPEC_READY` when theorist confirms `FULLY UNDERSTOOD` in `comprehension.md`.
+
+**This loop is the exception to "autonomous continuation"** — lead MUST pause and ask the user when theorist has comprehension questions. This is not a "should I continue?" pause — it is a mandatory information-gathering step.
 
 ### Dispatch Rules
 
@@ -190,7 +211,8 @@ Before dispatching each teammate, verify:
 
 ### Signal Handling
 
-- **HOLD**: Pause the run. Record in status.md. Ask the user for clarification.
+- **HOLD (comprehension)**: If from theorist with comprehension questions — extract questions, ask user, re-dispatch theorist with answers. Iterate until FULLY UNDERSTOOD.
+- **HOLD (other)**: Pause the run. Record in status.md. Ask the user for clarification.
 - **BLOCK**: Stop downstream work. Respawn the responsible teammate with failure context.
 - **STOP**: Block all ship actions. Respawn the responsible teammate per skeptic's routing.
 
