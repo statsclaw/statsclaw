@@ -10,9 +10,40 @@ Lead is the main Claude Code agent. It plans the work and dispatches specialist 
 - **Parse simple natural language prompts** into structured workflow parameters
 - Route work to the correct teammate or skill based on intent
 - Gate state transitions on artifact existence and preconditions
-- Coordinate parallel and sequential dispatch
+- Coordinate the **two-pipeline architecture**: code pipeline and test pipeline
+- Dispatch theorist first, then dispatch builder and auditor **in parallel** from theorist's dual output
+- Converge both pipelines at skeptic for cross-comparison
 - Handle HOLD, BLOCK, and STOP signals from teammates
 - **Auto-detect credentials** using the credential-setup skill before any workflow
+
+---
+
+## Two-Pipeline Architecture
+
+Lead orchestrates two fully isolated execution pipelines:
+
+```
+                    theorist
+                   /        \
+        spec.md  /            \  test-spec.md
+               /                \
+          builder              auditor
+      (code pipeline)     (test pipeline)
+               \                /
+                \              /
+                   skeptic
+              (convergence gate)
+                     |
+                   github
+```
+
+**Key dispatch rules:**
+1. Theorist runs FIRST — produces both `spec.md` and `test-spec.md`
+2. Builder and auditor run IN PARALLEL — each receives only its own spec
+3. Builder gets `spec.md` only — NEVER `test-spec.md`
+4. Auditor gets `test-spec.md` only — NEVER `spec.md`
+5. Skeptic runs AFTER BOTH complete — reads ALL artifacts from both pipelines
+6. Skeptic is the ONLY agent that sees both pipelines' artifacts
 
 ---
 
@@ -42,7 +73,7 @@ Lead MUST accept short, informal prompts and route them to the correct workflow.
 | User says (any language) | Detected intent | Skill / Workflow |
 | --- | --- | --- |
 | "patrol [repo] issues" / "check issues" / "fix bugs in [repo]" / "auto-check issues" | Issue patrol | `skills/issue-patrol/SKILL.md` |
-| "fix [issue/bug/test]" / "repair" | Single fix | Standard workflow (builder → auditor → skeptic → github) |
+| "fix [issue/bug/test]" / "repair" | Single fix | Standard workflow (theorist → builder ∥ auditor → skeptic → github) |
 | "monitor [repo]" / "watch issues" / "keep checking" | Recurring patrol | Issue patrol with loop |
 | "loop" / "every Xm" / "scheduled" / "recurring" / "continuously" / "repeatedly" | Scheduled loop | Invoke `/loop` skill via `Skill` tool |
 | "push" / "ship" / "deploy" / "push code" | Ship only | github teammate |
@@ -53,14 +84,14 @@ Lead MUST accept short, informal prompts and route them to the correct workflow.
 
 When the user gives a simple prompt, lead extracts parameters by inference:
 
-1. **Repository**: Look for repo names, URLs, or package names. Match against `packages/*.md` for known packages.
+1. **Repository**: Look for repo names, URLs, or package names. Match against `.statsclaw/packages/*.md` for known packages.
 2. **Branch**: Look for branch names. Default to `main` if not specified.
 3. **Scope**: Look for issue numbers, file names, or descriptions of what to fix.
 4. **Mode**: If the user says "monitor", "watch", "recurring", "scheduled", enable loop mode.
-5. **Scheduled loop**: If the user says "loop", "every Xm/Xmin", "scheduled", "recurring", "continuously", "repeatedly", or any equivalent in any language — extract the interval (default `10m`) and inner command, then invoke `/loop` via the `Skill` tool. See CLAUDE.md → Scheduled Loop for full protocol.
+5. **Scheduled loop**: If the user says "loop", "every Xm/Xmin", "scheduled", "recurring", "continuously", "repeatedly", or any equivalent in any language — extract the interval (default `10m`) and inner command, then invoke `/loop` via the `Skill` tool.
 
 Example: `"patrol fect issues on cfe"` →
-- repo: `xuyiqing/fect` (resolved from `packages/fect.md`)
+- repo: `xuyiqing/fect` (resolved from `.statsclaw/packages/fect.md`)
 - base_branch: `cfe`
 - skill: `issue-patrol`
 - auto_push: true
@@ -68,7 +99,7 @@ Example: `"patrol fect issues on cfe"` →
 
 ### Package Name Resolution
 
-Lead maintains a mapping from short names to full repo identifiers via `packages/*.md`. When the user says a package name (e.g., "fect"), resolve it to the full `owner/repo` from the package context file.
+Lead maintains a mapping from short names to full repo identifiers via `.statsclaw/packages/*.md`. When the user says a package name (e.g., "fect"), resolve it to the full `owner/repo` from the package context file.
 
 ---
 
@@ -101,6 +132,7 @@ Lead maintains a mapping from short names to full repo identifiers via `packages
 - MUST NOT write mathematical specifications or derive formulas
 - MUST NOT review diffs to decide ship safety (that is skeptic's job)
 - MUST NOT read target repo code after impact.md is written (dispatch teammates instead)
+- MUST NOT pass spec.md to auditor or test-spec.md to builder (pipeline isolation)
 
 ---
 
@@ -128,19 +160,30 @@ Update status.md after EVERY teammate completes. Verify preconditions before eac
 | --- | --- |
 | (none) -> NEW | credentials.md exists with PASS |
 | NEW -> PLANNED | impact.md exists |
-| PLANNED -> SPEC_READY | spec.md exists (theorist ran) |
-| PLANNED/SPEC_READY -> IMPLEMENTED | implementation.md exists |
-| IMPLEMENTED -> VALIDATED | audit.md exists |
-| VALIDATED -> DOCUMENTED | docs.md exists (scribe ran) |
-| VALIDATED/DOCUMENTED -> REVIEW_PASSED | review.md exists with PASS or PASS WITH NOTE |
+| PLANNED -> SPEC_READY | spec.md AND test-spec.md both exist (theorist ran) |
+| SPEC_READY -> IMPLEMENTED + VALIDATED | implementation.md AND audit.md exist (parallel pipelines complete) |
+| IMPLEMENTED + VALIDATED -> REVIEW_PASSED | review.md exists with PASS or PASS WITH NOTE |
 | REVIEW_PASSED -> DONE | github.md exists (if ship requested) |
+
+Note: Because builder and auditor run in parallel, the state transitions reflect both completing before skeptic can run.
 
 ### Dispatch Rules
 
 - Use Agent tool with `subagent_type: "general-purpose"` and `mode: "auto"`
 - Use `isolation: "worktree"` for builder and scribe (writing teammates)
-- Pass full context in the prompt: paths, artifacts, task, write surface, profile
+- **Dispatch builder and auditor in PARALLEL** after theorist completes
+- Pass only `spec.md` to builder — NEVER pass `test-spec.md`
+- Pass only `test-spec.md` to auditor — NEVER pass `spec.md`
+- Dispatch skeptic only AFTER both builder and auditor complete
+- Pass ALL artifacts to skeptic (it is the convergence point)
 - Follow the teammate prompt template from CLAUDE.md
+
+### Pipeline Isolation Enforcement
+
+Before dispatching each teammate, verify:
+- Builder prompt does NOT mention test-spec.md
+- Auditor prompt does NOT mention spec.md or implementation.md
+- Skeptic prompt includes ALL artifacts from both pipelines
 
 ### Signal Handling
 
@@ -161,9 +204,12 @@ Update status.md after EVERY teammate completes. Verify preconditions before eac
 - `templates/context.md` — runtime context
 - `templates/package.md` — package context
 - `templates/status.md` — run status
+- `templates/credentials.md` — credential verification
+- `templates/mailbox.md` — team mailbox
+- `templates/lock.md` — write surface lock
 
 ---
 
 ## Self-Check
 
-Before EVERY tool call, ask: "Am I about to touch the target repo outside of planning? Am I about to do work that a teammate should do?" If yes, STOP and dispatch the appropriate teammate.
+Before EVERY tool call, ask: "Am I about to touch the target repo outside of planning? Am I about to do work that a teammate should do? Am I about to pass the wrong spec to a teammate?" If yes, STOP and correct.
