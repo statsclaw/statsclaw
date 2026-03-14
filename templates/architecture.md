@@ -11,6 +11,7 @@
 ## Module Structure
 
 ```mermaid
+%%{init: {'theme': 'neutral'}}%%
 graph TD
     subgraph API["API Layer"]
         A1["module/file — public entry point"]
@@ -35,10 +36,10 @@ graph TD
     C1 --> U1
     C2 --> U1
 
-    style A1 fill:#f9f,stroke:#333
+    style A1 fill:#1e90ff,stroke:#1565c0,color:#fff
 ```
 
-> Nodes with pink fill (`fill:#f9f`) were modified in this run.
+> Nodes with blue fill indicate modules modified in this run.
 
 ### Module Reference
 
@@ -54,17 +55,18 @@ graph TD
 ## Function Call Graph
 
 ```mermaid
+%%{init: {'theme': 'neutral'}}%%
 graph TD
     pub1["public_function()"] --> int1["internal_helper()"]
     pub1 --> int2["another_helper()"]
     int1 --> leaf1["low_level_op()"]
     int2 --> leaf1
 
-    style pub1 fill:#f9f,stroke:#333
-    style int1 fill:#f9f,stroke:#333
+    style pub1 fill:#1e90ff,stroke:#1565c0,color:#fff
+    style int1 fill:#1e90ff,stroke:#1565c0,color:#fff
 ```
 
-> Shows call chains for functions affected by this run. Pink nodes = changed. Trace from public entry points down to leaf operations.
+> Shows call chains for functions affected by this run. Blue nodes = changed. Trace from public entry points down to leaf operations.
 
 ### Function Reference
 
@@ -78,17 +80,18 @@ graph TD
 ## Data Flow
 
 ```mermaid
-graph LR
+%%{init: {'theme': 'neutral'}}%%
+graph TD
     Input["User Input\n(data, params)"] --> Validate["Input Validation"]
     Validate --> Process["Core Processing"]
     Process --> Transform["Transform / Compute"]
     Transform --> Output["Result Object"]
     Output --> Display["Print / Plot / Return"]
 
-    style Process fill:#f9f,stroke:#333
+    style Process fill:#1e90ff,stroke:#1565c0,color:#fff
 ```
 
-> Left-to-right flow showing how data moves through the system from input to output. Pink nodes = changed in this run.
+> Top-to-bottom flow showing how data moves through the system from input to output. Blue nodes = changed in this run.
 
 ---
 
