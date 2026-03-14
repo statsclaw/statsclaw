@@ -111,6 +111,20 @@ Save the architecture diagram to **TWO locations**:
 1. **Target repo root**: `<TARGET_REPO>/architecture.md` — this is the **primary destination**. The architecture diagram is a project artifact that belongs in the target repository so it gets committed, pushed, and visible to all contributors.
 2. **Run directory**: `<RUN_DIR>/architecture.md` — copy for StatsClaw run tracking and state verification.
 
+#### 1e. Exclude `architecture.md` from Release Packages
+
+`architecture.md` is a **development-only artifact** for GitHub — it MUST NOT be included in release distributions (CRAN tarballs, PyPI sdists, npm packages, etc.). After writing `architecture.md` to the target repo root, ensure it is excluded from the build:
+
+| Profile | Action |
+| --- | --- |
+| R package | Append `^architecture\.md$` to `.Rbuildignore` (if not already present) |
+| Python package | Add `architecture.md` to `MANIFEST.in` exclude or `[tool.setuptools] exclude` (if not already present) |
+| npm/TypeScript | Add `architecture.md` to `.npmignore` (if not already present) |
+| Rust crate | Add `exclude = ["architecture.md"]` to `[package]` in `Cargo.toml` (if not already present) |
+| Go module | No action needed (Go ignores non-`.go` files in modules) |
+
+**Always check before appending** — do not create duplicate entries.
+
 **Use the template at `templates/architecture.md` for consistent formatting across all runs.** The template defines the exact section order, Mermaid graph types, table schemas, and styling conventions.
 
 Key formatting rules (from the template):
