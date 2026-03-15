@@ -30,8 +30,10 @@ Each teammate produces specific output artifacts per run stage:
 | builder | `implementation.md` | `.statsclaw/runs/<request-id>/implementation.md` | Code Pipeline output |
 | auditor | `audit.md` | `.statsclaw/runs/<request-id>/audit.md` | Test Pipeline output |
 | scribe | `architecture.md` | `.statsclaw/runs/<request-id>/architecture.md` | Architecture (mandatory) |
+| scribe | `log/<date>-<slug>.md` | `<TARGET_REPO>/log/<YYYY-MM-DD>-<short-slug>.md` | Log entry (mandatory, target repo) |
 | scribe | `docs.md` | `.statsclaw/runs/<request-id>/docs.md` | Code Pipeline (docs) |
 | skeptic | `review.md` | `.statsclaw/runs/<request-id>/review.md` | Convergence output |
+| github | `log/<date>-<slug>.md` | `<TARGET_REPO>/log/<YYYY-MM-DD>-<short-slug>.md` | Log entry fallback (when scribe not dispatched) |
 | github | `github.md` | `.statsclaw/runs/<request-id>/github.md` | Externalization output |
 
 ---

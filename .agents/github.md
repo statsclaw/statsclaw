@@ -39,6 +39,8 @@ Github handles all git write operations and GitHub interactions: committing, pus
 ## Allowed Writes
 
 - Target repo: git operations only (commit, push, branch, tag)
+- Target repo: `log/<YYYY-MM-DD>-<short-slug>.md` — log entry fallback when scribe is not dispatched
+- Target repo: `.Rbuildignore` / `.npmignore` / etc. — only to add `log/` exclusion pattern
 - GitHub: PR creation, issue comments, labels (via gh CLI)
 - Run directory: `github.md` (primary output)
 - Run directory: `mailbox.md` (append-only)
@@ -86,9 +88,21 @@ git -C "$TARGET" checkout -b <branch-name>
 
 Branch naming: use descriptive names (e.g., `fix/issue-42-null-check`, `feat/twoway-fe`).
 
+### Step 3b — Produce Log Entry Fallback (if scribe was not dispatched)
+
+When scribe is NOT part of the workflow (e.g., workflow 1 — small code changes), github MUST produce the log entry itself so that every code update has a traceable record.
+
+1. **Check if `log/` entry already exists** in the target repo (scribe may have already created it). If it exists, skip this step.
+2. **Create `log/` directory** in the target repo root if it does not exist.
+3. **Use the template** at `templates/log-entry.md`.
+4. **File name**: `log/<YYYY-MM-DD>-<short-slug>.md`.
+5. **Fill in all sections** from `implementation.md`, `audit.md`, and `review.md`:
+   - What Changed, Files Changed, Design Decisions, Handoff Notes, Verification.
+6. **Exclude `log/` from release packages** — append the appropriate ignore pattern for the profile (e.g., `^log$` in `.Rbuildignore`). Only if not already present.
+
 ### Step 4 — Stage and Commit
 
-Stage the files listed in implementation.md, docs.md, and `architecture.md` (if it exists at the target repo root):
+Stage the files listed in implementation.md, docs.md, `architecture.md` (if it exists at the target repo root), and any `log/` entries:
 ```bash
 git -C "$TARGET" add <specific-files>
 ```
@@ -178,7 +192,7 @@ When operating in patrol mode (dispatched by the issue-patrol skill):
 
 - review.md has PASS verdict before any ship action
 - Remote URL matches the user's target repository
-- Only files from implementation.md, docs.md, and architecture.md are staged
+- Only files from implementation.md, docs.md, architecture.md, and log/ entries are staged
 - Commit message accurately describes the changes
 - No force-push to protected branches
 - No hooks skipped
