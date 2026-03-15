@@ -36,6 +36,17 @@ Detect this profile when the target repository contains:
 - `sphinx` or `mkdocs` — documentation site generation
 - `coverage` / `pytest-cov` — test coverage reporting
 
+## Build Exclusions
+
+The following development-only artifacts MUST be excluded from sdist/wheel builds:
+
+| File/Directory | Exclude via |
+| --- | --- |
+| `architecture.md` | `MANIFEST.in` exclude or `[tool.setuptools] exclude` |
+| `log/` | `MANIFEST.in` exclude or `[tool.setuptools] exclude` |
+
+Scribe and github teammates are responsible for adding these exclusions. Check before adding to avoid duplicates.
+
 ## Builder Notes
 
 - Follow PEP 8 style conventions; prefer `ruff` auto-formatting when the project uses it.
