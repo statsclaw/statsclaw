@@ -10,6 +10,9 @@ Local checkout path: ""
 Version: unknown
 Primary language: ""
 Project profile: ""
+Credential status: ""          # PASS / FAIL / UNTESTED
+Credential method: ""          # PAT / SSH / gh-cli / env-token
+Credential verified at: ""     # YYYY-MM-DD HH:MM
 ```
 
 ## Request Defaults

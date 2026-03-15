@@ -9,16 +9,6 @@ TargetRepositoryURL: ""
 TargetRepositoryCheckout: ""
 ```
 
-## GitHub Schedule
-
-```yaml
-Schedule: ""
-Filter: ""
-GitHubAutoSolve: false
-ScheduleMode: ""
-ScheduledPrompt: ""
-```
-
 ## Session Notes
 
 _No notes yet._

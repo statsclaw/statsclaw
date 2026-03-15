@@ -10,7 +10,7 @@ Active Profile: [profile]
 Target Repository: [owner/repo or local path]
 Target Checkout: [absolute path]
 Credentials: [VERIFIED / NOT_VERIFIED]
-Credential Method: [PAT / SSH / proxy / none]
+Credential Method: [PAT / SSH / gh-cli / env-token]
 Last Updated: [YYYY-MM-DD HH:MM]
 ```
 
@@ -20,9 +20,14 @@ Last Updated: [YYYY-MM-DD HH:MM]
 CREDENTIALS_VERIFIED → NEW → PLANNED → SPEC_READY → PIPELINES_COMPLETE → DOCUMENTED? → REVIEW_PASSED → READY_TO_SHIP → DONE
 ```
 
-- `SPEC_READY` requires BOTH `spec.md` AND `test-spec.md` from theorist
+- `SPEC_READY` requires `comprehension.md`, `spec.md`, AND `test-spec.md` from theorist
 - `PIPELINES_COMPLETE` requires BOTH `implementation.md` (builder) AND `audit.md` (auditor)
 - Builder and auditor run in parallel after SPEC_READY
+
+Interrupt states:
+- `HOLD` — waiting for user input (only user can unblock)
+- `BLOCKED` — auditor validation failed (respawn upstream teammate)
+- `STOPPED` — skeptic quality gate failed (respawn per routing)
 
 ## Ownership Ledger
 
@@ -31,10 +36,12 @@ CREDENTIALS_VERIFIED → NEW → PLANNED → SPEC_READY → PIPELINES_COMPLETE �
 | credentials.md | lead | — | pending | |
 | request.md | lead | — | pending | |
 | impact.md | lead | — | pending | |
+| comprehension.md | theorist | Comprehension | pending | |
 | spec.md | theorist | → Code | pending | |
 | test-spec.md | theorist | → Test | pending | |
 | implementation.md | builder | Code | pending | |
 | audit.md | auditor | Test | pending | |
+| architecture.md | scribe | Architecture | pending | |
 | docs.md | scribe | Code | pending | |
 | review.md | skeptic | Convergence | pending | |
 | github.md | github | — | pending | |
