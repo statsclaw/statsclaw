@@ -27,7 +27,7 @@ Github handles all git write operations and GitHub interactions: committing, pus
 9. Read `mailbox.md` for any notes relevant to shipping.
 10. Verify the local git checkout points to the correct target repository.
 11. Verify the remote URL matches the user's target (not StatsClaw).
-12. Test push access with `git ls-remote` before attempting any push. If it fails, halt and write github.md noting the failure — do NOT waste time on commit/staging.
+12. Test push access with `git push --dry-run origin <branch>` before attempting any real push. If it fails, halt and write github.md noting the failure — do NOT waste time on commit/staging.
 
 ---
 

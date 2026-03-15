@@ -40,14 +40,8 @@ This section is the entry point for every non-trivial user request. You MUST fol
 1. **SETUP**: Read `.statsclaw/CONTEXT.md`. If it does not exist, create the full local runtime first (see Session Startup below). Read the active package context.
 2. **ACQUIRE TARGET**: If the user request names a repository URL, path, or reference, clone or locate the target repository locally. If acquisition fails, set state to `HOLD` in `status.md` and ask the user. Do NOT proceed without a local checkout.
 3. **CREATE RUN**: Generate a request ID. Create `.statsclaw/runs/<request-id>/`. Write `request.md` (scope, acceptance criteria, target repo identity). Write `status.md` with state `NEW`.
-4. **VERIFY CREDENTIALS**: Follow `skills/credential-setup/SKILL.md` for the auto-detection sequence.
-   - a. **Auto-detect** credentials: check `GITHUB_TOKEN` env → `gh auth status` → SSH → git credential helper (in order).
-   - b. If any method succeeds, **configure the target repo's git remote** with the working credential (e.g., `git remote set-url origin "https://x-access-token:<TOKEN>@github.com/<owner>/<repo>.git"`). Then test with a **write-access probe on the target repo**: attempt `git push --dry-run origin <branch>` in the target repo checkout. `git ls-remote` only confirms read access — prefer `push --dry-run` for write confirmation.
-   - c. **CRITICAL: The write-access probe MUST target the actual target repository**, not a proxy, not the StatsClaw repo, not any other repo. A PASS on a different repo does NOT satisfy this gate.
-   - d. **Only if ALL auto-detection fails**, use `AskUserQuestion` to ask the user for a GitHub Personal Access Token (PAT) or SSH key.
-   - e. Once credentials work, write `credentials.md` to the run directory recording: remote URL tested, method used (PAT/SSH/gh-cli/env-token), timestamp, and result (PASS/FAIL). Update `status.md` to `CREDENTIALS_VERIFIED`.
-   - f. Record the credential status in the package context under `.statsclaw/packages/`.
-   - **ENFORCEMENT**: Steps 5–9 are INVALID without a `credentials.md` showing PASS **against the target repo**. If you find yourself planning or dispatching teammates without confirmed push access to the target repo, STOP and return to step 4.
+4. **VERIFY CREDENTIALS**: Follow `skills/credential-setup/SKILL.md` for the full auto-detection sequence (GITHUB_TOKEN → gh auth → SSH → credential helper → ask user). Write `credentials.md` to the run directory. Update `status.md` to `CREDENTIALS_VERIFIED`.
+   - **ENFORCEMENT**: Steps 5–9 are INVALID without a `credentials.md` showing PASS **against the target repo**. The write-access probe MUST target the actual target repository — not a proxy, not StatsClaw, not any other repo. If you find yourself planning or dispatching teammates without confirmed push access, STOP and return to step 4.
 5. **LEAD PLANNING**: Read `.agents/lead.md`. Act as `lead`. Explore the target repository to identify affected surfaces. Write `impact.md` (affected files, risk areas, required teammates). Identify the profile from `profiles/`. Update `status.md` to `PLANNED`.
 6. **DISPATCH TEAMMATES (Two-Pipeline Architecture)**: See "Agent Teams Model" below for the architecture. Dispatch per the selected workflow:
    - a. **theorist** — ALWAYS dispatched for non-trivial requests. **MANDATORY when the user uploads files** (PDF, Word, txt, tex, images with formulas) — these contain primary source material that theorist must deeply comprehend before any specs are produced. Pass ALL uploaded file paths in the dispatch prompt. Theorist produces `comprehension.md` (verification of understanding), `spec.md` (code pipeline), and `test-spec.md` (test pipeline). **If theorist raises HOLD with comprehension questions, lead MUST forward them to the user via `AskUserQuestion` and re-dispatch theorist with the answers. Iterate until theorist confirms FULLY UNDERSTOOD.** Update status to `SPEC_READY`.
@@ -376,8 +370,9 @@ For non-trivial requests, you MUST continue through the selected workflow withou
 ## Runtime Maintenance
 
 - **Cleanup**: Runs older than 7 days under `.statsclaw/runs/` may be deleted to free disk space. Do not delete the active run.
-- **Logs**: Write diagnostic output to `.statsclaw/logs/` when debugging workflow issues.
-- **Locks**: The `locks/` directory under each run can be used to prevent concurrent writes to the same file. Use `templates/lock.md` format. Only `lead` manages locks.
+- **Logs**: Write diagnostic output to `.statsclaw/logs/` when debugging workflow issues (e.g., signal routing decisions, retry attempts, credential probe output).
+- **Locks**: The `locks/` directory under each run prevents concurrent writes when multiple teammates target overlapping files. Use `templates/lock.md` format. Only `lead` creates, transfers, or releases locks. Typical use: lock a file set before dispatching builder in worktree, release after merge-back.
+- **Tmp**: The `.statsclaw/tmp/` directory holds transient data (e.g., worktree extraction paths, intermediate query results). Contents may be deleted between runs.
 
 ---
 
@@ -466,6 +461,7 @@ StatsClaw/
 │   ├── credentials.md
 │   ├── mailbox.md
 │   ├── lock.md
+│   ├── log-entry.md
 │   └── architecture.md
 └── .statsclaw/           # local only, auto-created, git-ignored
 ```

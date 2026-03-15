@@ -72,7 +72,6 @@ Lead maintains a mapping from short names to full repo identifiers via `.statscl
 - `.statsclaw/runs/<request-id>/impact.md`
 - `.statsclaw/runs/<request-id>/status.md`
 - `.statsclaw/runs/<request-id>/locks/*`
-- `.statsclaw/runs/<request-id>/tasks/*`
 - `.statsclaw/runs/<request-id>/mailbox.md` (create only; teammates append)
 
 ---
