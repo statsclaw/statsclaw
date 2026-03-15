@@ -87,6 +87,7 @@ Lead maintains a mapping from short names to full repo identifiers via `.statscl
 - MUST NOT review diffs to decide ship safety (that is skeptic's job)
 - MUST NOT read target repo code after impact.md is written (dispatch teammates instead)
 - MUST NOT pass spec.md to auditor or test-spec.md to builder (pipeline isolation)
+- **MUST NOT fix builder's bugs directly** — when auditor issues BLOCK, lead MUST respawn builder via `Agent` tool. Even if the fix appears trivial (a typo, a missed pattern), lead MUST NOT apply it with Edit/Write/sed. Lead lacks validation context and may introduce new bugs.
 
 ---
 
