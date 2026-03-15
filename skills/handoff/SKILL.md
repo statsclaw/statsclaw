@@ -24,10 +24,12 @@ Each teammate produces specific output artifacts per run stage:
 
 | Teammate | Artifact(s) | Path | Pipeline |
 | --- | --- | --- | --- |
+| theorist | `comprehension.md` | `.statsclaw/runs/<request-id>/comprehension.md` | Comprehension record |
 | theorist | `spec.md` | `.statsclaw/runs/<request-id>/spec.md` | → Code Pipeline |
 | theorist | `test-spec.md` | `.statsclaw/runs/<request-id>/test-spec.md` | → Test Pipeline |
 | builder | `implementation.md` | `.statsclaw/runs/<request-id>/implementation.md` | Code Pipeline output |
 | auditor | `audit.md` | `.statsclaw/runs/<request-id>/audit.md` | Test Pipeline output |
+| scribe | `architecture.md` | `.statsclaw/runs/<request-id>/architecture.md` | Architecture (mandatory) |
 | scribe | `docs.md` | `.statsclaw/runs/<request-id>/docs.md` | Code Pipeline (docs) |
 | skeptic | `review.md` | `.statsclaw/runs/<request-id>/review.md` | Convergence output |
 | github | `github.md` | `.statsclaw/runs/<request-id>/github.md` | Externalization output |
@@ -48,12 +50,12 @@ A clear status indicator:
 
 | Teammate | Possible Verdicts |
 | --- | --- |
-| theorist | `SPEC_COMPLETE` (both specs produced), `HOLD` (ambiguity needs user input) |
-| builder | `IMPLEMENTED`, `HOLD` (spec unclear or conflict found) |
-| auditor | `PASS` (all checks green), `BLOCK` (failures found) |
-| scribe | `DOCUMENTED`, `HOLD` (implementation unclear) |
-| skeptic | `PASS`, `PASS WITH NOTE`, `STOP` |
-| github | `SHIPPED`, `HOLD` (permission or access issue) |
+| theorist | `SPEC_COMPLETE` — comprehension verified, both specs produced | `HOLD` — needs user input to resolve ambiguity |
+| builder | `IMPLEMENTED` — code and unit tests written | `HOLD` — spec unclear or API conflict |
+| auditor | `PASS` — all validation checks green | `BLOCK` — validation failed (routes to builder/theorist) |
+| scribe | `DOCUMENTED` — docs and architecture diagram produced | `HOLD` — implementation unclear or contradicts spec |
+| skeptic | `PASS` / `PASS WITH NOTE` — safe to ship | `STOP` — quality gate failed (routes per table) |
+| github | `SHIPPED` — pushed, PR created | `HOLD` — permission or access issue |
 
 ---
 
@@ -115,7 +117,7 @@ After each teammate returns, lead MUST:
 
 1. **Read the output artifact** in full.
 2. **Check the verdict.** If the verdict is `HOLD`, `BLOCK`, or `STOP`, do NOT dispatch the next downstream teammate.
-3. **Check the mailbox** for any `BLOCKER` or `INTERFACE_CHANGE` messages.
+3. **Check the mailbox** for any `HOLD_REQUEST` or `INTERFACE_CHANGE` messages.
 4. **Verify pipeline isolation** — confirm no cross-pipeline artifacts were referenced.
 5. **Update `status.md`** to reflect the completed stage.
 6. **Dispatch the next teammate** with only the artifacts allowed by pipeline rules.
@@ -132,34 +134,40 @@ After each teammate returns, lead MUST:
 
 ---
 
-## Handling Failures
+## Signal Handling During Handoff
 
-### On BLOCK (raised by auditor)
+Three signals, three owners, three responses. They never overlap.
 
-1. Lead reads `audit.md` to identify the failure.
-2. Lead determines the responsible teammate (usually builder, sometimes theorist).
-3. Lead respawns the responsible teammate with:
-   - The original dispatch context
-   - The `audit.md` failure details (exception: auditor routes failures WITHOUT revealing spec.md details)
-   - Instructions to fix the specific issue
-4. After the respawned teammate completes, lead re-dispatches auditor.
-5. **Pipeline isolation during respawn**: When respawning builder due to an auditor BLOCK, lead may share the specific failure description from audit.md (e.g., "function returns wrong value for input X") but MUST NOT share test-spec.md itself.
+### HOLD — Need User Input
 
-### On STOP (raised by skeptic)
+**Owner**: theorist, builder, scribe. **Status**: `HOLD`.
 
-1. Lead reads `review.md` to identify the concern.
-2. Lead determines the responsible teammate per skeptic's routing table.
-3. Lead respawns the responsible teammate with the skeptic's concern.
-4. After the fix, lead re-runs from the appropriate pipeline stage:
-   - If builder is respawned: re-run auditor, then skeptic
-   - If theorist is respawned: re-run both pipelines from scratch
-   - If auditor is respawned: re-run auditor, then skeptic
+1. Lead reads the teammate's output artifact and `mailbox.md` (`HOLD_REQUEST` messages).
+2. Lead asks the user the specific question via `AskUserQuestion`.
+3. After the user responds, lead re-dispatches the same teammate with the answer.
+4. Max 3 HOLD rounds per teammate. After 3, teammate must proceed with stated assumptions or declare the task unspecifiable.
 
-### On HOLD (raised by any teammate)
+### BLOCK — Validation Failed
 
-1. Lead reads the artifact to understand the ambiguity.
-2. Lead asks the user for clarification.
-3. After the user responds, lead respawns the teammate that raised HOLD with the clarification.
+**Owner**: auditor (exclusively). **Status**: `BLOCKED`.
+
+1. Lead reads `audit.md` to identify the failure and routing (builder, theorist, or scribe).
+2. Lead respawns the responsible upstream teammate with the failure description from `audit.md`.
+   - **Pipeline isolation**: lead may share the failure description (e.g., "function returns wrong value for input X") but MUST NOT share `test-spec.md` itself.
+3. After the fix, lead re-dispatches auditor.
+4. Max 3 BLOCK→respawn cycles. After 3, escalate to HOLD and ask user.
+
+### STOP — Quality Gate Failed
+
+**Owner**: skeptic (exclusively). **Status**: `STOPPED`.
+
+1. Lead reads `review.md` to identify the concern and routing.
+2. Lead respawns the teammate skeptic identifies.
+3. After the fix, lead re-runs from the appropriate stage:
+   - Builder respawned → re-run auditor → re-run skeptic
+   - Theorist respawned → re-run both pipelines from scratch
+   - Auditor respawned → re-run auditor → re-run skeptic
+4. Max 3 STOP→respawn cycles. After 3, escalate to HOLD and ask user.
 
 ---
 

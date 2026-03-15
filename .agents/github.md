@@ -88,7 +88,7 @@ Branch naming: use descriptive names (e.g., `fix/issue-42-null-check`, `feat/two
 
 ### Step 4 — Stage and Commit
 
-Stage only the files listed in implementation.md and docs.md:
+Stage the files listed in implementation.md, docs.md, and `architecture.md` (if it exists at the target repo root):
 ```bash
 git -C "$TARGET" add <specific-files>
 ```
@@ -178,7 +178,7 @@ When operating in patrol mode (dispatched by the issue-patrol skill):
 
 - review.md has PASS verdict before any ship action
 - Remote URL matches the user's target repository
-- Only files from implementation.md and docs.md are staged
+- Only files from implementation.md, docs.md, and architecture.md are staged
 - Commit message accurately describes the changes
 - No force-push to protected branches
 - No hooks skipped

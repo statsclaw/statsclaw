@@ -51,14 +51,24 @@ Worktree isolation gives each writing teammate its own working copy of the repos
 
 ## When NOT to Use Worktree Isolation
 
-Do **not** use worktree isolation for read-only teammates:
+Do **not** use worktree isolation for non-writing teammates:
 
-- **auditor** (runs validation commands on the existing checkout — after builder's worktree merges back)
+- **auditor** (runs validation commands on the merged checkout — see timing note below)
 - **skeptic** (reviews the evidence chain, never writes to the target repo)
 - **theorist** (produces spec artifacts, does not modify target repo files)
 - **github** (interacts with the remote via git/gh commands on the main checkout)
 
-Read-only teammates operate on the main checkout or on a worktree that a writing teammate already produced, depending on where the latest changes live.
+### Auditor Timing: Dispatch vs Execution
+
+Builder and auditor are dispatched **in the same message** (parallel dispatch), but their execution has a natural ordering:
+
+1. **Parallel phase**: Both agents start concurrently. Builder implements code in its worktree. Auditor parses `test-spec.md`, designs validation scenarios, and prepares test scripts.
+2. **Merge-back**: Builder's worktree merges back into the main checkout when it completes.
+3. **Validation phase**: Auditor runs its validation commands on the **merged checkout** containing builder's changes.
+
+In practice, the Agent tool manages this: auditor's validation commands execute against whichever state the checkout is in. If builder completes first (typical), auditor validates the new code. If auditor's validation commands run before builder merges, they validate the pre-change code — any new-feature tests will fail, and auditor will report a BLOCK that lead resolves by re-dispatching auditor after merge.
+
+The key principle: **dispatch is parallel, validation targets the merged result.** Lead should re-dispatch auditor if its initial run preceded builder's merge-back.
 
 ---
 

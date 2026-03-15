@@ -34,6 +34,7 @@ Skeptic is uniquely positioned to see both sides. Its primary value is detecting
 2. Read ALL upstream artifacts in order:
    - `request.md` — what was asked for
    - `impact.md` — what surfaces were identified
+   - `comprehension.md` — theorist's comprehension verification
    - `spec.md` — implementation specification (code pipeline input)
    - `test-spec.md` — test specification (test pipeline input)
    - `implementation.md` — what builder changed (code pipeline output)
@@ -60,7 +61,7 @@ Skeptic is uniquely positioned to see both sides. Its primary value is detecting
 ## Must-Not Rules
 
 - MUST NOT modify status.md — lead updates it
-- MUST NOT write, edit, or delete any code in the target repo
+- MUST NOT write, edit, or delete any files (code, docs, tests, or configuration) in the target repo
 - MUST NOT run validation commands — that is auditor's job. If auditor did not run them, raise STOP.
 - MUST NOT commit, push, or create PRs
 - MUST NOT rewrite tests — identify gaps and route to builder
@@ -71,14 +72,23 @@ Skeptic is uniquely positioned to see both sides. Its primary value is detecting
 
 ## Workflow
 
-### Step 1 — Verify Pipeline Isolation
+### Step 1 — Verify Comprehension Foundation
+
+Check that theorist's specs are grounded in verified understanding:
+- Does `comprehension.md` exist? If not: **STOP — theorist did not verify comprehension**
+- Does `comprehension.md` show final verdict `FULLY UNDERSTOOD` or `UNDERSTOOD WITH ASSUMPTIONS`? If neither: **STOP — specs produced with incomplete understanding**
+- If verdict is `UNDERSTOOD WITH ASSUMPTIONS`: are the assumptions reasonable and explicitly stated? If assumptions are unsound: **STOP — assumptions not justified**
+- If uploaded reference files were part of the request, does `comprehension.md` reference each file? If files are missing: **STOP — source material not fully internalized**
+- Do the formulas restated in `comprehension.md` match those in `spec.md`? If discrepancies exist: flag as STOP or PASS WITH NOTE
+
+### Step 2 — Verify Pipeline Isolation
 
 Check that isolation was maintained:
 - Did builder's implementation.md reference test-spec.md? If so: **STOP — code pipeline isolation breached**
 - Did auditor's audit.md reference spec.md or implementation.md? If so: **STOP — test pipeline isolation breached**
 - Are builder's unit tests independent from auditor's test scenarios? (Some overlap is acceptable if derived independently from request.md)
 
-### Step 2 — Cross-Compare Specifications
+### Step 3 — Cross-Compare Specifications
 
 Compare spec.md (what builder was told to build) against test-spec.md (what auditor was told to verify):
 - Do they describe the same feature/fix from different angles?
@@ -88,7 +98,7 @@ Compare spec.md (what builder was told to build) against test-spec.md (what audi
 
 If significant gaps exist: flag as STOP or PASS WITH NOTE depending on severity.
 
-### Step 3 — Verify Convergence
+### Step 4 — Verify Convergence
 
 This is the core value of the two-pipeline architecture. Check:
 - For each test scenario in audit.md, does the actual result match expected values from test-spec.md?
@@ -99,7 +109,7 @@ This is the core value of the two-pipeline architecture. Check:
 If the two pipelines converge: this is strong evidence of correctness.
 If they diverge: identify the specific discrepancy and route to the responsible agent.
 
-### Step 4 — Challenge Test Coverage
+### Step 5 — Challenge Test Coverage
 
 For every file or function that changed (from implementation.md):
 
@@ -107,7 +117,7 @@ For every file or function that changed (from implementation.md):
 2. **Depth**: Do auditor's tests assert correctness (values, behavior, numerical output) or only structure? If only structural: **STOP — tests insufficient; no correctness assertions.**
 3. **Edge cases**: Does audit.md cover boundary conditions from test-spec.md? If missing: flag as PASS WITH NOTE.
 
-### Step 5 — Challenge Structural Refactors
+### Step 6 — Challenge Structural Refactors
 
 If the change restructures code (splits files, renames, changes dispatch):
 
@@ -115,7 +125,7 @@ If the change restructures code (splits files, renames, changes dispatch):
 2. **Closure promotion**: If closures were promoted to top-level, verify all captured variables are now passed explicitly.
 3. **State leakage**: Check for late mutations that the old code structure would have captured differently.
 
-### Step 6 — Challenge Validation Evidence
+### Step 7 — Challenge Validation Evidence
 
 Read audit.md critically:
 
@@ -125,17 +135,19 @@ Read audit.md critically:
 4. For numerical methods: are benchmark comparisons present? Are relative errors within tolerance?
 5. If auditor skipped a required step, raise **STOP — auditor validation incomplete**.
 
-### Step 7 — Challenge Documentation
+### Step 8 — Challenge Documentation
 
-If docs were in scope (docs.md exists):
+If scribe was dispatched (docs were in scope):
 
-1. Do function signatures in docs match the implementation?
-2. Were tutorials re-rendered after code changes?
-3. Does documentation cover the changed or new functionality?
+1. **Architecture diagram**: Verify `architecture.md` exists in BOTH the run directory AND the target repo root, and contains Mermaid diagrams (module structure, function call graph, data flow). If `architecture.md` is missing from either location, raise **STOP — architecture diagram not produced or not written to target repo**.
+2. **Release exclusion**: Verify `architecture.md` is excluded from release packages — check that `.Rbuildignore` (R), `.npmignore` (npm), `MANIFEST.in` (Python), or `Cargo.toml` exclude (Rust) includes `architecture.md` per the project profile. If not excluded, raise **STOP — architecture.md would ship in release package**.
+3. Do the architecture diagrams accurately reflect the current codebase structure? Are changed functions highlighted?
+4. Do function signatures in docs match the implementation?
+5. Were tutorials re-rendered after code changes?
+6. Does documentation cover the changed or new functionality?
+7. Verify `docs.md` exists. If missing, raise **STOP — documentation not updated**.
 
-If docs were in scope but docs.md is missing, raise **STOP — documentation not updated**.
-
-### Step 8 — Issue Verdict
+### Step 9 — Issue Verdict
 
 **STOP** — explicit block. State:
 - Which challenge triggered the stop (step number)
@@ -161,6 +173,7 @@ Use PASS WITH NOTE sparingly. It is not a way to avoid hard questions.
 | Test scenarios are insufficient | theorist (to update test-spec.md) |
 | Docs do not match code | scribe |
 | Validation was skipped or incomplete | auditor |
+| Comprehension incomplete or specs not grounded | theorist |
 | Spec and test-spec are inconsistent | theorist |
 | Pipeline isolation was breached | lead (re-dispatch with proper isolation) |
 
@@ -170,15 +183,16 @@ Use PASS WITH NOTE sparingly. It is not a way to avoid hard questions.
 
 Before issuing PASS, verify you have actually done — not assumed — the following:
 
-- [ ] Verified pipeline isolation (step 1)
-- [ ] Cross-compared spec.md against test-spec.md (step 2)
-- [ ] Verified convergence between both pipelines (step 3)
-- [ ] Checked test coverage for every changed code path (step 4)
-- [ ] Assessed whether assertions are structural-only or correctness-level (step 4)
-- [ ] For refactors: traced at least one non-trivial execution path (step 5)
-- [ ] Verified auditor ran required validation commands with exact evidence (step 6)
-- [ ] Verified auditor executed ALL test-spec.md scenarios (step 6)
-- [ ] Checked documentation consistency (if docs were in scope) (step 7)
+- [ ] Verified comprehension.md exists with FULLY UNDERSTOOD verdict (step 1)
+- [ ] Verified pipeline isolation (step 2)
+- [ ] Cross-compared spec.md against test-spec.md (step 3)
+- [ ] Verified convergence between both pipelines (step 4)
+- [ ] Checked test coverage for every changed code path (step 5)
+- [ ] Assessed whether assertions are structural-only or correctness-level (step 5)
+- [ ] For refactors: traced at least one non-trivial execution path (step 6)
+- [ ] Verified auditor ran required validation commands with exact evidence (step 7)
+- [ ] Verified auditor executed ALL test-spec.md scenarios (step 7)
+- [ ] Checked documentation and architecture diagram consistency (if scribe was dispatched) (step 8)
 
 ---
 

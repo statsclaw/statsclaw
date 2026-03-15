@@ -37,7 +37,7 @@ Each message follows this exact format:
 ---
 **Timestamp:** YYYY-MM-DD HH:MM UTC
 **From:** <agent-name>
-**Type:** INFO | BLOCKER | INTERFACE_CHANGE
+**Type:** INFO | HOLD_REQUEST | INTERFACE_CHANGE
 **Subject:** <one-line summary>
 
 <message body — as concise as possible>
@@ -48,8 +48,20 @@ Each message follows this exact format:
 | Type | Meaning | Action Required |
 | --- | --- | --- |
 | `INFO` | Non-blocking observation or note for downstream teammates | Lead reads and forwards if relevant |
-| `BLOCKER` | The sender cannot continue without resolution | Lead must address before dispatching downstream work |
+| `HOLD_REQUEST` | The sender cannot continue without user input — corresponds to a HOLD signal | Lead must ask the user the specific question before dispatching downstream work |
 | `INTERFACE_CHANGE` | A function signature, file path, export, or API surface changed in a way that affects other teammates | Lead must notify affected downstream teammates in their dispatch prompt |
+
+### Relationship to Workflow Signals
+
+Mailbox message types are **not** workflow signals. They are communication records. The mapping:
+
+| Mailbox Type | Corresponding Signal | Who Acts |
+| --- | --- | --- |
+| `HOLD_REQUEST` | HOLD (raised by the teammate) | Lead asks user, re-dispatches teammate |
+| `INFO` | (none — no signal raised) | Lead reads and optionally forwards |
+| `INTERFACE_CHANGE` | (none — no signal raised) | Lead includes in downstream dispatch |
+
+Note: BLOCK and STOP are NOT mailbox types. They are verdicts written directly in `audit.md` (BLOCK) and `review.md` (STOP). The mailbox is for inter-teammate communication, not for verdict delivery.
 
 ---
 
@@ -57,17 +69,18 @@ Each message follows this exact format:
 
 Teammates SHOULD write to the mailbox when:
 
-- They discover that an upstream artifact is incomplete or ambiguous but can work around it
-- They change a function signature, file name, or export that downstream teammates depend on
-- They encounter a blocker that prevents completing their assigned task
-- They make a judgment call not covered by the spec and want to document it for the skeptic
-- They notice an out-of-scope issue that should be addressed in a future run
+- They need user input to continue (type: `HOLD_REQUEST`)
+- They change a function signature, file name, or export that downstream teammates depend on (type: `INTERFACE_CHANGE`)
+- They discover an upstream artifact is incomplete but can work around it (type: `INFO`)
+- They make a judgment call not covered by the spec and want to document it for skeptic (type: `INFO`)
+- They notice an out-of-scope issue for a future run (type: `INFO`)
 
 Teammates SHOULD NOT use the mailbox for:
 
 - Routine progress updates (the output artifact covers this)
 - Duplicating information already in their output artifact
 - Communicating directly with the user (only lead talks to the user)
+- Delivering BLOCK or STOP verdicts (those go in audit.md and review.md)
 
 ---
 
@@ -77,7 +90,7 @@ After each teammate completes, lead MUST:
 
 1. Read the teammate's output artifact.
 2. Read `mailbox.md` for any new messages since the last check.
-3. If a `BLOCKER` message exists, address it before dispatching the next teammate.
+3. If a `HOLD_REQUEST` message exists, forward the question to the user via `AskUserQuestion` before dispatching downstream work.
 4. If an `INTERFACE_CHANGE` message exists, include the change details in the dispatch prompt for any affected downstream teammate.
 5. If an `INFO` message is relevant to downstream work, summarize it in the next dispatch prompt.
 
@@ -96,9 +109,9 @@ The function `calc_stats()` in `src/stats.R` was renamed to `compute_statistics(
 
 ---
 **Timestamp:** 2026-03-13 14:45 UTC
-**From:** auditor
-**Type:** BLOCKER
-**Subject:** Test suite requires fixture file not present in repo
+**From:** theorist
+**Type:** HOLD_REQUEST
+**Subject:** Undefined symbol in equation (3)
 
-`tests/test_regression.py` references `fixtures/sample_data.csv` which does not exist. Cannot run validation suite. Builder needs to either create the fixture or update the test.
+In equation (3) of the uploaded PDF, the symbol $\hat\Sigma$ is used but never defined. Is this: (a) the sample covariance matrix $X'X/N$, (b) the residual covariance $\hat{e}\hat{e}'/N$, or (c) something else? Its dimension ($N \times N$ vs $T \times T$) also needs clarification.
 ```

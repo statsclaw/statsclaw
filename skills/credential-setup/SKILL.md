@@ -81,12 +81,14 @@ Once a working method is found:
 
 ### For PAT / Token:
 ```bash
-# Configure git remote with token
-git remote set-url origin "https://<TOKEN>@github.com/<owner>/<repo>.git"
-
-# Configure gh CLI
+# Configure gh CLI (preferred — token stays in gh's secure store)
 echo "<TOKEN>" | gh auth login --with-token
+
+# Configure git remote with token (fallback — stores token in .git/config plaintext)
+git remote set-url origin "https://<TOKEN>@github.com/<owner>/<repo>.git"
 ```
+
+**Security note**: Embedding the token in the remote URL stores it in `.git/config` in plaintext. Prefer `gh auth login` when possible, which uses a secure credential store. If the token-in-URL method is used, it only persists in the local checkout and is not committed.
 
 ### For SSH:
 ```bash
@@ -101,14 +103,19 @@ git remote set-url origin "git@github.com:<owner>/<repo>.git"
 After configuration, ALWAYS verify:
 
 ```bash
-# Test git access
+# Test git access (read access — confirms auth works)
 git ls-remote origin 2>&1
+
+# Test write access (preferred — confirms push ability)
+git push --dry-run origin HEAD 2>&1
 
 # Test gh CLI access
 gh repo view <owner/repo> --json name 2>&1
 ```
 
-Both must succeed. If either fails, retry with the next method or ask the user.
+**Note**: `git ls-remote` only confirms **read** access. A read-only token will pass `git ls-remote` but fail on push. Use `git push --dry-run` when possible to confirm write access. If `--dry-run` is not feasible (e.g., no commits yet), proceed with `git ls-remote` and note in `credentials.md` that write access is unconfirmed until first push.
+
+Both `git ls-remote` (or `git push --dry-run`) and `gh repo view` must succeed. If either fails, retry with the next method or ask the user.
 
 ---
 
@@ -130,7 +137,8 @@ Timestamp: <YYYY-MM-DD HH:MM>
 <exact output>
 
 ## Permissions Verified
-- [x] Push access (git ls-remote)
+- [x] Read access (git ls-remote)
+- [ ] Write access (git push --dry-run — check if confirmed, or deferred to first real push)
 - [x] Issue access (gh issue list)
 - [x] PR access (gh pr list)
 ```

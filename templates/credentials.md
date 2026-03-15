@@ -3,7 +3,7 @@
 ```
 Target Repository: [owner/repo]
 Remote URL Tested: [url]
-Method: [PAT / SSH / proxy / none]
+Method: [PAT / SSH / gh-cli / env-token]
 Test Command: git ls-remote [url]
 Result: [PASS / FAIL]
 Timestamp: [YYYY-MM-DD HH:MM]
