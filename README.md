@@ -12,7 +12,7 @@ All runtime state is local under `.statsclaw/` and ignored by git.
 - `.agents/` — agent definitions (lead, theorist, builder, auditor, scribe, skeptic, github)
 - `skills/` — shared protocol skills (credential-setup, isolation, handoff, mailbox, issue-patrol, profile-detection)
 - `profiles/` — language-specific execution rules (R, Python, TypeScript, Stata, Go, Rust)
-- `templates/` — runtime artifact templates (context, package, status, credentials, mailbox, lock)
+- `templates/` — runtime artifact templates (context, package, status, credentials, mailbox, lock, log-entry, architecture)
 
 Agent Teams is enabled at the project level through `.claude/settings.json`.
 
