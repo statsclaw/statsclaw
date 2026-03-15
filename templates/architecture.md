@@ -10,19 +10,12 @@
 
 ## Module Structure
 
-<!--
-  LAYOUT RULES:
-  - Max 3 nodes per horizontal row
-  - Subgraphs MUST stack vertically (use ~~~ invisible edges)
-  - If >20 nodes total, split into multiple diagrams (one per layer)
-  - Diagram MUST be taller than it is wide when rendered
--->
-
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
 graph TD
     subgraph API["API Layer"]
         A1["module — entry point"]
+        A2["module — alt entry"]
     end
 
     subgraph Core["Core Logic"]
@@ -38,12 +31,9 @@ graph TD
         U1["module — shared helpers"]
     end
 
-    API ~~~ Core
-    Core ~~~ Data
-    Data ~~~ Utils
-
     A1 --> C1
     A1 --> C2
+    A2 --> C1
     C1 --> D1
     C1 --> U1
     C2 --> U1
@@ -51,7 +41,7 @@ graph TD
     style A1 fill:#1e90ff,stroke:#1565c0,color:#fff
 ```
 
-> Blue fill = modified in this run. Subgraphs are stacked vertically by layer.
+> One unified diagram. Subgraph layers group related modules. Blue fill = modified in this run. If a layer has >5 modules, show key ones here and list the rest in the table below.
 
 ### Module Reference
 
@@ -66,13 +56,6 @@ graph TD
 
 ## Function Call Graph
 
-<!--
-  LAYOUT RULES:
-  - Max 3 nodes per horizontal row
-  - If a node has >3 children, use invisible routing nodes to split into rows
-  - Keep the graph narrow and tall
--->
-
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
 graph TD
@@ -86,7 +69,7 @@ graph TD
     style int1 fill:#1e90ff,stroke:#1565c0,color:#fff
 ```
 
-> Blue nodes = changed. Trace from public entry points down to leaf operations. Max 3 nodes per row.
+> Blue nodes = changed. Trace from public entry points down to leaf operations. Split into sub-diagrams only when the full graph exceeds ~25 nodes.
 
 ### Function Reference
 
@@ -99,26 +82,22 @@ graph TD
 
 ## Data Flow
 
-<!--
-  LAYOUT RULES:
-  - MUST be a single vertical chain (graph TD)
-  - NEVER horizontal (graph LR)
-  - Branches rejoin quickly (max 2 nodes wide)
--->
-
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
 graph TD
-    Input["User Input"] --> Validate["Validation"]
-    Validate --> Process["Core Processing"]
-    Process --> Transform["Compute"]
-    Transform --> Output["Result Object"]
-    Output --> Display["Return / Print"]
+    Input["User Input"] --> Parse["Parse + Validate"]
+    Parse --> Transform["Transform Data"]
+    Transform --> Branch{{"Decision?"}}
+    Branch -- yes --> StepA["Process A"]
+    Branch -- no --> StepB["Process B"]
+    StepA --> Merge["Merge Results"]
+    StepB --> Merge
+    Merge --> Output["Return Result"]
 
-    style Process fill:#1e90ff,stroke:#1565c0,color:#fff
+    style Transform fill:#1e90ff,stroke:#1565c0,color:#fff
 ```
 
-> Vertical chain from input to output. Blue nodes = changed in this run.
+> Vertical flowchart. Diamond nodes for decision points. Branches rejoin quickly. Blue = changed in this run.
 
 ---
 

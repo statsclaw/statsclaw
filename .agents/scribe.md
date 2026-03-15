@@ -86,60 +86,26 @@ Use this structure:
 ## System Architecture
 
 ### Module Structure
-<Mermaid graph TD (vertical) showing directories/modules and their relationships>
+<Mermaid graph TD — one unified diagram with subgraph layers containing all modules>
 
 ### Function Call Graph
-<Mermaid graph TD (vertical) showing key function call chains, highlighting changed functions>
+<Mermaid graph TD — call chains from public entry points to leaf functions>
 
 ### Data Flow
-<Mermaid graph TD (vertical) showing how data flows through the system>
+<Mermaid graph TD — vertical flowchart with decision diamonds for branches>
 ```
 
-**CRITICAL style rules**:
-- ALL graphs MUST use `graph TD` (top-down vertical). NEVER use `graph LR` (horizontal)
-- ALL graphs MUST begin with `%%{init: {'theme': 'neutral'}}%%` for dark/light mode compatibility
-- Changed nodes: `style NODE fill:#1e90ff,stroke:#1565c0,color:#fff` (blue). NEVER use `fill:#f9f` (pink)
-- Do NOT set custom subgraph background colors — let the neutral theme handle it
-- Keep node labels concise (max ~25 chars) to prevent overflow
+**Style rules**:
+- ALL graphs: `graph TD` with `%%{init: {'theme': 'neutral'}}%%`. Never `graph LR`.
+- Changed nodes: `style NODE fill:#1e90ff,stroke:#1565c0,color:#fff`. Never pink `#f9f`.
+- Node labels: max ~25 chars. Full names go in the reference table.
+- No custom subgraph background colors — let the neutral theme handle it.
 
-**CRITICAL width-control rules (MUST follow — diagrams that are wider than they are tall are REJECTED)**:
+**Layout rules per diagram type**:
 
-Mermaid's `graph TD` only controls edge direction — sibling nodes at the same depth still spread **horizontally**. You MUST actively prevent wide layouts:
-
-1. **Max 3 nodes per horizontal row.** If a parent has more than 3 children, split them into groups using invisible intermediate nodes:
-   ```mermaid
-   %% BAD — 6 children spread wide:
-   Parent --> A & B & C & D & E & F
-
-   %% GOOD — chain through invisible routing nodes:
-   Parent --> row1:::hidden
-   Parent --> row2:::hidden
-   row1 --> A
-   row1 --> B
-   row1 --> C
-   row2 --> D
-   row2 --> E
-   row2 --> F
-   classDef hidden display:none;
-   ```
-   Or simply chain them vertically: `A --> B --> C --> D` when the order is meaningful (e.g., data flow).
-
-2. **Split large diagrams.** If a single diagram would have more than ~20 nodes, split it into multiple focused diagrams (e.g., one per layer or subsystem) with a short prose bridge between them. Do NOT cram everything into one giant graph.
-
-3. **Subgraphs stack vertically.** When using subgraphs for layers, add a hidden edge between subgraphs to force vertical stacking:
-   ```mermaid
-   subgraph API["API Layer"]
-       A1
-   end
-   subgraph Core["Core Logic"]
-       C1
-   end
-   API ~~~ Core  %% invisible edge forces vertical stacking
-   ```
-
-4. **Data Flow MUST be a single vertical chain.** Data flow is sequential by nature. Use `graph TD` with a simple top-to-bottom chain. NEVER lay it out as a wide horizontal pipeline. If there are branches, keep them short (max 2 nodes wide) before rejoining.
-
-5. **The finished diagram MUST be taller than it is wide** when rendered. If you find yourself with more horizontal spread than vertical depth, restructure.
+- **Module Structure**: One cohesive `graph TD` with subgraph layers (API, Core, Utils, etc.) containing their modules. Keep modules grouped inside subgraphs — do NOT split layers into separate diagrams. Edges between modules show dependencies. If a layer has many modules (>5), show only the key ones in the graph and list the rest in the reference table.
+- **Function Call Graph**: `graph TD` tracing public → internal → leaf. If a node has many children, group them into rows of 3–4 using intermediate routing. Split into "Main Pipeline" + "Detail" sub-diagrams only when the full graph exceeds ~25 nodes.
+- **Data Flow**: Vertical flowchart (`graph TD`). Use `{Decision?}` diamond shapes for branches. Keep it a narrow chain — branches rejoin quickly (max 2 nodes wide before merging back). Never a wide horizontal pipeline.
 
 #### 1c. Annotate the Diagram
 
@@ -174,17 +140,12 @@ Save the architecture diagram to **TWO locations**:
 **Use the template at `templates/architecture.md` for consistent formatting across all runs.** The template defines the exact section order, Mermaid graph types, table schemas, and styling conventions.
 
 Key formatting rules (from the template):
-- **All diagrams**: MUST start with `%%{init: {'theme': 'neutral'}}%%` for dark/light mode compatibility
-- **All diagrams**: MUST use `graph TD` (top-down vertical layout). NEVER use `graph LR`
-- **Width control**: Max 3 nodes per horizontal row. If more siblings exist, use invisible routing nodes or split into separate diagrams. The diagram MUST be taller than it is wide.
-- **Module Structure**: `graph TD` with subgraph layers stacked vertically (use `~~~` invisible edges between subgraphs). Split into multiple diagrams if >20 nodes.
-- **Function Call Graph**: `graph TD` tracing public → internal → leaf. Max 3 nodes per row.
-- **Data Flow**: `graph TD` as a single vertical chain. NEVER a wide horizontal pipeline.
-- **Changed nodes**: `style NODE fill:#1e90ff,stroke:#1565c0,color:#fff` (blue). NEVER use pink (`#f9f`)
-- **Subgraph backgrounds**: use default neutral theme colors only — do NOT set custom fill colors
-- **Node labels**: max ~25 chars. Use abbreviations; put full names in the reference table
-- **Reference tables**: every diagram has a companion table below it
-- **Overview**: one paragraph summarizing purpose, language, framework, and key dependencies
+- All diagrams: `graph TD` + `%%{init: {'theme': 'neutral'}}%%`. Never `graph LR`.
+- Changed nodes: `fill:#1e90ff,stroke:#1565c0,color:#fff`. Never pink.
+- Module Structure: one unified diagram with subgraph layers containing modules (not split apart).
+- Function Call Graph: top-down call chains, split into sub-diagrams only if >25 nodes.
+- Data Flow: vertical flowchart with `{decision?}` diamonds. Narrow chain, not wide pipeline.
+- Node labels max ~25 chars. Every diagram has a companion reference table.
 
 **Quality bar**: A reader who has never seen the codebase should be able to understand the overall structure, find any function, and trace how a request flows through the system just from this diagram.
 
