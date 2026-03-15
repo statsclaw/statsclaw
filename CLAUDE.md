@@ -42,16 +42,19 @@ This section is the entry point for every non-trivial user request. You MUST fol
 3. **CREATE RUN**: Generate a request ID. Create `.statsclaw/runs/<request-id>/`. Write `request.md` (scope, acceptance criteria, target repo identity). Write `status.md` with state `NEW`.
 4. **VERIFY CREDENTIALS**: Follow `skills/credential-setup/SKILL.md` for the auto-detection sequence.
    - a. **Auto-detect** credentials: check `GITHUB_TOKEN` env → `gh auth status` → SSH → git credential helper (in order).
-   - b. If any method succeeds, configure it and test with a **write-access probe**: attempt `git push --dry-run` or fall back to `git ls-remote <remote-url>` (note: `git ls-remote` only confirms read access; write access is fully confirmed on the first real push).
-   - c. **Only if ALL auto-detection fails**, use `AskUserQuestion` to ask the user for a GitHub Personal Access Token (PAT) or SSH key.
-   - d. Once credentials work, write `credentials.md` to the run directory recording: remote URL tested, method used (PAT/SSH/gh-cli/env-token), timestamp, and result (PASS/FAIL). Update `status.md` to `CREDENTIALS_VERIFIED`.
-   - e. Record the credential status in the package context under `.statsclaw/packages/`.
-   - **ENFORCEMENT**: Steps 5–9 are INVALID without a `credentials.md` showing PASS. If you find yourself planning or dispatching teammates without confirmed push access, STOP and return to step 4.
+   - b. If any method succeeds, **configure the target repo's git remote** with the working credential (e.g., `git remote set-url origin "https://x-access-token:<TOKEN>@github.com/<owner>/<repo>.git"`). Then test with a **write-access probe on the target repo**: attempt `git push --dry-run origin <branch>` in the target repo checkout. `git ls-remote` only confirms read access — prefer `push --dry-run` for write confirmation.
+   - c. **CRITICAL: The write-access probe MUST target the actual target repository**, not a proxy, not the StatsClaw repo, not any other repo. A PASS on a different repo does NOT satisfy this gate.
+   - d. **Only if ALL auto-detection fails**, use `AskUserQuestion` to ask the user for a GitHub Personal Access Token (PAT) or SSH key.
+   - e. Once credentials work, write `credentials.md` to the run directory recording: remote URL tested, method used (PAT/SSH/gh-cli/env-token), timestamp, and result (PASS/FAIL). Update `status.md` to `CREDENTIALS_VERIFIED`.
+   - f. Record the credential status in the package context under `.statsclaw/packages/`.
+   - **ENFORCEMENT**: Steps 5–9 are INVALID without a `credentials.md` showing PASS **against the target repo**. If you find yourself planning or dispatching teammates without confirmed push access to the target repo, STOP and return to step 4.
 5. **LEAD PLANNING**: Read `.agents/lead.md`. Act as `lead`. Explore the target repository to identify affected surfaces. Write `impact.md` (affected files, risk areas, required teammates). Identify the profile from `profiles/`. Update `status.md` to `PLANNED`.
 6. **DISPATCH TEAMMATES (Two-Pipeline Architecture)**: See "Agent Teams Model" below for the architecture. Dispatch per the selected workflow:
    - a. **theorist** — ALWAYS dispatched for non-trivial requests. **MANDATORY when the user uploads files** (PDF, Word, txt, tex, images with formulas) — these contain primary source material that theorist must deeply comprehend before any specs are produced. Pass ALL uploaded file paths in the dispatch prompt. Theorist produces `comprehension.md` (verification of understanding), `spec.md` (code pipeline), and `test-spec.md` (test pipeline). **If theorist raises HOLD with comprehension questions, lead MUST forward them to the user via `AskUserQuestion` and re-dispatch theorist with the answers. Iterate until theorist confirms FULLY UNDERSTOOD.** Update status to `SPEC_READY`.
    - b. **builder + auditor IN PARALLEL** — After theorist completes, dispatch BOTH in the SAME message. Builder gets `spec.md` ONLY. Auditor gets `test-spec.md` ONLY. Update status to `PIPELINES_COMPLETE` after BOTH complete.
-   - c. **scribe** — ONLY if docs are in scope. Dispatch **AFTER builder completes** (scribe reads `implementation.md`). Dispatch with `isolation: "worktree"`. Produces `architecture.md` (mandatory, written to BOTH target repo root AND run directory) and `docs.md`. Update status to `DOCUMENTED`.
+   - c. **scribe** — Dispatch **AFTER builder completes** (scribe reads `implementation.md`). Dispatch with `isolation: "worktree"`. Produces `architecture.md` (mandatory, written to BOTH target repo root AND run directory) and `docs.md`. Update status to `DOCUMENTED`.
+      - **When to dispatch scribe**: Scribe is MANDATORY for any request that creates new files, deletes files, moves code between files, changes module boundaries, or touches 5+ files. Scribe is OPTIONAL only for small, localized changes (bug fix in a single file, config tweak). When in doubt, dispatch scribe — the architecture.md is always valuable.
+      - **CRITICAL**: If the request involves refactoring, restructuring, deduplication across files, or creating new utility modules, scribe MUST be dispatched. These changes alter the architecture and MUST be documented.
    - d. **skeptic** — ALWAYS dispatched after both pipelines complete (and scribe, if dispatched). Reads ALL artifacts. Produces `review.md` with verdict. Update status to `REVIEW_PASSED` or `STOPPED`.
    - e. **github** — ONLY if the user asked to ship, or issue-patrol is active. Produces `github.md`.
    - **PIPELINE ISOLATION**: builder NEVER receives `test-spec.md`. Auditor NEVER receives `spec.md` or `implementation.md`. See `skills/isolation/SKILL.md`.
@@ -69,7 +72,7 @@ Short prompts MUST work. A user message like "Work on https://github.com/foo/bar
 | Target State | Precondition | Verification |
 | --- | --- | --- |
 | `CREDENTIALS_VERIFIED` | `credentials.md` exists with result PASS | Read the file, confirm PASS is present |
-| `CREDENTIALS_VERIFIED` | Access to target repo confirmed | `git push --dry-run` or `git ls-remote` succeeded during step 4 |
+| `CREDENTIALS_VERIFIED` | Write access to **target repo** confirmed | `git push --dry-run` succeeded **in the target repo checkout** during step 4 (not in StatsClaw or any other repo) |
 | `PLANNED` | `request.md` and `impact.md` exist and are non-empty | Read the files |
 | `SPEC_READY` | `comprehension.md`, `spec.md`, AND `test-spec.md` all exist | Read all three file paths |
 | `SPEC_READY` | Theorist was dispatched via `Agent` tool | Agent tool call must exist in conversation |
@@ -105,6 +108,8 @@ Before EVERY tool call, `lead` MUST check whether the action belongs to a teamma
 | Review diffs or evidence chains to decide ship safety | `skeptic` |
 | Read target repo source files after `impact.md` is written | the relevant teammate |
 | Create branches, tags, or releases on target repo | `github` |
+| Fix code bugs found by auditor (even "trivial" ones) | `builder` (respawn) |
+| Run `R CMD check`, `pytest`, etc. to verify fixes | `auditor` (re-dispatch) |
 
 **Concrete rule**: `lead` may use `Read`, `Grep`, `Glob` on the target repo ONLY during step 5 (LEAD PLANNING) to write `impact.md`. After `impact.md` is written, all further target-repo interaction MUST go through dispatched teammates.
 
@@ -216,7 +221,7 @@ StatsClaw uses Agent Teams exclusively. You are the Team Lead (`lead`). You MUST
 
 **Mandatory teammates** (never skip for non-trivial requests): theorist, builder, auditor, skeptic.
 
-**Conditional teammates**: scribe (docs in scope), github (ship requested).
+**Conditional teammates**: scribe (see dispatch criteria in step 6c — mandatory for multi-file or structural changes), github (ship requested).
 
 Each agent's full workflow, allowed reads/writes, and must-not rules are defined in its `.agents/*.md` file. Pipeline isolation rules are in `skills/isolation/SKILL.md`. Artifact handoff rules are in `skills/handoff/SKILL.md`.
 
@@ -228,8 +233,8 @@ Each agent's full workflow, allowed reads/writes, and must-not rules are defined
 
 | # | Name | Trigger | Agent Sequence |
 | --- | --- | --- | --- |
-| 1 | Standard | Code change, no ship | `lead → theorist → [builder ∥ auditor] → skeptic` |
-| 2 | With Docs | Code change + docs | `lead → theorist → [builder ∥ auditor] → scribe → skeptic` |
+| 1 | Standard | Small code change (≤4 files, no structural change) | `lead → theorist → [builder ∥ auditor] → skeptic` |
+| 2 | With Docs | Code change + docs, OR structural change (≥5 files, new/deleted files, refactoring) | `lead → theorist → [builder ∥ auditor] → scribe → skeptic` |
 | 3 | With Ship | Code change + ship | `lead → theorist → [builder ∥ auditor] → skeptic → github` |
 | 4 | Issue Patrol | Scan + fix multiple issues | `lead scans → per issue: theorist → [builder ∥ auditor] → skeptic → github` |
 | 5 | Single Issue | Fix one named issue | `lead → theorist → [builder ∥ auditor] → skeptic → github` (ship is implicit — fixing an issue implies pushing the fix) |
@@ -256,7 +261,8 @@ Route semantically from intent. Do **not** require the user to learn trigger phr
 
 | User intent | Workflow |
 | --- | --- |
-| any non-trivial code request | 1–3 (full pipeline) |
+| small code change (≤4 files, no structural change) | 1 or 3 (standard pipeline) |
+| structural change (≥5 files, refactoring, new/deleted modules) | 2 or 3 (pipeline with scribe) |
 | "patrol issues" / "check issues and fix" / "auto-fix" | 4 (issue patrol) |
 | "fix issue #N" | 5 (single issue fix) |
 | "check" / "validate" / "run tests" | 6 (auditor only) |
@@ -295,7 +301,7 @@ StatsClaw uses exactly **three** workflow signals. Each signal has one exclusive
 | Signal | Exclusive Owner | When Raised | Status Set To | Lead Response |
 | --- | --- | --- | --- | --- |
 | **HOLD** | theorist, builder, scribe, github | Cannot proceed without user input: undefined symbol, ambiguous spec, conflicting API, unclear requirement, permission/access issue | `HOLD` | Pause run. Forward the specific question to user via `AskUserQuestion`. Re-dispatch the same teammate with the answer. |
-| **BLOCK** | auditor (only) | Validation failed: tests fail, checks produce errors/warnings, numerical results outside tolerance | `BLOCKED` | Read `audit.md` failure details. Respawn the responsible upstream teammate (usually builder). After fix, re-dispatch auditor. |
+| **BLOCK** | auditor (only) | Validation failed: tests fail, checks produce errors/warnings, numerical results outside tolerance | `BLOCKED` | Read `audit.md` failure details. **Respawn the responsible upstream teammate** (usually builder) via `Agent` tool — lead MUST NOT fix the code directly. After teammate fix, re-dispatch auditor. |
 | **STOP** | skeptic (only) | Quality gate failed: pipelines diverge, isolation breached, coverage gaps, unsafe to ship | `STOPPED` | Read `review.md` routing. Respawn the teammate skeptic identifies. Re-run affected pipeline(s), then re-dispatch skeptic. |
 
 ### Key Distinctions
@@ -317,6 +323,18 @@ HOLD:   teammate → lead → AskUserQuestion → user answers → lead re-dispa
 BLOCK:  auditor → lead → respawn builder/theorist → re-dispatch auditor → continue
 STOP:   skeptic → lead → respawn per routing table → re-run pipeline(s) → re-dispatch skeptic
 ```
+
+### BLOCK Handling Protocol (Detailed)
+
+When auditor issues BLOCK, lead MUST follow this exact sequence:
+
+1. **Read `audit.md`** — identify every failing check and the routing (which upstream teammate to respawn).
+2. **Respawn the upstream teammate via `Agent` tool** — pass the failure details from `audit.md` as context. The respawned teammate fixes the code.
+3. **NEVER fix code directly** — even if the fix seems trivial (a typo, a syntax error, a missed pattern). Lead MUST NOT use `Edit`, `Write`, `sed`, or any tool to modify target repo files. This rule has NO exceptions. The reason: lead lacks the full context of what the builder changed and may introduce new bugs (as demonstrated by incorrect `$!converged` and `show.uniform.isTRUE(CI)` patterns when lead attempted direct fixes).
+4. **After the respawned teammate completes**, re-dispatch auditor to re-validate.
+5. **If auditor blocks again**, repeat from step 1 (max 3 cycles).
+
+**Why this matters**: When lead directly edits target repo files to "quickly fix" builder bugs, it bypasses the two-pipeline verification model. The fix itself may be incorrect (lead doesn't run validation), and it creates an audit gap where changes exist that no teammate authored or verified.
 
 ---
 
