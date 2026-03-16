@@ -103,31 +103,25 @@ theorist
 
 ```
 theorist
-├── spec.md ──────────→ scribe (implementer + recorder)
-│                           │
-│                           ├── documentation changes
-│                           ├── implementation.md
-│                           ├── architecture.md, log/, docs.md
-│                           │
-│                           ▼
-└── test-spec.md ─────→ auditor (validates docs build)
+└── spec.md ──────────→ scribe (implementer + recorder)
                             │
-                            └── audit.md
-                                   │
-                                   ▼
-                               skeptic (convergence)
-                                   │
-                                   ▼
-                                github
+                            ├── documentation changes
+                            ├── implementation.md
+                            ├── architecture.md, log/, docs.md
+                            │
+                            ▼
+                        skeptic (convergence)
+                            │
+                            ▼
+                         github
 ```
 
 **Key properties:**
-1. Theorist produces TWO artifacts (not one)
+1. Theorist produces specs (only `spec.md` is used in docs-only; `test-spec.md` is unused)
 2. **Code workflows**: builder ∥ auditor in parallel, then scribe records
-3. **Docs-only**: scribe replaces builder as implementer, then auditor validates sequentially
-4. Neither implementer (builder/scribe) nor auditor sees the other's spec
-5. Scribe is MANDATORY — the single owner of all documentation and recording
-6. Skeptic is the convergence agent that cross-compares all outputs
+3. **Docs-only**: scribe replaces builder as implementer. No auditor — docs don't need testing. Skeptic reviews directly.
+4. Scribe is MANDATORY — the single owner of all documentation and recording
+5. Skeptic is the convergence agent that cross-compares all outputs
 
 ---
 
@@ -152,12 +146,7 @@ theorist
 **Theorist → Scribe (Implementer + Recorder)**
 - Lead passes: `spec.md`, `request.md`, `impact.md`, `mailbox.md`, `comprehension.md`
 - Scribe receives `spec.md` as the implementer (replaces builder). Implements documentation AND produces recording artifacts.
-- Lead MUST NOT pass: `test-spec.md`
-
-**Scribe → Auditor (Validation)**
-- Lead passes: `test-spec.md`, `request.md`, `impact.md`, `mailbox.md`
-- Auditor validates docs build from `test-spec.md`. Sequential — dispatched AFTER scribe completes.
-- Lead MUST NOT pass: `spec.md`
+- No auditor is dispatched — docs don't need testing. Skeptic reviews directly after scribe.
 
 ### All Workflows
 
@@ -182,15 +171,14 @@ After each teammate returns, lead MUST:
 6. **Dispatch the next teammate** with only the artifacts allowed by pipeline rules.
 
 ### After Theorist Completes:
-- Verify BOTH `spec.md` AND `test-spec.md` exist
+- Verify `spec.md` exists (and `test-spec.md` for code workflows)
 - **Code workflows**: Dispatch builder AND auditor IN PARALLEL in the same message. Give builder only `spec.md`; give auditor only `test-spec.md`.
-- **Docs-only workflow**: Dispatch scribe with `spec.md` (as implementer). After scribe completes, dispatch auditor with `test-spec.md`.
+- **Docs-only workflow**: Dispatch scribe with `spec.md` (as implementer). After scribe completes, dispatch skeptic directly.
 
-### After Implementer and Auditor Both Complete:
-- Read `implementation.md` (or `docs.md`) and `audit.md`
-- Check for BLOCK from auditor (if so, respawn the implementer — builder for code, scribe for docs — with failure details)
-- **Code workflows**: If both succeeded, dispatch scribe for recording with ALL artifacts. After scribe completes, dispatch skeptic.
-- **Docs-only workflow**: Scribe already ran as implementer and produced recording artifacts. Dispatch skeptic directly with ALL artifacts.
+### After Builder and Auditor Both Complete (Code Workflows):
+- Read `implementation.md` and `audit.md`
+- Check for BLOCK from auditor (if so, respawn builder with failure details)
+- If both succeeded, dispatch scribe for recording with ALL artifacts. After scribe completes, dispatch skeptic.
 
 ---
 
