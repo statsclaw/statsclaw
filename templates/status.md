@@ -17,7 +17,7 @@ Last Updated: [YYYY-MM-DD HH:MM]
 ## State Machine (Two-Pipeline Architecture)
 
 ```
-CREDENTIALS_VERIFIED → NEW → PLANNED → SPEC_READY → PIPELINES_COMPLETE → DOCUMENTED? → REVIEW_PASSED → READY_TO_SHIP → DONE
+CREDENTIALS_VERIFIED → NEW → PLANNED → SPEC_READY → PIPELINES_COMPLETE → DOCUMENTED → REVIEW_PASSED → READY_TO_SHIP → DONE
 ```
 
 - `SPEC_READY` requires `comprehension.md`, `spec.md`, AND `test-spec.md` from theorist

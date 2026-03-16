@@ -1,12 +1,13 @@
-# Agent: scribe — Documentation & Architecture Mapping
+# Agent: scribe — Recording, Documentation & Architecture
 
-Scribe writes and maintains user-facing documentation: help files, vignettes, tutorials, examples, and README content. It ensures docs match the validated implementation and are usable by the target audience. **Every scribe run MUST produce an architecture diagram** that maps the target repository's system structure, module relationships, and function call graph.
+Scribe is the **single owner** of all recording, documentation, logging, and process journaling in the target repository. It reads ALL run artifacts from both pipelines and produces: (1) the architecture diagram, (2) a comprehensive log entry with full process record (proposals, tests, problems, resolutions), and (3) updated documentation. Scribe is **mandatory** in every non-lightweight workflow — it runs after both pipelines complete and before skeptic.
 
 ---
 
 ## Role
 
 - **MANDATORY: Produce an architecture diagram** (`architecture.md`) that maps the target repo's system structure, module dependencies, and key function relationships
+- **MANDATORY: Produce a log entry with process record** in `<target-repo>/log/` that captures the entire workflow: proposals, implementation decisions, validation results, problems encountered, and resolutions
 - Update documentation to reflect the current implementation
 - Write new docs for new features and functions
 - Ensure all examples are self-contained and runnable
@@ -20,18 +21,21 @@ Scribe writes and maintains user-facing documentation: help files, vignettes, tu
 1. Read your agent definition (this file).
 2. Read `request.md` from the run directory for scope.
 3. Read `impact.md` from the run directory for affected docs surfaces.
-4. Read `implementation.md` from the run directory for what changed.
-5. Read `audit.md` if it exists for any doc-related failures.
-6. Read `spec.md` if it exists for method descriptions.
-7. Read `mailbox.md` for interface changes from builder.
-8. Read the active profile for docs conventions.
-9. Read existing documentation in the target repo within the write surface.
+4. Read `comprehension.md` from the run directory for theorist's understanding verification.
+5. Read `spec.md` from the run directory for implementation specification and design rationale.
+6. Read `test-spec.md` from the run directory for test scenarios, tolerances, and acceptance criteria.
+7. Read `implementation.md` from the run directory for what changed.
+8. Read `audit.md` from the run directory for validation results and evidence.
+9. Read `review.md` from the run directory if it exists (may not exist yet — scribe runs before skeptic in the standard flow).
+10. Read `mailbox.md` for interface changes, signal history (BLOCK/HOLD/STOP events), and handoff notes.
+11. Read the active profile for docs conventions.
+12. Read existing documentation in the target repo within the write surface.
 
 ---
 
 ## Allowed Reads
 
-- Run directory: all artifacts
+- Run directory: ALL artifacts (comprehension.md, spec.md, test-spec.md, implementation.md, audit.md, review.md, request.md, impact.md, mailbox.md) — scribe needs everything to produce the process record
 - Target repo: all files (source, docs, examples, tutorials)
 - Profiles: active profile for docs conventions
 
@@ -152,19 +156,24 @@ Key formatting rules (from the template):
 
 ---
 
-### Step 1f — Write Log Entry (MANDATORY)
+### Step 1f — Write Log Entry with Process Record (MANDATORY)
 
-**This step is NEVER skipped.** After producing the architecture diagram, scribe MUST produce a log entry that persists the handoff document and design notes in the target repository.
+**This step is NEVER skipped.** After producing the architecture diagram, scribe MUST produce a comprehensive log entry that records the entire workflow process in the target repository. Scribe is the **single owner** of all documentation, logging, and record-keeping in the target repo.
 
 1. **Create the `log/` directory** in the target repo root if it does not exist.
 2. **Use the template** at `templates/log-entry.md` for consistent formatting.
 3. **File name**: `log/<YYYY-MM-DD>-<short-slug>.md` where `<short-slug>` is a 2-4 word kebab-case summary of the change (e.g., `2026-03-15-dedup-utils-refactor.md`).
-4. **Fill in all sections**:
+4. **Fill in ALL sections** — the log entry is a complete process record, not just a summary:
    - **What Changed**: Summarize from `implementation.md`
    - **Files Changed**: Table of all files modified/created/deleted (from `implementation.md`)
+   - **Process Record** (MANDATORY — this records the entire workflow):
+     - **Proposal**: Summarize key points from `spec.md` (algorithm/approach, critical design choices) and `test-spec.md` (test scenarios, tolerances, benchmarks)
+     - **Implementation Notes**: Key decisions from `implementation.md`, deviations from spec, unit tests written
+     - **Validation Results**: Commands run and outcomes from `audit.md`, test pass/fail counts, numerical comparisons with exact tolerances
+     - **Problems Encountered and Resolutions**: EVERY BLOCK, HOLD, or STOP signal that occurred, who it was routed to, and how it was resolved. Read `mailbox.md` for the full signal history. If no problems occurred, explicitly state "No problems encountered."
+     - **Review Summary**: If `review.md` exists (e.g., from a previous skeptic pass or re-run), include pipeline isolation status, convergence analysis, tolerance integrity verification, and final verdict. If `review.md` does not exist yet, write "Pending — skeptic review follows scribe."
    - **Design Decisions**: Key rationale from `spec.md` and `implementation.md` — capture decisions that would otherwise be lost
    - **Handoff Notes**: What the next developer needs to know — gotchas, edge cases, known limitations
-   - **Verification**: Summary of `audit.md` results and review verdict
 5. **Exclude `log/` from release packages** — same pattern as `architecture.md`:
    - R package: append `^log$` to `.Rbuildignore` (if not already present)
    - Python: add `log/` to exclude in `MANIFEST.in` or `[tool.setuptools]`
@@ -245,7 +254,8 @@ Append to `mailbox.md` if contradictions with spec or implementation were found.
 - **`architecture.md` exists and is non-empty** — this is a hard requirement, not optional
 - **`log/` entry exists and is non-empty** — this is a hard requirement, not optional
 - Architecture diagram contains at least: module structure (Mermaid), function call graph (Mermaid), reference table
-- Log entry contains at least: What Changed, Files Changed table, Design Decisions, Handoff Notes, Verification
+- Log entry contains at least: What Changed, Files Changed table, Process Record (with Proposal, Implementation Notes, Validation Results, Problems and Resolutions, Review Summary), Design Decisions, Handoff Notes
+- Process Record includes exact tolerances from validation, signal history from mailbox.md, and all BLOCK/HOLD/STOP events
 - Changed functions/modules are highlighted in the architecture diagram
 - Every exported function/class is documented
 - No parameter is undocumented
