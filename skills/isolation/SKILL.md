@@ -111,7 +111,7 @@ After a writing teammate completes in its worktree:
 | theorist | Bridge | No | No | request.md, impact.md |
 | builder | Code | Yes | Yes | spec.md (NEVER test-spec.md) |
 | auditor | Test | No (runs commands) | No | test-spec.md (NEVER spec.md) |
-| scribe | Code | Yes | Yes | implementation.md |
+| scribe | Both | Yes | Yes | ALL artifacts (mandatory — reads everything to produce process record) |
 | skeptic | Convergence | No (reviews only) | No | ALL artifacts |
 | github | — | No (git/gh commands) | No | review.md, credentials.md |
 | lead | Control | No (runtime only) | N/A | ALL artifacts |

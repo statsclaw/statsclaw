@@ -31,6 +31,8 @@ StatsClaw uses two fully isolated execution pipelines that converge at the skept
       (code pipeline)            (test pipeline)
                \                        /
                 \                      /
+                   scribe (recording)
+                       |
                    skeptic (convergence)
                        |
                      github
@@ -42,7 +44,7 @@ StatsClaw uses two fully isolated execution pipelines that converge at the skept
 | Analysis | `theorist` | Bridge | Produces `spec.md` AND `test-spec.md` from requirements |
 | Code | `builder` | Code | Implements from `spec.md` only (never sees test-spec.md) |
 | Test | `auditor` | Test | Validates from `test-spec.md` only (never sees spec.md) |
-| Docs | `scribe` | Code | Updates documentation (conditional) |
+| Recording | `scribe` | Both | Architecture, process-record log, documentation (mandatory) |
 | Convergence | `skeptic` | Both | Cross-compares both pipelines; issues ship verdict |
 | Ship | `github` | — | Commits, pushes, PRs, issue comments (conditional) |
 
@@ -57,10 +59,10 @@ StatsClaw uses two fully isolated execution pipelines that converge at the skept
 ## Workflow
 
 ```text
-lead plans → theorist → [builder ∥ auditor] → scribe? → skeptic → github?
+lead plans → theorist → [builder ∥ auditor] → scribe → skeptic → github?
 ```
 
-States: `CREDENTIALS_VERIFIED → NEW → PLANNED → SPEC_READY → PIPELINES_COMPLETE → DOCUMENTED? → REVIEW_PASSED → READY_TO_SHIP → DONE`
+States: `CREDENTIALS_VERIFIED → NEW → PLANNED → SPEC_READY → PIPELINES_COMPLETE → DOCUMENTED → REVIEW_PASSED → READY_TO_SHIP → DONE`
 
 Signals: `HOLD` (ambiguous, ask user), `BLOCK` (validation failed), `STOP` (unsafe to ship)
 

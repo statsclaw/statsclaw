@@ -135,18 +135,37 @@ Read audit.md critically:
 4. For numerical methods: are benchmark comparisons present? Are relative errors within tolerance?
 5. If auditor skipped a required step, raise **STOP — auditor validation incomplete**.
 
-### Step 8 — Challenge Documentation
+#### 7a — Tolerance Integrity Audit (MANDATORY)
 
-If scribe was dispatched (docs were in scope):
+**This sub-step is NEVER skipped.** Skeptic MUST cross-reference every numerical tolerance in `audit.md` against `test-spec.md` to detect tolerance inflation.
+
+For each numerical comparison in `audit.md`:
+1. **Extract the tolerance used** (atol, rtol, epsilon, threshold, etc.)
+2. **Look up the corresponding tolerance in `test-spec.md`**
+3. **If the audit tolerance is wider than the spec tolerance**: **STOP — tolerance inflation detected. Auditor used tolerance [X] but test-spec.md specifies [Y]. Route to auditor (re-dispatch with original tolerances).**
+4. **If audit.md does not record the tolerances used**: **STOP — tolerance evidence missing. Auditor must record exact tolerances for every numerical comparison.**
+
+Also check for these evasion patterns:
+- Assertions removed or commented out between test-spec.md scenarios and audit execution
+- `try`/`catch` wrappers around assertions that swallow failures
+- Reduced iteration counts or sample sizes compared to test-spec.md
+- Random seed changes without justification
+- Test scenarios from test-spec.md that are simply absent from audit.md (silent omission)
+
+**If any evasion pattern is detected**: **STOP — validation integrity compromised. Route to auditor.**
+
+### Step 8 — Challenge Documentation and Process Record
+
+Scribe is mandatory in all non-lightweight workflows. Verify scribe's output:
 
 1. **Architecture diagram**: Verify `architecture.md` exists in BOTH the run directory AND the target repo root, and contains Mermaid diagrams (module structure, function call graph, data flow). If `architecture.md` is missing from either location, raise **STOP — architecture diagram not produced or not written to target repo**.
 2. **Log entry**: Verify a log entry exists in `<target-repo>/log/` for this run. If missing, raise **STOP — log entry not produced**. Verify it contains: What Changed, Files Changed, Design Decisions, Handoff Notes, Verification sections.
 3. **Release exclusion**: Verify `architecture.md` and `log/` are excluded from release packages — check that `.Rbuildignore` (R), `.npmignore` (npm), `MANIFEST.in` (Python), or `Cargo.toml` exclude (Rust) includes both per the project profile. If not excluded, raise **STOP — development artifacts would ship in release package**.
-3. Do the architecture diagrams accurately reflect the current codebase structure? Are changed functions highlighted?
-4. Do function signatures in docs match the implementation?
-5. Were tutorials re-rendered after code changes?
-6. Does documentation cover the changed or new functionality?
-7. Verify `docs.md` exists. If missing, raise **STOP — documentation not updated**.
+4. Do the architecture diagrams accurately reflect the current codebase structure? Are changed functions highlighted?
+5. Do function signatures in docs match the implementation?
+6. Were tutorials re-rendered after code changes?
+7. Does documentation cover the changed or new functionality?
+8. Verify `docs.md` exists. If missing, raise **STOP — documentation not updated**.
 
 ### Step 9 — Issue Verdict
 
@@ -174,6 +193,7 @@ Use PASS WITH NOTE sparingly. It is not a way to avoid hard questions.
 | Test scenarios are insufficient | theorist (to update test-spec.md) |
 | Docs do not match code | scribe |
 | Validation was skipped or incomplete | auditor |
+| Tolerance inflated or evasion pattern detected | auditor (re-dispatch with strict integrity rules) |
 | Comprehension incomplete or specs not grounded | theorist |
 | Spec and test-spec are inconsistent | theorist |
 | Pipeline isolation was breached | lead (re-dispatch with proper isolation) |
@@ -193,7 +213,8 @@ Before issuing PASS, verify you have actually done — not assumed — the follo
 - [ ] For refactors: traced at least one non-trivial execution path (step 6)
 - [ ] Verified auditor ran required validation commands with exact evidence (step 7)
 - [ ] Verified auditor executed ALL test-spec.md scenarios (step 7)
-- [ ] Checked documentation, architecture diagram, and log entry consistency (if scribe was dispatched) (step 8)
+- [ ] Cross-referenced ALL numerical tolerances in audit.md against test-spec.md — no inflation (step 7a)
+- [ ] Checked documentation, architecture diagram, process-record log entry, and release exclusions (step 8)
 
 ---
 
