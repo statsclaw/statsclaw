@@ -45,16 +45,18 @@ This section is the entry point for every non-trivial user request. You MUST fol
 5. **LEAD PLANNING**: Read `.agents/lead.md`. Act as `lead`. Explore the target repository to identify affected surfaces. Write `impact.md` (affected files, risk areas, required teammates). Identify the profile from `profiles/`. Update `status.md` to `PLANNED`.
 6. **DISPATCH TEAMMATES (Two-Pipeline Architecture)**: See "Agent Teams Model" below for the architecture. Dispatch per the selected workflow:
    - a. **theorist** — ALWAYS dispatched for non-trivial requests. **MANDATORY when the user uploads files** (PDF, Word, txt, tex, images with formulas) — these contain primary source material that theorist must deeply comprehend before any specs are produced. Pass ALL uploaded file paths in the dispatch prompt. Theorist produces `comprehension.md` (verification of understanding), `spec.md` (code pipeline), and `test-spec.md` (test pipeline). **If theorist raises HOLD with comprehension questions, lead MUST forward them to the user via `AskUserQuestion` and re-dispatch theorist with the answers. Iterate until theorist confirms FULLY UNDERSTOOD.** Update status to `SPEC_READY`.
-   - b. **builder + auditor IN PARALLEL** — After theorist completes, dispatch BOTH in the SAME message. Builder gets `spec.md` ONLY. Auditor gets `test-spec.md` ONLY. Update status to `PIPELINES_COMPLETE` after BOTH complete.
-   - c. **scribe** — **ALWAYS dispatched** after both pipelines complete. Dispatch with `isolation: "worktree"`. Scribe is the **single owner** of all documentation, logging, and process recording in the target repo. Scribe reads ALL available run artifacts (`comprehension.md`, `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `mailbox.md`). Produces:
-      - `architecture.md` (mandatory, written to BOTH target repo root AND run directory)
-      - **Log entry with process record** (written to `<target-repo>/log/<YYYY-MM-DD>-<short-description>.md`) — captures the entire workflow: proposals from theorist, implementation decisions, validation results with exact tolerances, all problems encountered (BLOCK/HOLD/STOP signals) and their resolutions, and the review verdict
-      - `docs.md` (documentation change summary)
-      - Update status to `DOCUMENTED`.
-      - **Log entry**: Every scribe run MUST produce a log entry in `<target-repo>/log/` using the template at `templates/log-entry.md`. The log entry includes a **process record** (complete audit trail of proposals, tests, problems, and resolutions), a **handoff document** (what the next developer needs to know), and a **design note** (key decisions and rationale). Log entries accumulate as a traceable record of all code updates.
-   - d. **skeptic** — ALWAYS dispatched after scribe completes. Reads ALL artifacts from both pipelines and scribe. Produces `review.md` with verdict. Update status to `REVIEW_PASSED` or `STOPPED`.
+   - b. **Implementer selection** — Lead MUST determine who implements based on the nature of the change:
+     - **Code changes** (source files, algorithms, features, bug fixes): dispatch **builder** (from `spec.md`). Builder and auditor are dispatched IN PARALLEL in the same message.
+     - **Docs-only changes** (quarto books, vignettes, tutorials, README, examples, man pages — NO source code): dispatch **scribe** (from `spec.md`). Scribe implements the docs AND produces recording artifacts. After scribe completes, dispatch auditor sequentially (auditor validates docs build from `test-spec.md`).
+     - **Mixed changes** (code + docs): dispatch **builder + auditor IN PARALLEL**. Builder does code, then scribe does docs + recording after both complete.
+   - c. **scribe** — **ALWAYS dispatched** in every non-lightweight workflow. Dispatch with `isolation: "worktree"`. Scribe is the **single owner** of all documentation, logging, and process recording in the target repo.
+     - **In code workflows (1, 3, 4, 5)**: scribe is dispatched AFTER both builder and auditor complete. Reads ALL available run artifacts. Produces `architecture.md`, log entry with process record, and `docs.md`.
+     - **In docs-only workflow (10)**: scribe IS the implementer — receives `spec.md` and implements documentation changes. Also produces `architecture.md`, log entry, and `docs.md` in the same dispatch. After scribe completes, auditor validates.
+     - Update status to `DOCUMENTED` after scribe completes (and auditor, for docs-only).
+     - **Log entry**: Every scribe run MUST produce a log entry in `<target-repo>/log/` using the template at `templates/log-entry.md`. The log entry includes a **process record** (complete audit trail of proposals, tests, problems, and resolutions), a **handoff document** (what the next developer needs to know), and a **design note** (key decisions and rationale). Log entries accumulate as a traceable record of all code updates.
+   - d. **skeptic** — ALWAYS dispatched after scribe completes (and auditor, in all workflows). Reads ALL artifacts from both pipelines and scribe. Produces `review.md` with verdict. Update status to `REVIEW_PASSED` or `STOPPED`.
    - e. **github** — ONLY if the user asked to ship, or issue-patrol is active. Produces `github.md`. Scribe has already produced the log entry — github stages and commits it along with all other changes.
-   - **PIPELINE ISOLATION**: builder NEVER receives `test-spec.md`. Auditor NEVER receives `spec.md` or `implementation.md`. See `skills/isolation/SKILL.md`.
+   - **PIPELINE ISOLATION**: builder NEVER receives `test-spec.md`. Auditor NEVER receives `spec.md` or `implementation.md`. In docs-only workflows, scribe receives `spec.md` (as implementer) but auditor still only receives `test-spec.md`. See `skills/isolation/SKILL.md`.
 7. **GATE**: Update `status.md` after EVERY teammate completes. Read the output artifact. Do NOT proceed past `STOP` or `BLOCK` signals. Respawn the responsible teammate on failure (max 3 retries per teammate before `HOLD`).
 8. **AUTONOMOUS CONTINUATION**: Do NOT pause between stages to ask the user "should I continue?". Continue automatically through the full workflow until `DONE`, `HOLD`, or `STOP`.
 
@@ -73,9 +75,9 @@ Short prompts MUST work. A user message like "Work on https://github.com/foo/bar
 | `PLANNED` | `request.md` and `impact.md` exist and are non-empty | Read the files |
 | `SPEC_READY` | `comprehension.md`, `spec.md`, AND `test-spec.md` all exist | Read all three file paths |
 | `SPEC_READY` | Theorist was dispatched via `Agent` tool | Agent tool call must exist in conversation |
-| `PIPELINES_COMPLETE` | `implementation.md` and `audit.md` exist | Read both file paths |
-| `PIPELINES_COMPLETE` | Builder dispatched with `isolation: "worktree"`, auditor dispatched | Agent tool calls must exist |
-| `PIPELINES_COMPLETE` | Pipeline isolation verified | Builder prompt has no test-spec.md; auditor prompt has no spec.md |
+| `PIPELINES_COMPLETE` | `implementation.md` (or `docs.md` for docs-only) and `audit.md` exist | Read both file paths |
+| `PIPELINES_COMPLETE` | Builder dispatched with `isolation: "worktree"` (code workflows) OR scribe dispatched as implementer (docs-only workflow) | Agent tool calls must exist |
+| `PIPELINES_COMPLETE` | Pipeline isolation verified | Implementer prompt has no test-spec.md; auditor prompt has no spec.md |
 | `PIPELINES_COMPLETE` | Lead did NOT run any validation command directly | Self-check: no Bash calls to R CMD check, pytest, npm test, etc. |
 | `DOCUMENTED` | `architecture.md` exists in BOTH run directory AND target repo root; `docs.md` exists in run directory; log entry with process record exists in `<target-repo>/log/` | Read all file paths; verify log entry contains Process Record section |
 | `DOCUMENTED` | Scribe was dispatched via `Agent` tool | Agent tool call must exist |
@@ -166,11 +168,11 @@ Write your artifact to: [STATSCLAW_PATH]/.statsclaw/runs/[REQUEST_ID]/[artifact]
 
 ### Dispatch Rules
 
-**Mandatory parallel dispatch**: builder + auditor — MUST be dispatched in the SAME message after theorist completes.
+**Code workflows (1, 2, 4, 5)**: theorist → (builder ∥ auditor) → scribe → skeptic → github?. Builder + auditor MUST be dispatched in the SAME message.
 
-**Sequential**: theorist → (builder ∥ auditor) → scribe (MANDATORY, reads ALL run artifacts) → skeptic → github.
+**Docs-only workflow (3)**: theorist → scribe → auditor → skeptic → github?. Sequential — scribe implements docs, then auditor validates the build.
 
-**Pipeline isolation at dispatch**: builder gets `spec.md` path (NEVER `test-spec.md`). Auditor gets `test-spec.md` path (NEVER `spec.md`). Skeptic gets ALL artifacts.
+**Pipeline isolation at dispatch**: builder gets `spec.md` path (NEVER `test-spec.md`). Auditor gets `test-spec.md` path (NEVER `spec.md`). In docs-only workflows, scribe gets `spec.md` (as implementer). Skeptic gets ALL artifacts.
 
 ---
 
@@ -219,9 +221,11 @@ StatsClaw uses Agent Teams exclusively. You are the Team Lead (`lead`). You MUST
 | Convergence | `skeptic` | Both | Cross-compares both pipelines; ship verdict | `.agents/skeptic.md` |
 | Ship | `github` | — | Commits, pushes, PRs, issue comments (conditional) | `.agents/github.md` |
 
-**Mandatory teammates** (never skip for non-trivial requests): theorist, builder, auditor, scribe, skeptic.
+**Mandatory teammates** (never skip for non-trivial requests): theorist, auditor, scribe, skeptic.
 
-**Conditional teammates**: github (ship requested).
+**Conditional teammates**: builder (code changes — NOT needed for docs-only), github (ship requested).
+
+**Scribe dual role**: Scribe is ALWAYS mandatory. In code workflows, scribe is the recorder (runs after builder + auditor). In docs-only workflows, scribe is ALSO the implementer (replaces builder, receives `spec.md`).
 
 Each agent's full workflow, allowed reads/writes, and must-not rules are defined in its `.agents/*.md` file. Pipeline isolation rules are in `skills/isolation/SKILL.md`. Artifact handoff rules are in `skills/handoff/SKILL.md`.
 
@@ -233,19 +237,25 @@ Each agent's full workflow, allowed reads/writes, and must-not rules are defined
 
 | # | Name | Trigger | Agent Sequence |
 | --- | --- | --- | --- |
-| 1 | Standard | Small code change (≤4 files, no structural change) | `lead → theorist → [builder ∥ auditor] → scribe → skeptic` |
-| 2 | With Docs | Code change + docs, OR structural change (≥5 files, new/deleted files, refactoring) | `lead → theorist → [builder ∥ auditor] → scribe → skeptic` |
-| 3 | With Ship | Code change + ship | `lead → theorist → [builder ∥ auditor] → scribe → skeptic → github` |
+| 1 | Code Change | Code modification (any size) | `lead → theorist → [builder ∥ auditor] → scribe → skeptic` |
+| 2 | Code + Ship | Code modification + push | `lead → theorist → [builder ∥ auditor] → scribe → skeptic → github` |
+| 3 | Docs Only | Documentation-only changes (no source code) | `lead → theorist → scribe → auditor → skeptic` |
 | 4 | Issue Patrol | Scan + fix multiple issues | `lead scans → per issue: theorist → [builder ∥ auditor] → scribe → skeptic → github` |
-| 5 | Single Issue | Fix one named issue | `lead → theorist → [builder ∥ auditor] → scribe → skeptic → github` (ship is implicit — fixing an issue implies pushing the fix) |
+| 5 | Single Issue | Fix one named issue | `lead → theorist → [builder ∥ auditor] → scribe → skeptic → github` |
 | 6 | Validation | Run tests only | `lead → auditor` |
 | 7 | Ship Only | Push reviewed changes | `lead → skeptic → github` |
 | 8 | Review Only | Assess without shipping | `lead → skeptic` |
 | 9 | Scheduled Loop | Recurring execution | `lead → /loop → inner workflow` |
 
+**Key distinction — code vs docs workflows:**
+- **Workflows 1–2** (code): Builder implements source code, then scribe records and documents. Builder ∥ auditor are parallel.
+- **Workflow 3** (docs-only): Scribe IS the implementer — receives `spec.md` and writes documentation. No builder needed. Scribe → auditor is sequential (auditor validates scribe's docs output).
+- **Workflows 4–5** (issues): Standard code pipeline per issue. Scribe records each fix.
+
 **Workflow details**: Each workflow's agent cooperation, artifacts, and state transitions are documented in the respective agent definitions (`.agents/*.md`) and skills (`skills/*.md`). Key references:
 
-- **Workflows 1–5**: Standard two-pipeline flow. See `skills/handoff/SKILL.md` for artifact flow between agents.
+- **Workflows 1–5**: Two-pipeline flow. See `skills/handoff/SKILL.md` for artifact flow between agents.
+- **Workflow 3**: Docs-only — scribe replaces builder as the implementer. Scribe receives `spec.md` (what docs to write), produces documentation changes + recording artifacts (architecture.md, log entry, docs.md). Then auditor validates docs build from `test-spec.md`. No builder is dispatched.
 - **Workflow 4**: See `skills/issue-patrol/SKILL.md` for patrol phases (scan, triage, fix loop, report).
 - **Workflow 6**: Lightweight — no theorist, builder, or skeptic. Auditor runs profile validation commands directly. State jumps directly from `PLANNED` to `PIPELINES_COMPLETE` (auditor-only).
 - **Workflows 7–8**: Lightweight — skip the full pipeline. These are for already-completed work that needs shipping or review. State model requirements for `SPEC_READY` and `PIPELINES_COMPLETE` are waived; skeptic reads whatever artifacts are available.
@@ -261,16 +271,18 @@ Route semantically from intent. Do **not** require the user to learn trigger phr
 
 | User intent | Workflow |
 | --- | --- |
-| small code change (≤4 files, no structural change) | 1 or 3 (standard pipeline) |
-| structural change (≥5 files, refactoring, new/deleted modules) | 2 or 3 (pipeline with scribe) |
+| code change (bug fix, feature, refactor) | 1 (code change) or 2 (+ ship) |
+| code change + "ship" / "push" | 2 (code + ship) |
+| documentation only (quarto book, vignettes, tutorials, README, man pages, examples) | 3 (docs only — scribe implements) |
 | "patrol issues" / "check issues and fix" / "auto-fix" | 4 (issue patrol) |
 | "fix issue #N" | 5 (single issue fix) |
 | "check" / "validate" / "run tests" | 6 (auditor only) |
 | "ship it" / "push" / "open a PR" | 7 (skeptic → github) |
 | "review" / "is this safe?" | 8 (skeptic only) |
 | "loop" / "every Xm" / "monitor every" | 9 (/loop wrapping inner workflow) |
-| formalize math, equations, algorithms | 1 (theorist-first pipeline) |
-| update docs, tutorials, examples | 2 (pipeline with scribe) |
+| formalize math, equations, algorithms | 1 (code pipeline) |
+
+**Routing rule — code vs docs**: If the request touches ONLY documentation files (`.Rd`, `.md`, `.qmd`, `.Rmd`, vignettes, tutorials, `pkgdown`, `_quarto.yml`, man pages, README) and NO source code (`.R`, `.py`, `.ts`, `.go`, `.rs`, `.ado`), use workflow 3 (docs-only). If the request touches any source code, use workflow 1 or 2 even if docs are also needed — scribe handles docs in the recording phase.
 
 Routing is semantic. Lead interprets intent from natural language in any language.
 
@@ -301,7 +313,7 @@ StatsClaw uses exactly **three** workflow signals. Each signal has one exclusive
 | Signal | Exclusive Owner | When Raised | Status Set To | Lead Response |
 | --- | --- | --- | --- | --- |
 | **HOLD** | theorist, builder, scribe, github | Cannot proceed without user input: undefined symbol, ambiguous spec, conflicting API, unclear requirement, permission/access issue | `HOLD` | Pause run. Forward the specific question to user via `AskUserQuestion`. Re-dispatch the same teammate with the answer. |
-| **BLOCK** | auditor (only) | Validation failed: tests fail, checks produce errors/warnings, numerical results outside tolerance | `BLOCKED` | Read `audit.md` failure details. **Respawn the responsible upstream teammate** (usually builder) via `Agent` tool — lead MUST NOT fix the code directly. After teammate fix, re-dispatch auditor. |
+| **BLOCK** | auditor (only) | Validation failed: tests fail, checks produce errors/warnings, numerical results outside tolerance | `BLOCKED` | Read `audit.md` failure details. **Respawn the responsible upstream teammate** (builder for code, scribe for docs) via `Agent` tool — lead MUST NOT fix directly. After teammate fix, re-dispatch auditor. |
 | **STOP** | skeptic (only) | Quality gate failed: pipelines diverge, isolation breached, coverage gaps, unsafe to ship | `STOPPED` | Read `review.md` routing. Respawn the teammate skeptic identifies. Re-run affected pipeline(s), then re-dispatch skeptic. |
 
 ### Key Distinctions
@@ -320,7 +332,7 @@ StatsClaw uses exactly **three** workflow signals. Each signal has one exclusive
 
 ```
 HOLD:   teammate → lead → AskUserQuestion → user answers → lead re-dispatches teammate
-BLOCK:  auditor → lead → respawn builder/theorist → re-dispatch auditor → continue
+BLOCK:  auditor → lead → respawn implementer (builder or scribe) / theorist → re-dispatch auditor → continue
 STOP:   skeptic → lead → respawn per routing table → re-run pipeline(s) → re-dispatch skeptic
 ```
 
@@ -329,8 +341,8 @@ STOP:   skeptic → lead → respawn per routing table → re-run pipeline(s) �
 When auditor issues BLOCK, lead MUST follow this exact sequence:
 
 1. **Read `audit.md`** — identify every failing check and the routing (which upstream teammate to respawn).
-2. **Respawn the upstream teammate via `Agent` tool** — pass the failure details from `audit.md` as context. The respawned teammate fixes the code.
-3. **NEVER fix code directly** — even if the fix seems trivial (a typo, a syntax error, a missed pattern). Lead MUST NOT use `Edit`, `Write`, `sed`, or any tool to modify target repo files. This rule has NO exceptions. The reason: lead lacks the full context of what the builder changed and may introduce new bugs (as demonstrated by incorrect `$!converged` and `show.uniform.isTRUE(CI)` patterns when lead attempted direct fixes).
+2. **Respawn the upstream implementer via `Agent` tool** — pass the failure details from `audit.md` as context. For code workflows, respawn builder. For docs-only workflows, respawn scribe.
+3. **NEVER fix directly** — even if the fix seems trivial (a typo, a syntax error, a missed pattern). Lead MUST NOT use `Edit`, `Write`, `sed`, or any tool to modify target repo files. This rule has NO exceptions. The reason: lead lacks the full context of what the implementer changed and may introduce new bugs.
 4. **After the respawned teammate completes**, re-dispatch auditor to re-validate.
 5. **If auditor blocks again**, repeat from step 1 (max 3 cycles).
 

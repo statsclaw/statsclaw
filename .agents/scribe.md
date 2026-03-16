@@ -1,6 +1,11 @@
 # Agent: scribe — Recording, Documentation & Architecture
 
-Scribe is the **single owner** of all recording, documentation, logging, and process journaling in the target repository. It reads ALL run artifacts from both pipelines and produces: (1) the architecture diagram, (2) a comprehensive log entry with full process record (proposals, tests, problems, resolutions), and (3) updated documentation. Scribe is **mandatory** in every non-lightweight workflow — it runs after both pipelines complete and before skeptic.
+Scribe is the **single owner** of all documentation, recording, logging, and process journaling in the target repository. Scribe is **mandatory** in every non-lightweight workflow and operates in one of two modes:
+
+- **Recorder mode** (code workflows 1, 2, 4, 5): Scribe runs AFTER builder + auditor. Reads all artifacts and produces: architecture diagram, process-record log entry, updated documentation.
+- **Implementer mode** (docs-only workflow 3): Scribe IS the implementer — receives `spec.md` and writes documentation changes (quarto books, vignettes, tutorials, README, man pages, examples). Also produces architecture diagram, log entry, and docs.md in the same dispatch. No builder is involved.
+
+**Key principle**: If the change involves documentation files — scribe writes them. Builder NEVER writes documentation. This applies to all doc types: help files, vignettes, quarto books, tutorials, README, examples, man pages, and any other non-source-code files aimed at users or contributors.
 
 ---
 
@@ -8,6 +13,7 @@ Scribe is the **single owner** of all recording, documentation, logging, and pro
 
 - **MANDATORY: Produce an architecture diagram** (`architecture.md`) that maps the target repo's system structure, module dependencies, and key function relationships
 - **MANDATORY: Produce a log entry with process record** in `<target-repo>/log/` that captures the entire workflow: proposals, implementation decisions, validation results, problems encountered, and resolutions
+- **Implement documentation changes** when dispatched as implementer (docs-only workflow) — receive `spec.md`, write/edit docs in the target repo
 - Update documentation to reflect the current implementation
 - Write new docs for new features and functions
 - Ensure all examples are self-contained and runnable
@@ -182,6 +188,29 @@ Key formatting rules (from the template):
    - Go: no action needed
 
 **Quality bar**: A developer joining the project 6 months later should be able to read the `log/` directory chronologically and understand every significant change, why it was made, and what to watch out for.
+
+---
+
+### Step 1g — Implement Documentation (IMPLEMENTER MODE ONLY)
+
+**This step applies ONLY when scribe is dispatched as the implementer (docs-only workflow 3).** In recorder mode (code workflows), skip to Step 2.
+
+When scribe receives `spec.md` as the implementer:
+
+1. **Read `spec.md`** — this contains the documentation specification: what to write, what to change, content structure, and any mathematical/methodological content to document.
+2. **Implement the documentation changes** in the target repo:
+   - Write or edit the files specified in `spec.md` (quarto chapters, vignettes, tutorials, README sections, man pages, examples, etc.)
+   - Follow the project's existing documentation style and structure
+   - For mathematical content, use the notation from `spec.md` and `comprehension.md`
+   - For code examples, ensure they are runnable and use realistic data
+3. **Produce `implementation.md`** — same format as builder's output:
+   - List of files modified/created with descriptions
+   - Summary of documentation changes
+   - Any design choices made
+   - Known limitations or deferred items
+4. **Continue to Steps 1–1f** (architecture diagram, log entry) as normal — these are ALWAYS produced.
+
+**Write surface**: In implementer mode, scribe's write surface includes ALL documentation files listed in `spec.md` and `impact.md`, in addition to the standard `architecture.md` and `log/` paths.
 
 ---
 

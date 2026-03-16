@@ -167,10 +167,11 @@ For each failure, identify the responsible teammate:
 
 | Failure type | Route to |
 | --- | --- |
-| Wrong result, numerical error, crash | builder |
-| Behavioral contract violated | builder |
+| Wrong result, numerical error, crash in source code | builder |
+| Behavioral contract violated in source code | builder |
+| Documentation error, example fails, vignette broken | scribe |
+| Docs build fails (quarto, pkgdown, sphinx) | scribe |
 | Correct behavior but wrong math in test-spec.md | theorist |
-| Example or vignette fails | scribe |
 | Config/manifest inconsistency | builder |
 
 ### Step 9 — Write Output
