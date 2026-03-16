@@ -61,7 +61,7 @@ StatsClaw uses two fully isolated execution pipelines that converge at the skept
 
 ```text
 Code:      lead → theorist → [builder ∥ auditor] → scribe → skeptic → github?
-Docs-only: lead → theorist → scribe → auditor → skeptic → github?
+Docs-only: lead → theorist → scribe → skeptic → github?
 ```
 
 States: `CREDENTIALS_VERIFIED → NEW → PLANNED → SPEC_READY → PIPELINES_COMPLETE → DOCUMENTED → REVIEW_PASSED → READY_TO_SHIP → DONE`
