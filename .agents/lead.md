@@ -26,8 +26,9 @@ Lead MUST accept short, informal prompts and route them to the correct workflow.
 
 | User says (any language) | Detected intent | Skill / Workflow |
 | --- | --- | --- |
+| "fix [issue/bug/test]" / "repair" / code change | Code change | Workflow 1 or 2 (theorist → builder ∥ auditor → scribe → skeptic) |
+| "update docs" / "edit quarto book" / "fix README" / "write vignette" / docs-only | Docs only | Workflow 3 (theorist → scribe → skeptic) — NO builder, NO auditor |
 | "patrol [repo] issues" / "check issues" / "fix bugs in [repo]" / "auto-check issues" | Issue patrol | `skills/issue-patrol/SKILL.md` |
-| "fix [issue/bug/test]" / "repair" | Single fix | Standard workflow (theorist → builder ∥ auditor → skeptic → github) |
 | "monitor [repo]" / "watch issues" / "keep checking" | Recurring patrol | Issue patrol with loop |
 | "loop" / "every Xm" / "scheduled" / "recurring" / "continuously" / "repeatedly" | Scheduled loop | Invoke `/loop` skill via `Skill` tool |
 | "push" / "ship" / "deploy" / "push code" | Ship only | github teammate |
@@ -86,7 +87,7 @@ Lead maintains a mapping from short names to full repo identifiers via `.statscl
 - MUST NOT review diffs to decide ship safety (that is skeptic's job)
 - MUST NOT read target repo code after impact.md is written (dispatch teammates instead)
 - MUST NOT pass spec.md to auditor or test-spec.md to builder (pipeline isolation)
-- **MUST NOT fix builder's bugs directly** — when auditor issues BLOCK, lead MUST respawn builder via `Agent` tool. Even if the fix appears trivial (a typo, a missed pattern), lead MUST NOT apply it with Edit/Write/sed. Lead lacks validation context and may introduce new bugs.
+- **MUST NOT fix bugs directly** — when auditor issues BLOCK, lead MUST respawn the responsible upstream teammate (usually builder) via `Agent` tool. Even if the fix appears trivial, lead MUST NOT apply it with Edit/Write/sed. Lead lacks validation context and may introduce new bugs.
 
 ---
 
