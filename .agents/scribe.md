@@ -39,6 +39,7 @@ Scribe writes and maintains user-facing documentation: help files, vignettes, tu
 
 - Target repo: ONLY doc files within the assigned write surface from impact.md
 - Target repo: `architecture.md` at the repository root (mandatory — this is the primary destination)
+- Target repo: `log/<YYYY-MM-DD>-<short-slug>.md` — log entry for this run (mandatory)
 - Run directory: `architecture.md` (copy for run tracking)
 - Run directory: `docs.md` (primary output)
 - Run directory: `mailbox.md` (append-only)
@@ -151,6 +152,30 @@ Key formatting rules (from the template):
 
 ---
 
+### Step 1f — Write Log Entry (MANDATORY)
+
+**This step is NEVER skipped.** After producing the architecture diagram, scribe MUST produce a log entry that persists the handoff document and design notes in the target repository.
+
+1. **Create the `log/` directory** in the target repo root if it does not exist.
+2. **Use the template** at `templates/log-entry.md` for consistent formatting.
+3. **File name**: `log/<YYYY-MM-DD>-<short-slug>.md` where `<short-slug>` is a 2-4 word kebab-case summary of the change (e.g., `2026-03-15-dedup-utils-refactor.md`).
+4. **Fill in all sections**:
+   - **What Changed**: Summarize from `implementation.md`
+   - **Files Changed**: Table of all files modified/created/deleted (from `implementation.md`)
+   - **Design Decisions**: Key rationale from `spec.md` and `implementation.md` — capture decisions that would otherwise be lost
+   - **Handoff Notes**: What the next developer needs to know — gotchas, edge cases, known limitations
+   - **Verification**: Summary of `audit.md` results and review verdict
+5. **Exclude `log/` from release packages** — same pattern as `architecture.md`:
+   - R package: append `^log$` to `.Rbuildignore` (if not already present)
+   - Python: add `log/` to exclude in `MANIFEST.in` or `[tool.setuptools]`
+   - npm/TypeScript: add `log/` to `.npmignore`
+   - Rust: add `"log/"` to `exclude` in `Cargo.toml`
+   - Go: no action needed
+
+**Quality bar**: A developer joining the project 6 months later should be able to read the `log/` directory chronologically and understand every significant change, why it was made, and what to watch out for.
+
+---
+
 ### Step 2 — Identify Documentation Scope
 
 From request.md and impact.md, determine what docs need updating:
@@ -218,7 +243,9 @@ Append to `mailbox.md` if contradictions with spec or implementation were found.
 ## Quality Checks
 
 - **`architecture.md` exists and is non-empty** — this is a hard requirement, not optional
+- **`log/` entry exists and is non-empty** — this is a hard requirement, not optional
 - Architecture diagram contains at least: module structure (Mermaid), function call graph (Mermaid), reference table
+- Log entry contains at least: What Changed, Files Changed table, Design Decisions, Handoff Notes, Verification
 - Changed functions/modules are highlighted in the architecture diagram
 - Every exported function/class is documented
 - No parameter is undocumented
@@ -235,7 +262,8 @@ Append to `mailbox.md` if contradictions with spec or implementation were found.
 Primary artifacts:
 - `architecture.md` in the **target repo root** (MANDATORY — system architecture diagram with Mermaid graphs, primary destination)
 - `architecture.md` in the run directory (copy for run tracking)
+- `log/<YYYY-MM-DD>-<short-slug>.md` in the **target repo root** (MANDATORY — handoff doc and design notes for traceability)
 - `docs.md` in the run directory (documentation change summary)
 
 Secondary: append to `mailbox.md` with any contradictions found.
-Target repo: modified/created doc files within the assigned write surface, plus `architecture.md` at repo root.
+Target repo: modified/created doc files within the assigned write surface, plus `architecture.md` and `log/` entry at repo root.

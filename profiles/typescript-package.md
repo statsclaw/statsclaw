@@ -36,6 +36,17 @@ If the project uses `pnpm`, substitute `pnpm` for `npm` in all commands.
 - `prettier` — formatter (when configured)
 - `tsup` or `tsc` — bundler / build tool
 
+## Build Exclusions
+
+The following development-only artifacts MUST be excluded from npm packages via `.npmignore`:
+
+| Entry | Purpose |
+| --- | --- |
+| `architecture.md` | Architecture diagram (development-only) |
+| `log/` | Change log entries with handoff docs and design notes (development-only) |
+
+Scribe and github teammates are responsible for adding these entries. Check before adding to avoid duplicates.
+
 ## Builder Notes
 
 - Use strict TypeScript: do not use `any` unless absolutely necessary and justified in a comment.

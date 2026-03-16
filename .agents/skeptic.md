@@ -140,7 +140,8 @@ Read audit.md critically:
 If scribe was dispatched (docs were in scope):
 
 1. **Architecture diagram**: Verify `architecture.md` exists in BOTH the run directory AND the target repo root, and contains Mermaid diagrams (module structure, function call graph, data flow). If `architecture.md` is missing from either location, raise **STOP — architecture diagram not produced or not written to target repo**.
-2. **Release exclusion**: Verify `architecture.md` is excluded from release packages — check that `.Rbuildignore` (R), `.npmignore` (npm), `MANIFEST.in` (Python), or `Cargo.toml` exclude (Rust) includes `architecture.md` per the project profile. If not excluded, raise **STOP — architecture.md would ship in release package**.
+2. **Log entry**: Verify a log entry exists in `<target-repo>/log/` for this run. If missing, raise **STOP — log entry not produced**. Verify it contains: What Changed, Files Changed, Design Decisions, Handoff Notes, Verification sections.
+3. **Release exclusion**: Verify `architecture.md` and `log/` are excluded from release packages — check that `.Rbuildignore` (R), `.npmignore` (npm), `MANIFEST.in` (Python), or `Cargo.toml` exclude (Rust) includes both per the project profile. If not excluded, raise **STOP — development artifacts would ship in release package**.
 3. Do the architecture diagrams accurately reflect the current codebase structure? Are changed functions highlighted?
 4. Do function signatures in docs match the implementation?
 5. Were tutorials re-rendered after code changes?
@@ -192,7 +193,7 @@ Before issuing PASS, verify you have actually done — not assumed — the follo
 - [ ] For refactors: traced at least one non-trivial execution path (step 6)
 - [ ] Verified auditor ran required validation commands with exact evidence (step 7)
 - [ ] Verified auditor executed ALL test-spec.md scenarios (step 7)
-- [ ] Checked documentation and architecture diagram consistency (if scribe was dispatched) (step 8)
+- [ ] Checked documentation, architecture diagram, and log entry consistency (if scribe was dispatched) (step 8)
 
 ---
 

@@ -30,8 +30,10 @@ Each teammate produces specific output artifacts per run stage:
 | builder | `implementation.md` | `.statsclaw/runs/<request-id>/implementation.md` | Code Pipeline output |
 | auditor | `audit.md` | `.statsclaw/runs/<request-id>/audit.md` | Test Pipeline output |
 | scribe | `architecture.md` | `.statsclaw/runs/<request-id>/architecture.md` | Architecture (mandatory) |
+| scribe | `log/<date>-<slug>.md` | `<TARGET_REPO>/log/<YYYY-MM-DD>-<short-slug>.md` | Log entry (mandatory, target repo) |
 | scribe | `docs.md` | `.statsclaw/runs/<request-id>/docs.md` | Code Pipeline (docs) |
 | skeptic | `review.md` | `.statsclaw/runs/<request-id>/review.md` | Convergence output |
+| github | `log/<date>-<slug>.md` | `<TARGET_REPO>/log/<YYYY-MM-DD>-<short-slug>.md` | Log entry fallback (when scribe not dispatched) |
 | github | `github.md` | `.statsclaw/runs/<request-id>/github.md` | Externalization output |
 
 ---
@@ -152,9 +154,10 @@ Three signals, three owners, three responses. They never overlap.
 **Owner**: auditor (exclusively). **Status**: `BLOCKED`.
 
 1. Lead reads `audit.md` to identify the failure and routing (builder, theorist, or scribe).
-2. Lead respawns the responsible upstream teammate with the failure description from `audit.md`.
+2. **Lead respawns the responsible upstream teammate via `Agent` tool** with the failure description from `audit.md`.
    - **Pipeline isolation**: lead may share the failure description (e.g., "function returns wrong value for input X") but MUST NOT share `test-spec.md` itself.
-3. After the fix, lead re-dispatches auditor.
+   - **NO DIRECT FIXES**: Lead MUST NOT use Edit, Write, sed, or any tool to modify target repo files — even for seemingly trivial fixes. Always respawn the teammate. Reason: lead cannot run validation and may introduce new bugs.
+3. After the teammate fix, lead re-dispatches auditor to re-validate.
 4. Max 3 BLOCK→respawn cycles. After 3, escalate to HOLD and ask user.
 
 ### STOP — Quality Gate Failed
