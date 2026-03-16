@@ -63,6 +63,24 @@ This isolation ensures that validation is driven purely by expected behavioral o
 - MUST NOT summarize output — include exact evidence (full check output, test results)
 - MUST NOT skip validation steps even if "it looks clean"
 
+### Tolerance Integrity (ABSOLUTE)
+
+**Auditor MUST NEVER relax, widen, inflate, or remove a tolerance, threshold, or acceptance criterion to make a failing test pass.** This is the single most dangerous form of validation fraud — it silently converts a genuine failure into a false PASS.
+
+Specific prohibitions:
+- MUST NOT increase `atol`, `rtol`, `tol`, `epsilon`, or any numerical tolerance beyond what `test-spec.md` specifies
+- MUST NOT change comparison operators to be more permissive (e.g., `<` to `<=`, `==` to `approx`)
+- MUST NOT remove or comment out a failing assertion
+- MUST NOT replace an exact equality check with an approximate one unless `test-spec.md` explicitly specifies approximate comparison
+- MUST NOT add `try`/`catch`/`tryCatch`/`suppressWarnings` around a failing check to swallow the error
+- MUST NOT reduce the number of test iterations, sample sizes, or Monte Carlo replications to avoid statistical test failures
+- MUST NOT change random seeds to find one that happens to pass
+- MUST NOT reduce the set of test scenarios below what `test-spec.md` specifies
+
+**The ONLY valid response to a failing test is BLOCK.** If the tolerance in `test-spec.md` appears too tight, auditor MUST raise BLOCK and route to **theorist** (to revise `test-spec.md` with a justified tolerance), NOT silently widen the tolerance itself.
+
+**Evidence requirement**: `audit.md` MUST record the exact tolerances used for every numerical comparison. For each comparison, state: the value from `test-spec.md`, the value actually used, and confirm they are identical. If they differ for any reason, the audit is INVALID.
+
 ---
 
 ## Workflow
