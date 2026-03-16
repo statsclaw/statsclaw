@@ -46,13 +46,14 @@ This section is the entry point for every non-trivial user request. You MUST fol
 6. **DISPATCH TEAMMATES (Two-Pipeline Architecture)**: See "Agent Teams Model" below for the architecture. Dispatch per the selected workflow:
    - a. **theorist** — ALWAYS dispatched for non-trivial requests. **MANDATORY when the user uploads files** (PDF, Word, txt, tex, images with formulas) — these contain primary source material that theorist must deeply comprehend before any specs are produced. Pass ALL uploaded file paths in the dispatch prompt. Theorist produces `comprehension.md` (verification of understanding), `spec.md` (code pipeline), and `test-spec.md` (test pipeline). **If theorist raises HOLD with comprehension questions, lead MUST forward them to the user via `AskUserQuestion` and re-dispatch theorist with the answers. Iterate until theorist confirms FULLY UNDERSTOOD.** Update status to `SPEC_READY`.
    - b. **builder + auditor IN PARALLEL** — After theorist completes, dispatch BOTH in the SAME message. Builder gets `spec.md` ONLY. Auditor gets `test-spec.md` ONLY. Update status to `PIPELINES_COMPLETE` after BOTH complete.
-   - c. **scribe** — Dispatch **AFTER builder completes** (scribe reads `implementation.md`). Dispatch with `isolation: "worktree"`. Produces `architecture.md` (mandatory, written to BOTH target repo root AND run directory), a **log entry** (written to `<target-repo>/log/<YYYY-MM-DD>-<short-description>.md`), and `docs.md`. Update status to `DOCUMENTED`.
-      - **When to dispatch scribe**: Scribe is MANDATORY for any request that creates new files, deletes files, moves code between files, changes module boundaries, or touches 5+ files. Scribe is OPTIONAL only for small, localized changes (bug fix in a single file, config tweak). When in doubt, dispatch scribe — the architecture.md is always valuable.
-      - **CRITICAL**: If the request involves refactoring, restructuring, deduplication across files, or creating new utility modules, scribe MUST be dispatched. These changes alter the architecture and MUST be documented.
-      - **Log entry**: Every scribe run MUST produce a log entry in `<target-repo>/log/` using the template at `templates/log-entry.md`. The log entry is a **handoff document** (what changed, files affected, handoff notes for the next developer) combined with a **design note** (key decisions and rationale). Log entries accumulate over time as a traceable record of all code updates.
-   - d. **skeptic** — ALWAYS dispatched after both pipelines complete (and scribe, if dispatched). Reads ALL artifacts. Produces `review.md` with verdict. Update status to `REVIEW_PASSED` or `STOPPED`.
-   - e. **github** — ONLY if the user asked to ship, or issue-patrol is active. Produces `github.md`.
-      - **Log entry fallback**: If scribe was NOT dispatched (workflow 1 — small change), github MUST produce a minimal log entry in `<target-repo>/log/<YYYY-MM-DD>-<short-description>.md` before committing using the template at `templates/log-entry.md`. This ensures EVERY shipped change has a log entry, regardless of whether scribe ran.
+   - c. **scribe** — **ALWAYS dispatched** after both pipelines complete. Dispatch with `isolation: "worktree"`. Scribe is the **single owner** of all documentation, logging, and process recording in the target repo. Scribe reads ALL available run artifacts (`comprehension.md`, `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `mailbox.md`). Produces:
+      - `architecture.md` (mandatory, written to BOTH target repo root AND run directory)
+      - **Log entry with process record** (written to `<target-repo>/log/<YYYY-MM-DD>-<short-description>.md`) — captures the entire workflow: proposals from theorist, implementation decisions, validation results with exact tolerances, all problems encountered (BLOCK/HOLD/STOP signals) and their resolutions, and the review verdict
+      - `docs.md` (documentation change summary)
+      - Update status to `DOCUMENTED`.
+      - **Log entry**: Every scribe run MUST produce a log entry in `<target-repo>/log/` using the template at `templates/log-entry.md`. The log entry includes a **process record** (complete audit trail of proposals, tests, problems, and resolutions), a **handoff document** (what the next developer needs to know), and a **design note** (key decisions and rationale). Log entries accumulate as a traceable record of all code updates.
+   - d. **skeptic** — ALWAYS dispatched after scribe completes. Reads ALL artifacts from both pipelines and scribe. Produces `review.md` with verdict. Update status to `REVIEW_PASSED` or `STOPPED`.
+   - e. **github** — ONLY if the user asked to ship, or issue-patrol is active. Produces `github.md`. Scribe has already produced the log entry — github stages and commits it along with all other changes.
    - **PIPELINE ISOLATION**: builder NEVER receives `test-spec.md`. Auditor NEVER receives `spec.md` or `implementation.md`. See `skills/isolation/SKILL.md`.
 7. **GATE**: Update `status.md` after EVERY teammate completes. Read the output artifact. Do NOT proceed past `STOP` or `BLOCK` signals. Respawn the responsible teammate on failure (max 3 retries per teammate before `HOLD`).
 8. **AUTONOMOUS CONTINUATION**: Do NOT pause between stages to ask the user "should I continue?". Continue automatically through the full workflow until `DONE`, `HOLD`, or `STOP`.
@@ -76,7 +77,8 @@ Short prompts MUST work. A user message like "Work on https://github.com/foo/bar
 | `PIPELINES_COMPLETE` | Builder dispatched with `isolation: "worktree"`, auditor dispatched | Agent tool calls must exist |
 | `PIPELINES_COMPLETE` | Pipeline isolation verified | Builder prompt has no test-spec.md; auditor prompt has no spec.md |
 | `PIPELINES_COMPLETE` | Lead did NOT run any validation command directly | Self-check: no Bash calls to R CMD check, pytest, npm test, etc. |
-| `DOCUMENTED` | `architecture.md` exists in BOTH run directory AND target repo root; `docs.md` exists in run directory; log entry exists in `<target-repo>/log/` | Read all file paths |
+| `DOCUMENTED` | `architecture.md` exists in BOTH run directory AND target repo root; `docs.md` exists in run directory; log entry with process record exists in `<target-repo>/log/` | Read all file paths; verify log entry contains Process Record section |
+| `DOCUMENTED` | Scribe was dispatched via `Agent` tool | Agent tool call must exist |
 | `DOCUMENTED` | `architecture.md` and `log/` excluded from release packages | Verify `.Rbuildignore` / `.npmignore` / etc. updated per profile |
 | `REVIEW_PASSED` | `review.md` exists with verdict `PASS` or `PASS WITH NOTE` | Read the file, check verdict |
 | `REVIEW_PASSED` | Skeptic was dispatched via `Agent` tool | Agent tool call must exist |
@@ -166,7 +168,7 @@ Write your artifact to: [STATSCLAW_PATH]/.statsclaw/runs/[REQUEST_ID]/[artifact]
 
 **Mandatory parallel dispatch**: builder + auditor — MUST be dispatched in the SAME message after theorist completes.
 
-**Sequential**: theorist → (builder ∥ auditor) → scribe (if needed, reads `implementation.md`) → skeptic → github.
+**Sequential**: theorist → (builder ∥ auditor) → scribe (MANDATORY, reads ALL run artifacts) → skeptic → github.
 
 **Pipeline isolation at dispatch**: builder gets `spec.md` path (NEVER `test-spec.md`). Auditor gets `test-spec.md` path (NEVER `spec.md`). Skeptic gets ALL artifacts.
 
@@ -200,6 +202,8 @@ StatsClaw uses Agent Teams exclusively. You are the Team Lead (`lead`). You MUST
   (code pipeline)          (test pipeline)
            \                      /
             \                    /
+              scribe (recording)
+                    |
               skeptic (convergence)
                     |
                   github
@@ -211,13 +215,13 @@ StatsClaw uses Agent Teams exclusively. You are the Team Lead (`lead`). You MUST
 | Analysis | `theorist` | Bridge | Produces `spec.md` AND `test-spec.md` | `.agents/theorist.md` |
 | Code | `builder` | Code | Implements from `spec.md` only (worktree) | `.agents/builder.md` |
 | Test | `auditor` | Test | Validates from `test-spec.md` only | `.agents/auditor.md` |
-| Docs | `scribe` | Code | Updates documentation (conditional, worktree) | `.agents/scribe.md` |
+| Recording | `scribe` | Both | Architecture, process-record log, documentation (mandatory, worktree) | `.agents/scribe.md` |
 | Convergence | `skeptic` | Both | Cross-compares both pipelines; ship verdict | `.agents/skeptic.md` |
 | Ship | `github` | — | Commits, pushes, PRs, issue comments (conditional) | `.agents/github.md` |
 
-**Mandatory teammates** (never skip for non-trivial requests): theorist, builder, auditor, skeptic.
+**Mandatory teammates** (never skip for non-trivial requests): theorist, builder, auditor, scribe, skeptic.
 
-**Conditional teammates**: scribe (see dispatch criteria in step 6c — mandatory for multi-file or structural changes), github (ship requested).
+**Conditional teammates**: github (ship requested).
 
 Each agent's full workflow, allowed reads/writes, and must-not rules are defined in its `.agents/*.md` file. Pipeline isolation rules are in `skills/isolation/SKILL.md`. Artifact handoff rules are in `skills/handoff/SKILL.md`.
 
@@ -229,11 +233,11 @@ Each agent's full workflow, allowed reads/writes, and must-not rules are defined
 
 | # | Name | Trigger | Agent Sequence |
 | --- | --- | --- | --- |
-| 1 | Standard | Small code change (≤4 files, no structural change) | `lead → theorist → [builder ∥ auditor] → skeptic` |
+| 1 | Standard | Small code change (≤4 files, no structural change) | `lead → theorist → [builder ∥ auditor] → scribe → skeptic` |
 | 2 | With Docs | Code change + docs, OR structural change (≥5 files, new/deleted files, refactoring) | `lead → theorist → [builder ∥ auditor] → scribe → skeptic` |
-| 3 | With Ship | Code change + ship | `lead → theorist → [builder ∥ auditor] → skeptic → github` |
-| 4 | Issue Patrol | Scan + fix multiple issues | `lead scans → per issue: theorist → [builder ∥ auditor] → skeptic → github` |
-| 5 | Single Issue | Fix one named issue | `lead → theorist → [builder ∥ auditor] → skeptic → github` (ship is implicit — fixing an issue implies pushing the fix) |
+| 3 | With Ship | Code change + ship | `lead → theorist → [builder ∥ auditor] → scribe → skeptic → github` |
+| 4 | Issue Patrol | Scan + fix multiple issues | `lead scans → per issue: theorist → [builder ∥ auditor] → scribe → skeptic → github` |
+| 5 | Single Issue | Fix one named issue | `lead → theorist → [builder ∥ auditor] → scribe → skeptic → github` (ship is implicit — fixing an issue implies pushing the fix) |
 | 6 | Validation | Run tests only | `lead → auditor` |
 | 7 | Ship Only | Push reviewed changes | `lead → skeptic → github` |
 | 8 | Review Only | Assess without shipping | `lead → skeptic` |
@@ -338,7 +342,7 @@ When auditor issues BLOCK, lead MUST follow this exact sequence:
 
 Each run moves through explicit states:
 
-`CREDENTIALS_VERIFIED` → `NEW` → `PLANNED` → `SPEC_READY` → `PIPELINES_COMPLETE` → `DOCUMENTED`? → `REVIEW_PASSED` → `READY_TO_SHIP` → `DONE`
+`CREDENTIALS_VERIFIED` → `NEW` → `PLANNED` → `SPEC_READY` → `PIPELINES_COMPLETE` → `DOCUMENTED` → `REVIEW_PASSED` → `READY_TO_SHIP` → `DONE`
 
 Interrupt states (can occur at any point):
 - `HOLD` — waiting for user input (only unblocked by user response)
@@ -388,6 +392,7 @@ For non-trivial requests, you MUST continue through the selected workflow withou
 - **Ship actions are explicit.** Do not push unless the user asked, issue-patrol is active, or a single-issue fix was requested (workflow 5 — fixing an issue implies pushing the fix).
 - **Surgical scope.** Each run modifies only what the request requires.
 - **Parallel when possible.** Builder and auditor are ALWAYS dispatched in parallel.
+- **Tolerance integrity is absolute.** Auditor MUST NEVER relax tolerances, thresholds, or acceptance criteria to make a failing test pass. The only valid response to a genuine failure is BLOCK. Skeptic cross-audits every tolerance against test-spec.md.
 
 ---
 

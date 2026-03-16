@@ -18,6 +18,18 @@ Downstream teammates MUST reuse upstream artifacts. They MUST NOT re-discover or
 
 ---
 
+## Artifact Naming Convention
+
+**ALL artifacts passed between agents MUST use the `.md` (Markdown) file extension.** This is a hard requirement, not a style preference. Markdown ensures artifacts are human-readable, diff-friendly, and renderable on GitHub.
+
+Rules:
+- Every handoff artifact is a `.md` file: `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `review.md`, `docs.md`, `github.md`, `comprehension.md`, `architecture.md`, `mailbox.md`, `credentials.md`, `status.md`, `request.md`, `impact.md`
+- Log entries in `<target-repo>/log/` MUST be `.md` files: `log/<YYYY-MM-DD>-<short-slug>.md`
+- Lock files MUST be `.md` files
+- No agent may produce a handoff artifact in any other format (no `.txt`, `.json`, `.yaml`, `.html`)
+
+---
+
 ## Output Artifacts
 
 Each teammate produces specific output artifacts per run stage:
@@ -30,10 +42,9 @@ Each teammate produces specific output artifacts per run stage:
 | builder | `implementation.md` | `.statsclaw/runs/<request-id>/implementation.md` | Code Pipeline output |
 | auditor | `audit.md` | `.statsclaw/runs/<request-id>/audit.md` | Test Pipeline output |
 | scribe | `architecture.md` | `.statsclaw/runs/<request-id>/architecture.md` | Architecture (mandatory) |
-| scribe | `log/<date>-<slug>.md` | `<TARGET_REPO>/log/<YYYY-MM-DD>-<short-slug>.md` | Log entry (mandatory, target repo) |
-| scribe | `docs.md` | `.statsclaw/runs/<request-id>/docs.md` | Code Pipeline (docs) |
+| scribe | `log/<date>-<slug>.md` | `<TARGET_REPO>/log/<YYYY-MM-DD>-<short-slug>.md` | Log entry with process record (mandatory, target repo) |
+| scribe | `docs.md` | `.statsclaw/runs/<request-id>/docs.md` | Documentation changes |
 | skeptic | `review.md` | `.statsclaw/runs/<request-id>/review.md` | Convergence output |
-| github | `log/<date>-<slug>.md` | `<TARGET_REPO>/log/<YYYY-MM-DD>-<short-slug>.md` | Log entry fallback (when scribe not dispatched) |
 | github | `github.md` | `.statsclaw/runs/<request-id>/github.md` | Externalization output |
 
 ---
@@ -76,8 +87,13 @@ theorist
                             └── audit.md           │
                                    │               │
                                    ▼               ▼
+                                scribe (recording)
+                         reads ALL artifacts from both pipelines
+                         produces: architecture.md, log/, docs.md
+                                   │
+                                   ▼
                                skeptic (convergence)
-                          reads ALL from both pipelines
+                          reads ALL from both pipelines + scribe output
                                    │
                                    └── review.md
                                           │
@@ -85,12 +101,12 @@ theorist
                                        github
 ```
 
-**Key differences from linear handoff:**
+**Key properties:**
 1. Theorist produces TWO artifacts (not one)
 2. Builder and auditor receive DIFFERENT artifacts and run IN PARALLEL
 3. Neither builder nor auditor sees the other's input or output
-4. Skeptic is the FIRST agent to see both pipelines' artifacts together
-5. Scribe (if needed) runs from implementation.md, not from both pipelines
+4. Scribe is MANDATORY — produces architecture diagram, process-record log entry, and docs
+5. Skeptic is the convergence agent that cross-compares both pipelines and scribe's output
 
 ---
 
@@ -104,9 +120,14 @@ theorist
 - Lead passes: `test-spec.md`, `request.md`, `impact.md`, `mailbox.md`
 - Lead MUST NOT pass: `spec.md`
 
-### Builder + Auditor → Skeptic (Convergence)
-- Lead passes: ALL artifacts — `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `request.md`, `impact.md`, `mailbox.md`, `docs.md` (if exists)
-- Skeptic is the ONLY agent that receives artifacts from both pipelines
+### Builder + Auditor → Scribe (Recording)
+- Lead passes: ALL available artifacts — `comprehension.md`, `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `request.md`, `impact.md`, `mailbox.md`
+- Note: `review.md` does not exist yet (skeptic runs after scribe). If this is a re-run after STOP, `review.md` from the previous cycle may exist.
+- Scribe reads everything to produce the process-record log entry, architecture diagram, and docs
+
+### Scribe → Skeptic (Convergence)
+- Lead passes: ALL artifacts — `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `architecture.md`, `docs.md`, `request.md`, `impact.md`, `mailbox.md`, `comprehension.md`
+- Skeptic is the convergence agent that cross-compares both pipelines AND scribe's output
 
 ### Skeptic → Github
 - Lead passes: `review.md`, `credentials.md`, `implementation.md`, `audit.md`
@@ -132,7 +153,8 @@ After each teammate returns, lead MUST:
 ### After Builder and Auditor Both Complete:
 - Read both `implementation.md` and `audit.md`
 - Check for BLOCK from auditor (if so, respawn builder with failure details)
-- If both succeeded, dispatch skeptic with ALL artifacts
+- If both succeeded, dispatch scribe with ALL artifacts (scribe produces architecture.md, log entry with process record, and docs.md)
+- After scribe completes, dispatch skeptic with ALL artifacts (including scribe's output)
 
 ---
 
