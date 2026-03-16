@@ -20,11 +20,17 @@ Lead runs these checks in order. The first successful method is used.
 echo "${GITHUB_TOKEN:+SET}"
 ```
 
-If `GITHUB_TOKEN` is set, configure `gh` and `git`:
+If `GITHUB_TOKEN` is set, configure git for the **target repository**:
 ```bash
+# Configure the target repo's remote with the token (most reliable method)
+cd <TARGET_REPO_CHECKOUT>
+git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/<owner>/<repo>.git"
+
+# Also configure gh CLI if available
 echo "$GITHUB_TOKEN" | gh auth login --with-token 2>/dev/null
-gh auth status
 ```
+
+**CRITICAL**: Always configure the **target repository's** git remote, not just the gh CLI. The token must be embedded in the target repo's remote URL for `git push` to work.
 
 ### Step 2 — Check gh CLI Auth
 
@@ -100,22 +106,24 @@ git remote set-url origin "git@github.com:<owner>/<repo>.git"
 
 ## Verification
 
-After configuration, ALWAYS verify:
+After configuration, ALWAYS verify **in the target repository checkout**:
 
 ```bash
-# Test git access (read access — confirms auth works)
+# MUST run these commands inside the target repo checkout, NOT in StatsClaw or any other repo
+cd <TARGET_REPO_CHECKOUT>
+
+# Test write access (PREFERRED — confirms push ability to the actual target)
+git push --dry-run origin <branch> 2>&1
+
+# Fallback: test read access (only if push --dry-run is not feasible)
 git ls-remote origin 2>&1
-
-# Test write access (preferred — confirms push ability)
-git push --dry-run origin HEAD 2>&1
-
-# Test gh CLI access
-gh repo view <owner/repo> --json name 2>&1
 ```
+
+**CRITICAL**: The verification MUST target the actual repository the workflow will push to. Testing against a different repository (e.g., the StatsClaw framework repo) does NOT satisfy this gate. A credential that works for repo A may not work for repo B.
 
 **Note**: `git ls-remote` only confirms **read** access. A read-only token will pass `git ls-remote` but fail on push. Use `git push --dry-run` when possible to confirm write access. If `--dry-run` is not feasible (e.g., no commits yet), proceed with `git ls-remote` and note in `credentials.md` that write access is unconfirmed until first push.
 
-Both `git ls-remote` (or `git push --dry-run`) and `gh repo view` must succeed. If either fails, retry with the next method or ask the user.
+If verification fails, retry with the next detection method or ask the user.
 
 ---
 

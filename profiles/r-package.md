@@ -36,6 +36,17 @@ Detect this profile when the target repository contains:
 - `usethis` — package scaffolding helpers
 - `covr` — test coverage reporting
 
+## Build Exclusions
+
+The following development-only artifacts MUST be excluded from CRAN tarballs via `.Rbuildignore`:
+
+| Pattern | Purpose |
+| --- | --- |
+| `^architecture\.md$` | Architecture diagram (development-only) |
+| `^log$` | Change log entries with handoff docs and design notes (development-only) |
+
+Scribe and github teammates are responsible for appending these patterns. Check before appending to avoid duplicates.
+
 ## Builder Notes
 
 - Respect the existing exported API; do not rename or remove exports without explicit request.

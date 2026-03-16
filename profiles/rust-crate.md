@@ -34,6 +34,17 @@ Detect this profile when the target repository contains:
 - `rustdoc` — documentation generator
 - `miri` — undefined behavior detector (for unsafe code)
 
+## Build Exclusions
+
+The following development-only artifacts MUST be excluded from crate packages via `Cargo.toml` `[package] exclude`:
+
+| Entry | Purpose |
+| --- | --- |
+| `architecture.md` | Architecture diagram (development-only) |
+| `log/` | Change log entries with handoff docs and design notes (development-only) |
+
+Scribe and github teammates are responsible for adding these entries. Check before adding to avoid duplicates.
+
 ## Builder Notes
 
 - Follow Rust conventions: snake_case for functions/variables, PascalCase for types, SCREAMING_SNAKE_CASE for constants.

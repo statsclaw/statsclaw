@@ -33,6 +33,10 @@ Detect this profile when the target repository contains:
 - `gofmt` / `goimports` — formatting
 - `go generate` — code generation
 
+## Build Exclusions
+
+Go modules automatically ignore non-`.go` files, so `architecture.md` and `log/` require no explicit exclusion. However, these artifacts are still development-only and MUST NOT be treated as part of the module's source.
+
 ## Builder Notes
 
 - Follow Go conventions: exported names are PascalCase, unexported are camelCase.
