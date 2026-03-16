@@ -50,8 +50,9 @@ StatsClaw uses two fully isolated execution pipelines that converge at the skept
 
 **Key properties:**
 - **Theorist is always mandatory** — it bridges both pipelines
-- **Builder and auditor run in parallel** — each with its own isolated spec
-- **Pipeline isolation is enforced** — builder never sees test-spec.md, auditor never sees spec.md
+- **Builder handles code, scribe handles docs** — for docs-only requests, scribe replaces builder as implementer
+- **Builder and auditor run in parallel** (code workflows) — each with its own isolated spec
+- **Pipeline isolation is enforced** — builder/scribe never sees test-spec.md, auditor never sees spec.md
 - **Adversarial verification** — if both pipelines converge independently, confidence is high
 
 ---
@@ -59,7 +60,8 @@ StatsClaw uses two fully isolated execution pipelines that converge at the skept
 ## Workflow
 
 ```text
-lead plans → theorist → [builder ∥ auditor] → scribe → skeptic → github?
+Code:      lead → theorist → [builder ∥ auditor] → scribe → skeptic → github?
+Docs-only: lead → theorist → scribe → auditor → skeptic → github?
 ```
 
 States: `CREDENTIALS_VERIFIED → NEW → PLANNED → SPEC_READY → PIPELINES_COMPLETE → DOCUMENTED → REVIEW_PASSED → READY_TO_SHIP → DONE`

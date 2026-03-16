@@ -65,16 +65,17 @@ A clear status indicator:
 | --- | --- |
 | theorist | `SPEC_COMPLETE` — comprehension verified, both specs produced | `HOLD` — needs user input to resolve ambiguity |
 | builder | `IMPLEMENTED` — code and unit tests written | `HOLD` — spec unclear or API conflict |
-| auditor | `PASS` — all validation checks green | `BLOCK` — validation failed (routes to builder/theorist) |
-| scribe | `DOCUMENTED` — docs and architecture diagram produced | `HOLD` — implementation unclear or contradicts spec |
+| auditor | `PASS` — all validation checks green | `BLOCK` — validation failed (routes to builder/scribe/theorist) |
+| scribe (recorder) | `DOCUMENTED` — recording artifacts produced | `HOLD` — implementation unclear or contradicts spec |
+| scribe (implementer) | `IMPLEMENTED` + `DOCUMENTED` — docs written and recorded | `HOLD` — spec unclear or contradicts existing docs |
 | skeptic | `PASS` / `PASS WITH NOTE` — safe to ship | `STOP` — quality gate failed (routes per table) |
 | github | `SHIPPED` — pushed, PR created | `HOLD` — permission or access issue |
 
 ---
 
-## Handoff Chain (Two-Pipeline Architecture)
+## Handoff Chain
 
-The handoff chain reflects the parallel pipeline structure:
+### Code Workflows (1, 2, 4, 5)
 
 ```
 theorist
@@ -93,43 +94,78 @@ theorist
                                    │
                                    ▼
                                skeptic (convergence)
-                          reads ALL from both pipelines + scribe output
                                    │
-                                   └── review.md
-                                          │
-                                          ▼
-                                       github
+                                   ▼
+                                github
+```
+
+### Docs-Only Workflow (3)
+
+```
+theorist
+├── spec.md ──────────→ scribe (implementer + recorder)
+│                           │
+│                           ├── documentation changes
+│                           ├── implementation.md
+│                           ├── architecture.md, log/, docs.md
+│                           │
+│                           ▼
+└── test-spec.md ─────→ auditor (validates docs build)
+                            │
+                            └── audit.md
+                                   │
+                                   ▼
+                               skeptic (convergence)
+                                   │
+                                   ▼
+                                github
 ```
 
 **Key properties:**
 1. Theorist produces TWO artifacts (not one)
-2. Builder and auditor receive DIFFERENT artifacts and run IN PARALLEL
-3. Neither builder nor auditor sees the other's input or output
-4. Scribe is MANDATORY — produces architecture diagram, process-record log entry, and docs
-5. Skeptic is the convergence agent that cross-compares both pipelines and scribe's output
+2. **Code workflows**: builder ∥ auditor in parallel, then scribe records
+3. **Docs-only**: scribe replaces builder as implementer, then auditor validates sequentially
+4. Neither implementer (builder/scribe) nor auditor sees the other's spec
+5. Scribe is MANDATORY — the single owner of all documentation and recording
+6. Skeptic is the convergence agent that cross-compares all outputs
 
 ---
 
 ## Pipeline-Aware Handoff Rules
 
-### Theorist → Builder (Code Pipeline)
+### Code Workflows (1, 2, 4, 5)
+
+**Theorist → Builder (Code Pipeline)**
 - Lead passes: `spec.md`, `request.md`, `impact.md`, `mailbox.md`
 - Lead MUST NOT pass: `test-spec.md`
 
-### Theorist → Auditor (Test Pipeline)
+**Theorist → Auditor (Test Pipeline)**
 - Lead passes: `test-spec.md`, `request.md`, `impact.md`, `mailbox.md`
 - Lead MUST NOT pass: `spec.md`
 
-### Builder + Auditor → Scribe (Recording)
+**Builder + Auditor → Scribe (Recording)**
 - Lead passes: ALL available artifacts — `comprehension.md`, `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `request.md`, `impact.md`, `mailbox.md`
-- Note: `review.md` does not exist yet (skeptic runs after scribe). If this is a re-run after STOP, `review.md` from the previous cycle may exist.
 - Scribe reads everything to produce the process-record log entry, architecture diagram, and docs
 
-### Scribe → Skeptic (Convergence)
+### Docs-Only Workflow (3)
+
+**Theorist → Scribe (Implementer + Recorder)**
+- Lead passes: `spec.md`, `request.md`, `impact.md`, `mailbox.md`, `comprehension.md`
+- Scribe receives `spec.md` as the implementer (replaces builder). Implements documentation AND produces recording artifacts.
+- Lead MUST NOT pass: `test-spec.md`
+
+**Scribe → Auditor (Validation)**
+- Lead passes: `test-spec.md`, `request.md`, `impact.md`, `mailbox.md`
+- Auditor validates docs build from `test-spec.md`. Sequential — dispatched AFTER scribe completes.
+- Lead MUST NOT pass: `spec.md`
+
+### All Workflows
+
+**→ Skeptic (Convergence)**
 - Lead passes: ALL artifacts — `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `architecture.md`, `docs.md`, `request.md`, `impact.md`, `mailbox.md`, `comprehension.md`
 - Skeptic is the convergence agent that cross-compares both pipelines AND scribe's output
 
-### Skeptic → Github
+**Skeptic → Github**
 - Lead passes: `review.md`, `credentials.md`, `implementation.md`, `audit.md`
 
 ---
@@ -147,14 +183,14 @@ After each teammate returns, lead MUST:
 
 ### After Theorist Completes:
 - Verify BOTH `spec.md` AND `test-spec.md` exist
-- Dispatch builder AND auditor IN PARALLEL in the same message
-- Give builder only `spec.md`; give auditor only `test-spec.md`
+- **Code workflows**: Dispatch builder AND auditor IN PARALLEL in the same message. Give builder only `spec.md`; give auditor only `test-spec.md`.
+- **Docs-only workflow**: Dispatch scribe with `spec.md` (as implementer). After scribe completes, dispatch auditor with `test-spec.md`.
 
-### After Builder and Auditor Both Complete:
-- Read both `implementation.md` and `audit.md`
-- Check for BLOCK from auditor (if so, respawn builder with failure details)
-- If both succeeded, dispatch scribe with ALL artifacts (scribe produces architecture.md, log entry with process record, and docs.md)
-- After scribe completes, dispatch skeptic with ALL artifacts (including scribe's output)
+### After Implementer and Auditor Both Complete:
+- Read `implementation.md` (or `docs.md`) and `audit.md`
+- Check for BLOCK from auditor (if so, respawn the implementer — builder for code, scribe for docs — with failure details)
+- **Code workflows**: If both succeeded, dispatch scribe for recording with ALL artifacts. After scribe completes, dispatch skeptic.
+- **Docs-only workflow**: Scribe already ran as implementer and produced recording artifacts. Dispatch skeptic directly with ALL artifacts.
 
 ---
 
