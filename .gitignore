@@ -1,6 +1,9 @@
 # StatsClaw runtime state (never committed)
 .statsclaw/
 
+# Target repositories (user's working copies, never committed)
+.repo/
+
 # R artifacts
 .Rhistory
 .Rapp.history

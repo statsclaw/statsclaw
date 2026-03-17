@@ -125,7 +125,8 @@ StatsClaw/
 ├── skills/             # shared protocol skills (6 skills)
 ├── profiles/           # language execution rules (6 languages)
 ├── templates/          # runtime artifact templates
-└── .statsclaw/         # local only, auto-created, git-ignored
+├── .repo/              # target repo checkouts (git-ignored)
+└── .statsclaw/         # local runtime state (git-ignored)
 ```
 
 ---
