@@ -106,6 +106,10 @@ This is the core value of the two-pipeline architecture. Check:
 - Did builder's unit tests and auditor's validation scenarios overlap appropriately? (Complete overlap suggests isolation failure; zero overlap suggests specification gaps)
 - For numerical methods: do builder's unit test values and auditor's benchmark values agree within tolerance?
 
+**Verify Per-Test Result Table**: audit.md MUST contain a Per-Test Result Table with one row per metric per scenario. If the table is missing or incomplete (fewer rows than test scenarios in test-spec.md): **STOP — per-test result table missing or incomplete. Route to auditor.**
+
+**Verify Before/After Comparison Table**: For code changes, audit.md MUST contain a Before/After Comparison Table showing how key metrics changed from old to new implementation. If the table is missing (and this is a code change, not a new feature): **STOP — before/after comparison table missing. Route to auditor.** Check that any metrics that worsened are flagged and justified.
+
 If the two pipelines converge: this is strong evidence of correctness.
 If they diverge: identify the specific discrepancy and route to the responsible agent.
 
@@ -159,7 +163,7 @@ Also check for these evasion patterns:
 Scribe is mandatory in all non-lightweight workflows. Verify scribe's output:
 
 1. **Architecture diagram**: Verify `architecture.md` exists in BOTH the run directory AND the target repo root, and contains Mermaid diagrams (module structure, function call graph, data flow). If `architecture.md` is missing from either location, raise **STOP — architecture diagram not produced or not written to target repo**.
-2. **Log entry**: Verify a log entry exists in `<target-repo>/log/` for this run. If missing, raise **STOP — log entry not produced**. Verify it contains: What Changed, Files Changed, Design Decisions, Handoff Notes, Verification sections.
+2. **Log entry**: Verify a log entry exists in `<target-repo>/log/` for this run. If missing, raise **STOP — log entry not produced**. Verify it contains: What Changed, Files Changed, Process Record (with Per-Test Result Table, Before/After Comparison Table, Problems and Resolutions), Design Decisions, Handoff Notes.
 3. **Release exclusion**: Verify `architecture.md` and `log/` are excluded from release packages — check that `.Rbuildignore` (R), `.npmignore` (npm), `MANIFEST.in` (Python), or `Cargo.toml` exclude (Rust) includes both per the project profile. If not excluded, raise **STOP — development artifacts would ship in release package**.
 4. Do the architecture diagrams accurately reflect the current codebase structure? Are changed functions highlighted?
 5. Do function signatures in docs match the implementation?
@@ -214,7 +218,9 @@ Before issuing PASS, verify you have actually done — not assumed — the follo
 - [ ] Verified auditor ran required validation commands with exact evidence (step 7)
 - [ ] Verified auditor executed ALL test-spec.md scenarios (step 7)
 - [ ] Cross-referenced ALL numerical tolerances in audit.md against test-spec.md — no inflation (step 7a)
-- [ ] Checked documentation, architecture diagram, process-record log entry, and release exclusions (step 8)
+- [ ] Verified Per-Test Result Table present in audit.md with all scenarios covered (step 4)
+- [ ] Verified Before/After Comparison Table present in audit.md for code changes (step 4)
+- [ ] Checked documentation, architecture diagram, process-record log entry (with both tables), and release exclusions (step 8)
 
 ---
 

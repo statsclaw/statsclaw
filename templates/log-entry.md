@@ -35,10 +35,26 @@ This section captures the full workflow history: what was proposed, what was tes
 
 ### Validation Results (from auditor)
 
+**Per-Test Result Table** (copy from `audit.md` — every test with its specific metrics):
+
+| Test | Metric | Expected | Actual | Tolerance | Rel. Error | Verdict |
+| --- | --- | --- | --- | --- | --- | --- |
+| [test name] | [metric name] | [expected value] | [actual value] | [tolerance] | [rel. error %] | [PASS/FAIL] |
+
+Summary: [N] tests executed, [N] passed, [N] failed.
+
+**Before/After Comparison Table** (copy from `audit.md` — how key metrics changed):
+
+| Metric | Before (old) | After (new) | Change | Interpretation |
+| --- | --- | --- | --- | --- |
+| [metric name] | [old value] | [new value] | [signed change] | [improvement / regression / neutral] |
+
+[If no code changes or new feature with no baseline, note "N/A — [reason]".]
+
+Additional notes:
 - [Validation commands run and their outcomes]
-- [Test scenarios executed: N passed, N failed]
-- [Numerical comparison results with exact tolerances used]
 - [Edge case results]
+- [Any warnings or deferred items]
 
 ### Problems Encountered and Resolutions
 
