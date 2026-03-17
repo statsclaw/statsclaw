@@ -175,7 +175,7 @@ Key formatting rules (from the template):
    - **Process Record** (MANDATORY — this records the entire workflow):
      - **Proposal**: Summarize key points from `spec.md` (algorithm/approach, critical design choices) and `test-spec.md` (test scenarios, tolerances, benchmarks)
      - **Implementation Notes**: Key decisions from `implementation.md`, deviations from spec, unit tests written
-     - **Validation Results**: Commands run and outcomes from `audit.md`, test pass/fail counts, numerical comparisons with exact tolerances
+     - **Validation Results**: Copy the **Per-Test Result Table** from `audit.md` (every test with metric, expected, actual, tolerance, rel. error, verdict). Copy the **Before/After Comparison Table** from `audit.md` (old vs new metrics with interpretation). Include pass/fail summary counts and any additional notes.
      - **Problems Encountered and Resolutions**: EVERY BLOCK, HOLD, or STOP signal that occurred, who it was routed to, and how it was resolved. Read `mailbox.md` for the full signal history. If no problems occurred, explicitly state "No problems encountered."
      - **Review Summary**: If `review.md` exists (e.g., from a previous skeptic pass or re-run), include pipeline isolation status, convergence analysis, tolerance integrity verification, and final verdict. If `review.md` does not exist yet, write "Pending — skeptic review follows scribe."
    - **Design Decisions**: Key rationale from `spec.md` and `implementation.md` — capture decisions that would otherwise be lost
@@ -284,7 +284,7 @@ Append to `mailbox.md` if contradictions with spec or implementation were found.
 - **`log/` entry exists and is non-empty** — this is a hard requirement, not optional
 - Architecture diagram contains at least: module structure (Mermaid), function call graph (Mermaid), reference table
 - Log entry contains at least: What Changed, Files Changed table, Process Record (with Proposal, Implementation Notes, Validation Results, Problems and Resolutions, Review Summary), Design Decisions, Handoff Notes
-- Process Record includes exact tolerances from validation, signal history from mailbox.md, and all BLOCK/HOLD/STOP events
+- Process Record includes Per-Test Result Table and Before/After Comparison Table (copied from `audit.md`), signal history from mailbox.md, and all BLOCK/HOLD/STOP events
 - Changed functions/modules are highlighted in the architecture diagram
 - Every exported function/class is documented
 - No parameter is undocumented

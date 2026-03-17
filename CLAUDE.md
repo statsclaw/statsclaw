@@ -38,7 +38,7 @@ This section is the entry point for every non-trivial user request. You MUST fol
 **CRITICAL: You are the Team Lead (`lead`). You MUST use the `Agent` tool to dispatch every teammate. You MUST NOT perform teammate work yourself. If you catch yourself doing builder, auditor, scribe, skeptic, theorist, or github work directly, STOP and dispatch it to an agent instead.**
 
 1. **SETUP**: Read `.statsclaw/CONTEXT.md`. If it does not exist, create the full local runtime first (see Session Startup below). Read the active package context.
-2. **ACQUIRE TARGET**: If the user request names a repository URL, path, or reference, clone or locate the target repository locally. If acquisition fails, set state to `HOLD` in `status.md` and ask the user. Do NOT proceed without a local checkout.
+2. **ACQUIRE TARGET**: If the user request names a repository URL, path, or reference, clone or locate the target repository under `.repo/` (e.g., `.repo/fect/`). If a checkout already exists in `.repo/`, reuse it (`git pull`). If not, `git clone` into `.repo/`. The `.repo/` directory is git-ignored — target repos are never committed to StatsClaw. If acquisition fails, set state to `HOLD` in `status.md` and ask the user. Do NOT proceed without a local checkout.
 3. **CREATE RUN**: Generate a request ID. Create `.statsclaw/runs/<request-id>/`. Write `request.md` (scope, acceptance criteria, target repo identity). Write `status.md` with state `NEW`.
 4. **VERIFY CREDENTIALS**: Follow `skills/credential-setup/SKILL.md` for the full auto-detection sequence (GITHUB_TOKEN → gh auth → SSH → credential helper → ask user). Write `credentials.md` to the run directory. Update `status.md` to `CREDENTIALS_VERIFIED`.
    - **ENFORCEMENT**: Steps 5–9 are INVALID without a `credentials.md` showing PASS **against the target repo**. The write-access probe MUST target the actual target repository — not a proxy, not StatsClaw, not any other repo. If you find yourself planning or dispatching teammates without confirmed push access, STOP and return to step 4.
@@ -180,7 +180,7 @@ At the start of every session:
 
 1. Read `.statsclaw/CONTEXT.md` if it exists.
 2. If it does not exist, create a minimal local runtime: `.statsclaw/`, `.statsclaw/packages/`, `.statsclaw/runs/`, `.statsclaw/logs/`, `.statsclaw/tmp/`, `CONTEXT.md` from `templates/context.md`, package contexts from `templates/package.md`.
-3. If the user message includes a target repo path or GitHub URL, acquire it.
+3. If the user message includes a target repo path or GitHub URL, acquire it into `.repo/` (clone or pull).
 4. **Verify push credentials** immediately after acquisition — follow `skills/credential-setup/SKILL.md`.
 5. If no target is clear, infer from context or ask one concise question.
 6. Determine the project profile using `skills/profile-detection/SKILL.md` or repo markers in `profiles/*.md`.
@@ -369,8 +369,9 @@ Interrupt states (can occur at any point):
 
 ## Target Repository Boundaries
 
+- Target repositories live under `.repo/` (git-ignored) — they are never committed to StatsClaw
 - When the user target is a repository other than `StatsClaw`, versioned `StatsClaw` files are not part of the write surface
-- All target code changes, validation runs, commits, pushes, and PRs must happen in the target repository
+- All target code changes, validation runs, commits, pushes, and PRs must happen in the target repository under `.repo/`
 - `StatsClaw` only receives local runtime updates under `.statsclaw/`
 
 ---
@@ -478,5 +479,6 @@ StatsClaw/
 │   ├── lock.md
 │   ├── log-entry.md
 │   └── architecture.md
-└── .statsclaw/           # local only, auto-created, git-ignored
+├── .repo/                # target repo checkouts, git-ignored
+└── .statsclaw/           # local runtime state, auto-created, git-ignored
 ```
