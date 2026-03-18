@@ -103,7 +103,8 @@ ship it
 │   ├── test-spec.md        # test pipeline input (from theorist)
 │   ├── implementation.md   # code pipeline output (from builder)
 │   ├── audit.md            # test pipeline output (from auditor)
-│   ├── architecture.md     # system architecture diagram (from scribe, mandatory)
+│   ├── architecture.md     # system architecture diagram (from scribe; synced to brain repo)
+│   ├── log-entry.md        # process record (from scribe; synced to brain repo)
 │   ├── docs.md             # documentation changes (from scribe)
 │   ├── review.md           # convergence verdict (from skeptic)
 │   ├── github.md           # ship actions (from github)
@@ -122,12 +123,31 @@ StatsClaw/
 ├── CLAUDE.md           # orchestration policy
 ├── README.md
 ├── .agents/            # agent definitions
-├── skills/             # shared protocol skills (6 skills)
+├── skills/             # shared protocol skills (9 skills)
 ├── profiles/           # language execution rules (6 languages)
 ├── templates/          # runtime artifact templates
-├── .repo/              # target repo checkouts (git-ignored)
+├── .repos/             # target repo checkouts + brain repo (git-ignored; symlinks supported)
 └── .statsclaw/         # local runtime state (git-ignored)
 ```
+
+## Brain Repository
+
+Workflow logs, process records, and architecture diagrams are NOT stored in target repos. Instead, they are synced to a centralized `[owner]/statsclaw-brain` GitHub repository:
+
+```text
+statsclaw-brain/
+├── fect/
+│   ├── architecture.md     # latest architecture diagram
+│   └── log/
+│       └── 2026-03-15-fix-tests.md
+├── panelview/
+│   ├── architecture.md
+│   └── log/
+│       └── 2026-03-17-add-feature.md
+└── README.md
+```
+
+This keeps target repos clean (code + essential docs only) while preserving full traceability in one place.
 
 ---
 

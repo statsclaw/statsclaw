@@ -12,7 +12,7 @@ Scribe is the **single owner** of all documentation, recording, logging, and pro
 ## Role
 
 - **MANDATORY: Produce an architecture diagram** (`architecture.md`) that maps the target repo's system structure, module dependencies, and key function relationships
-- **MANDATORY: Produce a log entry with process record** in `<target-repo>/log/` that captures the entire workflow: proposals, implementation decisions, validation results, problems encountered, and resolutions
+- **MANDATORY: Produce a log entry with process record** in the run directory (`log-entry.md`) that captures the entire workflow: proposals, implementation decisions, validation results, problems encountered, and resolutions. The github agent syncs this to the brain repo.
 - **Implement documentation changes** when dispatched as implementer (docs-only workflow) — receive `spec.md`, write/edit docs in the target repo
 - Update documentation to reflect the current implementation
 - Write new docs for new features and functions
@@ -47,12 +47,13 @@ Scribe is the **single owner** of all documentation, recording, logging, and pro
 
 ## Allowed Writes
 
-- Target repo: ONLY doc files within the assigned write surface from impact.md
-- Target repo: `architecture.md` at the repository root (mandatory — this is the primary destination)
-- Target repo: `log/<YYYY-MM-DD>-<short-slug>.md` — log entry for this run (mandatory)
-- Run directory: `architecture.md` (copy for run tracking)
+- Target repo: ONLY doc files within the assigned write surface from impact.md (user-facing docs: README, help files, vignettes, man pages)
+- Run directory: `architecture.md` (mandatory — the github agent syncs this to the brain repo)
+- Run directory: `log-entry.md` (mandatory — the github agent syncs this to the brain repo as `log/<YYYY-MM-DD>-<slug>.md`)
 - Run directory: `docs.md` (primary output)
 - Run directory: `mailbox.md` (append-only)
+
+**IMPORTANT**: Scribe does NOT write `architecture.md` or `log/` entries to the target repo. Workflow artifacts go to the run directory only. The github agent handles syncing them to the brain repo (`[owner]/statsclaw-brain`). See `skills/brain-sync/SKILL.md`.
 
 ---
 
@@ -129,24 +130,11 @@ Mark functions/modules that were modified in the current run with a clear indica
 
 #### 1d. Write `architecture.md`
 
-Save the architecture diagram to **TWO locations**:
+Save the architecture diagram to the **run directory only**:
 
-1. **Target repo root**: `<TARGET_REPO>/architecture.md` — this is the **primary destination**. The architecture diagram is a project artifact that belongs in the target repository so it gets committed, pushed, and visible to all contributors.
-2. **Run directory**: `<RUN_DIR>/architecture.md` — copy for StatsClaw run tracking and state verification.
+- **Run directory**: `<RUN_DIR>/architecture.md`
 
-#### 1e. Exclude `architecture.md` from Release Packages
-
-`architecture.md` is a **development-only artifact** for GitHub — it MUST NOT be included in release distributions (CRAN tarballs, PyPI sdists, npm packages, etc.). After writing `architecture.md` to the target repo root, ensure it is excluded from the build:
-
-| Profile | Action |
-| --- | --- |
-| R package | Append `^architecture\.md$` to `.Rbuildignore` (if not already present) |
-| Python package | Add `architecture.md` to `MANIFEST.in` exclude or `[tool.setuptools] exclude` (if not already present) |
-| npm/TypeScript | Add `architecture.md` to `.npmignore` (if not already present) |
-| Rust crate | Add `exclude = ["architecture.md"]` to `[package]` in `Cargo.toml` (if not already present) |
-| Go module | No action needed (Go ignores non-`.go` files in modules) |
-
-**Always check before appending** — do not create duplicate entries.
+The github agent will sync this to the brain repo (`[owner]/statsclaw-brain/<repo-name>/architecture.md`) during brain sync. Scribe does NOT write to the target repo root.
 
 **Use the template at `templates/architecture.md` for consistent formatting across all runs.** The template defines the exact section order, Mermaid graph types, table schemas, and styling conventions.
 
@@ -164,12 +152,11 @@ Key formatting rules (from the template):
 
 ### Step 1f — Write Log Entry with Process Record (MANDATORY)
 
-**This step is NEVER skipped.** After producing the architecture diagram, scribe MUST produce a comprehensive log entry that records the entire workflow process in the target repository. Scribe is the **single owner** of all documentation, logging, and record-keeping in the target repo.
+**This step is NEVER skipped.** After producing the architecture diagram, scribe MUST produce a comprehensive log entry that records the entire workflow process. Scribe is the **single owner** of all documentation, logging, and record-keeping.
 
-1. **Create the `log/` directory** in the target repo root if it does not exist.
-2. **Use the template** at `templates/log-entry.md` for consistent formatting.
-3. **File name**: `log/<YYYY-MM-DD>-<short-slug>.md` where `<short-slug>` is a 2-4 word kebab-case summary of the change (e.g., `2026-03-15-dedup-utils-refactor.md`).
-4. **Fill in ALL sections** — the log entry is a complete process record, not just a summary:
+1. **Use the template** at `templates/log-entry.md` for consistent formatting.
+2. **Write to the run directory**: `<RUN_DIR>/log-entry.md`. Include the intended filename in the header: `<!-- filename: <YYYY-MM-DD>-<short-slug>.md -->` where `<short-slug>` is a 2-4 word kebab-case summary of the change (e.g., `2026-03-15-dedup-utils-refactor.md`). The github agent uses this to name the file when syncing to the brain repo.
+3. **Fill in ALL sections** — the log entry is a complete process record, not just a summary:
    - **What Changed**: Summarize from `implementation.md`
    - **Files Changed**: Table of all files modified/created/deleted (from `implementation.md`)
    - **Process Record** (MANDATORY — this records the entire workflow):
@@ -180,14 +167,10 @@ Key formatting rules (from the template):
      - **Review Summary**: If `review.md` exists (e.g., from a previous skeptic pass or re-run), include pipeline isolation status, convergence analysis, tolerance integrity verification, and final verdict. If `review.md` does not exist yet, write "Pending — skeptic review follows scribe."
    - **Design Decisions**: Key rationale from `spec.md` and `implementation.md` — capture decisions that would otherwise be lost
    - **Handoff Notes**: What the next developer needs to know — gotchas, edge cases, known limitations
-5. **Exclude `log/` from release packages** — same pattern as `architecture.md`:
-   - R package: append `^log$` to `.Rbuildignore` (if not already present)
-   - Python: add `log/` to exclude in `MANIFEST.in` or `[tool.setuptools]`
-   - npm/TypeScript: add `log/` to `.npmignore`
-   - Rust: add `"log/"` to `exclude` in `Cargo.toml`
-   - Go: no action needed
 
-**Quality bar**: A developer joining the project 6 months later should be able to read the `log/` directory chronologically and understand every significant change, why it was made, and what to watch out for.
+**Note**: Scribe does NOT write to the target repo's `log/` directory or modify `.Rbuildignore`/`.npmignore`. The github agent handles syncing log entries to the brain repo (`[owner]/statsclaw-brain/<repo-name>/log/`). See `skills/brain-sync/SKILL.md`.
+
+**Quality bar**: A developer reading the brain repo's `log/` directory chronologically should be able to understand every significant change, why it was made, and what to watch out for.
 
 ---
 
@@ -280,8 +263,9 @@ Append to `mailbox.md` if contradictions with spec or implementation were found.
 
 ## Quality Checks
 
-- **`architecture.md` exists and is non-empty** — this is a hard requirement, not optional
-- **`log/` entry exists and is non-empty** — this is a hard requirement, not optional
+- **`architecture.md` exists in run directory and is non-empty** — this is a hard requirement, not optional
+- **`log-entry.md` exists in run directory and is non-empty** — this is a hard requirement, not optional
+- **`log-entry.md` contains a `<!-- filename: ... -->` header** for the github agent to use during brain sync
 - Architecture diagram contains at least: module structure (Mermaid), function call graph (Mermaid), reference table
 - Log entry contains at least: What Changed, Files Changed table, Process Record (with Proposal, Implementation Notes, Validation Results, Problems and Resolutions, Review Summary), Design Decisions, Handoff Notes
 - Process Record includes Per-Test Result Table and Before/After Comparison Table (copied from `audit.md`), signal history from mailbox.md, and all BLOCK/HOLD/STOP events
@@ -293,16 +277,16 @@ Append to `mailbox.md` if contradictions with spec or implementation were found.
 - Code chunks produce deterministic output
 - References cite original sources with DOI or publication info
 - No internal/unexported items are marked as public
+- **No workflow artifacts written to target repo** — architecture.md and log entries go to run directory only
 
 ---
 
 ## Output
 
 Primary artifacts:
-- `architecture.md` in the **target repo root** (MANDATORY — system architecture diagram with Mermaid graphs, primary destination)
-- `architecture.md` in the run directory (copy for run tracking)
-- `log/<YYYY-MM-DD>-<short-slug>.md` in the **target repo root** (MANDATORY — handoff doc and design notes for traceability)
+- `architecture.md` in the run directory (MANDATORY — system architecture diagram with Mermaid graphs; synced to brain repo by github agent)
+- `log-entry.md` in the run directory (MANDATORY — process record with handoff doc and design notes; synced to brain repo by github agent)
 - `docs.md` in the run directory (documentation change summary)
 
 Secondary: append to `mailbox.md` with any contradictions found.
-Target repo: modified/created doc files within the assigned write surface, plus `architecture.md` and `log/` entry at repo root.
+Target repo: modified/created user-facing doc files within the assigned write surface only. NO workflow artifacts (architecture.md, log entries) in the target repo.
