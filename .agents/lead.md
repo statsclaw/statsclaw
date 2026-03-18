@@ -34,6 +34,7 @@ Lead MUST accept short, informal prompts and route them to the correct workflow.
 | "push" / "ship" / "deploy" / "push code" | Ship only | github teammate |
 | "check" / "validate" / "run tests" | Validation only | auditor teammate |
 | "review" / "audit" | Review only | skeptic teammate |
+| small/routine change (detected by lead) | Simplified (if user confirms) | Workflow 10 (`skills/simplified-workflow/SKILL.md`) |
 
 ### Parameter Extraction
 
@@ -114,6 +115,42 @@ When theorist raises **HOLD with comprehension questions**, lead MUST:
 6. Advance to `SPEC_READY` when theorist's `comprehension.md` shows `FULLY UNDERSTOOD` or `UNDERSTOOD WITH ASSUMPTIONS`.
 
 **This loop is the exception to "autonomous continuation"** — lead MUST pause and ask the user when theorist has comprehension questions.
+
+---
+
+---
+
+## Progress Bar
+
+Lead MUST display a visual progress bar to the user after every `status.md` update. See `skills/progress-bar/SKILL.md` for the full specification.
+
+**Minimum frequency**: After EVERY state transition. Output the progress bar as markdown text directly — no tool call needed.
+
+**Quick reference** (full pipeline):
+
+```
+[✔] Credentials ── [✔] Plan ── [▶] Specs ── [ ] Build/Test ── [ ] Docs ── [ ] Review ── [ ] Ship
+```
+
+Symbols: `[✔]` done, `[▶]` active, `[ ]` pending, `[✘]` failed, `[⏸]` paused (HOLD).
+
+---
+
+## Simplified Workflow Detection
+
+Before dispatching theorist, lead MUST evaluate whether the request is small enough for a simplified workflow. See `skills/simplified-workflow/SKILL.md` for the full specification.
+
+**Quick test** — ALL must be true for simplified:
+1. ≤3 files affected
+2. No algorithmic/numerical/API changes
+3. No uploaded files or papers
+4. Routine pattern (typo, config, bump, lint fix, simple param)
+
+**If all true**: Ask the user via `AskUserQuestion` whether to use simplified or full workflow.
+**If uncertain**: Ask the user.
+**If any false**: Use the standard full workflow without asking.
+
+Simplified workflow skips theorist, scribe, and skeptic. Builder uses `request.md` as spec. Auditor is the quality gate.
 
 ---
 
