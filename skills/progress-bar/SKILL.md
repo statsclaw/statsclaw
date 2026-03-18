@@ -1,0 +1,202 @@
+# Skill: Progress Bar
+
+Renders a visual progress bar to the user showing the current workflow state. Lead MUST call this after every `status.md` update to keep the user informed.
+
+---
+
+## When to Display
+
+- After every state transition in `status.md`
+- When dispatching a teammate (show which stage is active)
+- When a signal (HOLD, BLOCK, STOP) interrupts the workflow
+- At workflow completion (DONE)
+
+---
+
+## Progress Bar Format
+
+Lead outputs the progress bar directly as text (markdown) to the user. No tool call needed — just print it.
+
+### Full Pipeline (Workflows 1, 2, 4, 5)
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  StatsClaw Progress                                          [3/7] │
+│                                                                     │
+│  [✔] Credentials ── [✔] Plan ── [▶] Specs ── [ ] Build/Test        │
+│       ── [ ] Docs ── [ ] Review ── [ ] Ship                        │
+│                                                                     │
+│  ▶ Active: theorist producing specs...                              │
+│  ⏱ Elapsed: 2m 15s                                                  │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Docs-Only Pipeline (Workflow 3)
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  StatsClaw Progress                                          [2/5] │
+│                                                                     │
+│  [✔] Credentials ── [✔] Plan ── [▶] Specs ── [ ] Docs/Implement    │
+│       ── [ ] Review                                                 │
+│                                                                     │
+│  ▶ Active: theorist producing specs...                              │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Lightweight Pipelines (Workflows 6, 7, 8)
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  StatsClaw Progress (lightweight)                            [1/2] │
+│                                                                     │
+│  [▶] Validate ── [ ] Done                                          │
+│                                                                     │
+│  ▶ Active: auditor running validation...                            │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Simplified Pipeline (Workflow 10 — small requests)
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  StatsClaw Progress (simplified)                             [2/4] │
+│                                                                     │
+│  [✔] Plan ── [▶] Implement ── [ ] Validate ── [ ] Ship             │
+│                                                                     │
+│  ▶ Active: builder implementing changes...                          │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## State-to-Step Mapping
+
+### Full Pipeline
+
+| State | Step # | Label | Symbol |
+| --- | --- | --- | --- |
+| `CREDENTIALS_VERIFIED` | 1 | Credentials | `[✔]` when passed |
+| `PLANNED` | 2 | Plan | `[✔]` when impact.md written |
+| `SPEC_READY` | 3 | Specs | `[✔]` when theorist completes |
+| `PIPELINES_COMPLETE` | 4 | Build/Test | `[✔]` when builder + auditor complete |
+| `DOCUMENTED` | 5 | Docs | `[✔]` when scribe completes |
+| `REVIEW_PASSED` | 6 | Review | `[✔]` when skeptic passes |
+| `DONE` | 7 | Ship | `[✔]` when github completes (or skipped) |
+
+### Docs-Only Pipeline
+
+| State | Step # | Label |
+| --- | --- | --- |
+| `CREDENTIALS_VERIFIED` | 1 | Credentials |
+| `PLANNED` | 2 | Plan |
+| `SPEC_READY` | 3 | Specs |
+| `DOCUMENTED` | 4 | Docs/Implement |
+| `REVIEW_PASSED` | 5 | Review |
+
+### Simplified Pipeline
+
+| State | Step # | Label |
+| --- | --- | --- |
+| `PLANNED` | 1 | Plan |
+| `PIPELINES_COMPLETE` | 2 | Implement |
+| `REVIEW_PASSED` | 3 | Validate |
+| `DONE` | 4 | Ship |
+
+---
+
+## Symbols
+
+| Symbol | Meaning |
+| --- | --- |
+| `[✔]` | Step completed |
+| `[▶]` | Step in progress |
+| `[ ]` | Step pending |
+| `[✘]` | Step failed (BLOCK/STOP) |
+| `[⏸]` | Step paused (HOLD — waiting for user) |
+
+---
+
+## Interrupt Display
+
+When a signal interrupts the workflow, the progress bar shows the interruption:
+
+### HOLD (waiting for user)
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  StatsClaw Progress                                          [3/7] │
+│                                                                     │
+│  [✔] Credentials ── [✔] Plan ── [⏸] Specs ── [ ] Build/Test        │
+│       ── [ ] Docs ── [ ] Review ── [ ] Ship                        │
+│                                                                     │
+│  ⏸ HOLD: theorist needs clarification (see question below)          │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### BLOCK (validation failed)
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  StatsClaw Progress                                          [4/7] │
+│                                                                     │
+│  [✔] Credentials ── [✔] Plan ── [✔] Specs ── [✘] Build/Test        │
+│       ── [ ] Docs ── [ ] Review ── [ ] Ship                        │
+│                                                                     │
+│  ✘ BLOCKED: auditor found test failures → respawning builder (1/3)  │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### STOP (quality gate failed)
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  StatsClaw Progress                                          [6/7] │
+│                                                                     │
+│  [✔] Credentials ── [✔] Plan ── [✔] Specs ── [✔] Build/Test        │
+│       ── [✔] Docs ── [✘] Review ── [ ] Ship                        │
+│                                                                     │
+│  ✘ STOPPED: skeptic found isolation breach → respawning builder     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Completion Display
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  StatsClaw Progress                                          [7/7] │
+│                                                                     │
+│  [✔] Credentials ── [✔] Plan ── [✔] Specs ── [✔] Build/Test        │
+│       ── [✔] Docs ── [✔] Review ── [✔] Ship                        │
+│                                                                     │
+│  ✔ DONE — All changes shipped successfully                          │
+│  Summary: 3 files changed, PR #42 opened                           │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Parallel Stage Indicator
+
+When builder and auditor run in parallel, show both:
+
+```
+│  [✔] Credentials ── [✔] Plan ── [✔] Specs ── [▶] Build/Test        │
+│                                                                     │
+│  ▶ Active (parallel):                                               │
+│    ├─ builder: implementing changes in worktree...                  │
+│    └─ auditor: running test scenarios...                            │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Implementation Rule
+
+Lead MUST output the progress bar as markdown text directly after each state transition. This is a **text output**, not a tool call. Lead constructs the bar from `status.md` state and the active workflow type.
+
+**Minimum frequency**: After EVERY `status.md` write. Optionally also when dispatching a teammate (to show the "Active" line changing).
+
+**No separate tool needed** — lead simply prints the formatted text block above as part of its response.

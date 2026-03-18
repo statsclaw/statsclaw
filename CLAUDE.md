@@ -57,6 +57,9 @@ This section is the entry point for every non-trivial user request. You MUST fol
    - **PIPELINE ISOLATION**: builder NEVER receives `test-spec.md`. Auditor NEVER receives `spec.md` or `implementation.md`. In docs-only workflows, scribe receives `spec.md` (as implementer); no auditor is dispatched. See `skills/isolation/SKILL.md`.
 7. **GATE**: Update `status.md` after EVERY teammate completes. Read the output artifact. Do NOT proceed past `STOP` or `BLOCK` signals. Respawn the responsible teammate on failure (max 3 retries per teammate before `HOLD`).
 8. **AUTONOMOUS CONTINUATION**: Do NOT pause between stages to ask the user "should I continue?". Continue automatically through the full workflow until `DONE`, `HOLD`, or `STOP`.
+9. **PROGRESS BAR**: After EVERY `status.md` update, output a visual progress bar to the user. See `skills/progress-bar/SKILL.md` for format. This is mandatory — users must always know what stage the workflow is in.
+
+**Simplified workflow gate** (step 5.5): After writing `impact.md` but before dispatching theorist, lead MUST evaluate whether the request qualifies for the simplified workflow (see `skills/simplified-workflow/SKILL.md`). If it qualifies, ask the user to choose. If the user chooses simplified, skip steps 6a–6d and follow the simplified pipeline instead.
 
 Short prompts MUST work. A user message like "Work on https://github.com/foo/bar. Fix the tests." is a complete, non-trivial request. It MUST trigger the full protocol above, not ad-hoc direct work.
 
@@ -244,6 +247,7 @@ Each agent's full workflow, allowed reads/writes, and must-not rules are defined
 | 7 | Ship Only | Push reviewed changes | `lead → skeptic → github` |
 | 8 | Review Only | Assess without shipping | `lead → skeptic` |
 | 9 | Scheduled Loop | Recurring execution | `lead → /loop → inner workflow` |
+| 10 | Simplified | Small routine change (user confirms) | `lead → builder → auditor → github?` |
 
 **Key distinction — code vs docs workflows:**
 - **Workflows 1–2** (code): Builder implements source code, auditor validates in parallel, then scribe records.
@@ -258,8 +262,9 @@ Each agent's full workflow, allowed reads/writes, and must-not rules are defined
 - **Workflow 6**: Lightweight — no theorist, builder, or skeptic. Auditor runs profile validation commands directly. State jumps directly from `PLANNED` to `PIPELINES_COMPLETE` (auditor-only).
 - **Workflows 7–8**: Lightweight — skip the full pipeline. These are for already-completed work that needs shipping or review. State model requirements for `SPEC_READY` and `PIPELINES_COMPLETE` are waived; skeptic reads whatever artifacts are available.
 - **Workflow 9**: Lead invokes `/loop` via `Skill` tool. See "Scheduled Loop" below.
+- **Workflow 10**: Simplified — for small, routine changes (≤3 files, no algorithms, no uploaded files). Lead asks user to confirm simplified vs full. Skips theorist, scribe, skeptic. Builder uses `request.md` as spec. Auditor is the quality gate. State: `PLANNED` → `PIPELINES_COMPLETE` → `REVIEW_PASSED` → `DONE`. See `skills/simplified-workflow/SKILL.md`. If complexity exceeds expectations, lead MUST escalate to full workflow.
 
-**Lightweight workflow rule**: Workflows 6, 7, and 8 are exceptions to the "mandatory teammates" rule. They serve specific, limited purposes (validation-only, ship-only, review-only) and intentionally skip the full two-pipeline flow.
+**Lightweight workflow rule**: Workflows 6, 7, 8, and 10 are exceptions to the "mandatory teammates" rule. They serve specific, limited purposes (validation-only, ship-only, review-only, simplified) and intentionally skip the full two-pipeline flow.
 
 ---
 
@@ -279,6 +284,9 @@ Route semantically from intent. Do **not** require the user to learn trigger phr
 | "review" / "is this safe?" | 8 (skeptic only) |
 | "loop" / "every Xm" / "monitor every" | 9 (/loop wrapping inner workflow) |
 | formalize math, equations, algorithms | 1 (code pipeline) |
+| small routine change (typo, config, bump, lint fix) | 10 (simplified — ask user to confirm) |
+
+**Routing rule — simplified vs full**: Before committing to workflow 1–5, lead evaluates smallness criteria (see `skills/simplified-workflow/SKILL.md`). If ALL criteria are met, lead asks the user via `AskUserQuestion` to choose simplified or full. If the user declines or lead is uncertain, use the standard workflow. Lead MUST NOT silently downgrade to simplified.
 
 **Routing rule — code vs docs**: If the request touches ONLY documentation files (`.Rd`, `.md`, `.qmd`, `.Rmd`, vignettes, tutorials, `pkgdown`, `_quarto.yml`, man pages, README) and NO source code (`.R`, `.py`, `.ts`, `.go`, `.rs`, `.ado`), use workflow 3 (docs-only — no builder, no auditor). If the request touches any source code, use workflow 1 or 2 even if docs are also needed — scribe handles docs in the recording phase.
 
@@ -462,7 +470,9 @@ StatsClaw/
 │   ├── handoff/SKILL.md
 │   ├── issue-patrol/SKILL.md
 │   ├── credential-setup/SKILL.md
-│   └── profile-detection/SKILL.md
+│   ├── profile-detection/SKILL.md
+│   ├── progress-bar/SKILL.md
+│   └── simplified-workflow/SKILL.md
 ├── profiles/
 │   ├── r-package.md
 │   ├── python-package.md
