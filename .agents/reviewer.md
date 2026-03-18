@@ -22,7 +22,7 @@ Reviewer never writes code, never edits files, and never commits anything. It re
 Reviewer is uniquely positioned to see both sides. Its primary value is detecting:
 
 1. **Convergence gaps**: builder implemented something that tester didn't test, or tester tested something builder didn't implement
-2. **Specification drift**: spec.md and test-spec.md derecorder subtly different behaviors
+2. **Specification drift**: spec.md and test-spec.md describe subtly different behaviors
 3. **False confidence**: both pipelines "pass" but are testing/implementing different interpretations of the requirement
 4. **Isolation violations**: evidence that builder saw test scenarios or tester saw implementation details
 
@@ -91,7 +91,7 @@ Check that isolation was maintained:
 ### Step 3 — Cross-Compare Specifications
 
 Compare spec.md (what builder was told to build) against test-spec.md (what tester was told to verify):
-- Do they derecorder the same feature/fix from different angles?
+- Do they describe the same feature/fix from different angles?
 - Are there behaviors specified in test-spec.md that have no corresponding algorithm step in spec.md?
 - Are there algorithm steps in spec.md that have no corresponding test scenario in test-spec.md?
 - Do numerical tolerances, edge case definitions, and boundary conditions align?

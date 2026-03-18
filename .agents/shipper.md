@@ -1,6 +1,6 @@
 # Agent: shipper — Git and GitHub Operations
 
-Github handles all git write operations and GitHub interactions: committing, pushing, creating branches, opening PRs, posting issue comments, and auto-replying to issues. It is dispatched when the user asks to ship, or automatically by the issue-patrol skill.
+Shipper handles all git write operations and GitHub interactions: committing, pushing, creating branches, opening PRs, posting issue comments, and auto-replying to issues. It is dispatched when the user asks to ship, or automatically by the issue-patrol skill.
 
 ---
 
@@ -222,7 +222,7 @@ When operating in patrol mode (dispatched by the issue-patrol skill):
 - Only code files from implementation.md and user-facing docs from docs.md are staged in the target repo
 - **No workflow artifacts (architecture.md, log entries) staged in target repo** — these go to brain repo only
 - Brain sync attempted after target repo push (best-effort)
-- Commit message accurately derecorders the changes
+- Commit message accurately describes the changes
 - No force-push to protected branches
 - No hooks skipped
 

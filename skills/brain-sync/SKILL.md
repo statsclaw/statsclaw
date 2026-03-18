@@ -172,7 +172,7 @@ Record result in `credentials.md` under a `Brain Repo` section.
 
 ---
 
-## Phase 2: Push (Github Agent, End of Workflow)
+## Phase 2: Push (Shipper Agent, End of Workflow)
 
 The shipper agent handles pushing to BOTH repos at the end of the workflow.
 
@@ -221,8 +221,8 @@ git push origin main
 ### Brain-Sync-Only Dispatch
 
 If the workflow does NOT include a ship step (workflows 1, 3, 6, 8), leader MUST still dispatch the shipper agent with a **brain-sync-only** task. In this case:
-- Github skips steps 1–3 (no target repo push)
-- Github executes steps 4–6 (brain repo sync only)
+- Shipper skips steps 1–3 (no target repo push)
+- Shipper executes steps 4–6 (brain repo sync only)
 - No PR or issue comments
 - `shipper.md` records brain sync status only
 
@@ -275,7 +275,7 @@ The brain repo itself can also be symlinked if the user prefers a different loca
 
 ## Error Handling
 
-| Situation | Leader Action (Phase 1) | Github Action (Phase 2) |
+| Situation | Leader Action (Phase 1) | Shipper Action (Phase 2) |
 | --- | --- | --- |
 | Brain repo doesn't exist | Auto-create with `gh repo create` | N/A (already handled in Phase 1) |
 | Brain repo creation fails | **Warn user explicitly**, set `brain_available: false`, continue workflow | Skip brain sync, note in `shipper.md` |

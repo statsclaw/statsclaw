@@ -238,7 +238,7 @@ If spec.md exists:
 - Verify parameter descriptions match the spec
 - Verify return value documentation matches the spec
 - Verify any mathematical notation in docs matches the spec
-- If docs contradict the spec, raise **HOLD** and derecorder the contradiction
+- If docs contradict the spec, raise **HOLD** and describe the contradiction
 
 ### Step 6 — Example Verification
 
@@ -273,7 +273,7 @@ Append to `mailbox.md` if contradictions with spec or implementation were found.
 - Every exported function/class is documented
 - No parameter is undocumented
 - Examples run without error
-- Return values derecorder class and structure, not just "the result"
+- Return values describe class and structure, not just "the result"
 - Code chunks produce deterministic output
 - References cite original sources with DOI or publication info
 - No internal/unexported items are marked as public

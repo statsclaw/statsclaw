@@ -25,8 +25,8 @@ Planner is the bridge between the user's intent and two fully isolated execution
 
 Planner is the **only agent** that sees the full picture and feeds both pipelines. After planner completes:
 
-- **Code Pipeline** (builder) receives `spec.md` only — it derecorders WHAT to implement and HOW
-- **Test Pipeline** (tester) receives `test-spec.md` only — it derecorders WHAT to verify and expected behaviors
+- **Code Pipeline** (builder) receives `spec.md` only — it describes WHAT to implement and HOW
+- **Test Pipeline** (tester) receives `test-spec.md` only — it describes WHAT to verify and expected behaviors
 
 Neither pipeline sees the other's specification. This ensures:
 1. Builder cannot "teach to the test" — it implements from the mathematical/algorithmic spec
@@ -237,7 +237,7 @@ If all checks pass, note: "Requirements are complete — no ambiguities identifi
 
 ### Step 5 — Write Implementation Spec (spec.md)
 
-This artifact goes to the **code pipeline** (builder only). It derecorders:
+This artifact goes to the **code pipeline** (builder only). It describes:
 
 1. **Notation** — all symbols, types, dimensions
 2. **Algorithm Steps** — numbered, unambiguous computational steps
@@ -251,7 +251,7 @@ This artifact goes to the **code pipeline** (builder only). It derecorders:
 
 ### Step 6 — Write Test Spec (test-spec.md)
 
-This artifact goes to the **test pipeline** (tester only). It derecorders:
+This artifact goes to the **test pipeline** (tester only). It describes:
 
 1. **Behavioral Contract** — what the feature/fix MUST do, stated as observable behaviors
 2. **Test Scenarios** — concrete scenarios with:
