@@ -47,8 +47,6 @@ https://github.com/<owner>/statsclaw-brain
 
 For example, if the user is working on `xuyiqing/fect`, the brain repo is `xuyiqing/statsclaw-brain`.
 
-If the brain repo does not exist, the github agent MUST create it (see Initialization below).
-
 ---
 
 ## Where the Brain Repo Lives Locally
@@ -66,9 +64,29 @@ The brain repo is treated like any other repo checkout — it's git-ignored and 
 
 ---
 
-## Initialization
+## Two-Phase Workflow: Pull First, Push Last
 
-When the brain repo is needed for the first time in a session:
+Brain sync has two distinct phases that bookend the entire workflow:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  PHASE 1: ACQUIRE (start of workflow, step 2)           │
+│  ├── git pull target repo                               │
+│  └── git pull brain repo (or clone, or auto-create)     │
+├─────────────────────────────────────────────────────────┤
+│  ... workflow runs (theorist → builder → auditor → ...) │
+├─────────────────────────────────────────────────────────┤
+│  PHASE 2: PUSH (end of workflow, github agent)          │
+│  ├── git push target repo (code + docs only)            │
+│  └── git push brain repo (architecture + log entry)     │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Phase 1: Acquire (Lead, Step 2 of Mandatory Protocol)
+
+Lead is responsible for acquiring BOTH repos at the START of every workflow. This happens in step 2 of the Mandatory Execution Protocol (ACQUIRE REPOS).
 
 ### Step 1 — Determine Brain Repo URL
 
@@ -87,7 +105,7 @@ gh repo view "$BRAIN_REPO" --json name 2>&1
 ### Step 3a — If It Exists, Clone or Pull
 
 ```bash
-# Clone if not already present
+# Clone if not already present locally
 if [ ! -d ".repos/statsclaw-brain" ]; then
     git clone "https://github.com/${BRAIN_REPO}.git" .repos/statsclaw-brain
 else
@@ -95,10 +113,11 @@ else
 fi
 ```
 
-### Step 3b — If It Does Not Exist, Create It
+### Step 3b — If It Does Not Exist, Auto-Create It
 
 ```bash
-gh repo create "$BRAIN_REPO" --public --description "StatsClaw workflow logs and process records" --clone .repos/statsclaw-brain
+gh repo create "$BRAIN_REPO" --public --description "StatsClaw workflow logs and process records"
+git clone "https://github.com/${BRAIN_REPO}.git" .repos/statsclaw-brain
 ```
 
 Then initialize with a README:
@@ -117,17 +136,95 @@ These artifacts are automatically generated and pushed by the StatsClaw workflow
 
 Commit and push the README.
 
+### Step 3c — If Auto-Creation Fails
+
+If `gh repo create` fails (insufficient permissions, API error, etc.):
+
+1. **Warn the user explicitly** via `AskUserQuestion` or direct message:
+   > "I cannot create the repository `[owner]/statsclaw-brain`. Workflow logs will NOT be recorded for this session. Please either:
+   > 1. Create the repository manually at https://github.com/new (name: `statsclaw-brain`)
+   > 2. Grant the current token `repo` scope for repository creation
+   >
+   > The workflow will continue, but without log recording."
+
+2. **Record in `credentials.md`**: `Brain Repo: FAIL — creation failed, user notified`
+3. **Set `brain_available: false`** in the run's `request.md`
+4. **Continue the workflow** — brain sync is skipped at the end, but code changes still proceed normally
+
+**This is NOT a silent skip.** The user MUST be informed.
+
+### Step 4 — Verify Brain Repo Push Access
+
+After acquiring the brain repo, verify push access:
+
+```bash
+cd .repos/statsclaw-brain
+git push --dry-run origin main 2>&1
+```
+
+If this fails, configure the remote with the same token used for the target repo:
+
+```bash
+git -C .repos/statsclaw-brain remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${BRAIN_REPO}.git"
+```
+
+Record result in `credentials.md` under a `Brain Repo` section.
+
 ---
 
-## When Brain Sync Happens
+## Phase 2: Push (Github Agent, End of Workflow)
 
-Brain sync is performed by the **github agent** as part of its ship workflow. After committing and pushing changes to the target repo, github:
+The github agent handles pushing to BOTH repos at the end of the workflow.
 
-1. Reads `architecture.md` and the log entry from the run directory
-2. Copies them to the brain repo under `<repo-name>/`
-3. Commits and pushes to the brain repo
+### Order of Operations
 
-If the workflow does NOT include a ship step (workflows 1, 3, 6, 8), brain sync is still performed by lead dispatching the github agent with a brain-sync-only task after skeptic completes (or after the last mandatory step).
+```
+1. Pull latest from target repo (in case of remote changes during workflow)
+2. Stage + commit code changes to target repo
+3. Push target repo
+4. Pull latest from brain repo (in case of concurrent brain syncs from other sessions)
+5. Copy workflow artifacts to brain repo
+6. Commit + push brain repo
+7. Create PR, post issue comments (if applicable)
+```
+
+### Target Repo Push (Steps 1–3)
+
+Standard github agent workflow — stage code + user-facing docs, commit, push. NO workflow artifacts.
+
+### Brain Repo Push (Steps 4–6)
+
+```bash
+# 4. Pull latest
+git -C .repos/statsclaw-brain pull origin main
+
+# 5. Copy artifacts
+REPO_NAME=$(basename "$(git -C "$TARGET_REPO" remote get-url origin)" .git)
+BRAIN_DIR=".repos/statsclaw-brain/${REPO_NAME}"
+mkdir -p "${BRAIN_DIR}/log"
+
+# Copy architecture diagram (overwrite — always latest)
+cp "${RUN_DIR}/architecture.md" "${BRAIN_DIR}/architecture.md"
+
+# Copy log entry (new file — accumulates)
+# Extract filename from <!-- filename: ... --> header in log-entry.md
+LOGFILE=$(grep -oP '(?<=<!-- filename: ).*(?= -->)' "${RUN_DIR}/log-entry.md")
+cp "${RUN_DIR}/log-entry.md" "${BRAIN_DIR}/log/${LOGFILE}"
+
+# 6. Commit and push
+cd .repos/statsclaw-brain
+git add "${REPO_NAME}/"
+git commit -m "sync: ${REPO_NAME} — <short description of the change>"
+git push origin main
+```
+
+### Brain-Sync-Only Dispatch
+
+If the workflow does NOT include a ship step (workflows 1, 3, 6, 8), lead MUST still dispatch the github agent with a **brain-sync-only** task. In this case:
+- Github skips steps 1–3 (no target repo push)
+- Github executes steps 4–6 (brain repo sync only)
+- No PR or issue comments
+- `github.md` records brain sync status only
 
 ---
 
@@ -145,62 +242,16 @@ If the workflow does NOT include a ship step (workflows 1, 3, 6, 8), brain sync 
 
 ---
 
-## Github Agent Brain Sync Steps
+## Credential Handling
 
-After completing the target repo push (or as a standalone brain-sync dispatch):
+The brain repo typically uses the **same credentials** as the target repo (same owner). During step 4 of the Mandatory Execution Protocol (VERIFY CREDENTIALS):
 
-### Step 1 — Acquire Brain Repo
+1. **Verify target repo push access** — hard gate (workflow cannot proceed without this)
+2. **Verify brain repo push access** — soft gate (workflow proceeds, but user is warned if this fails)
 
-Follow the initialization steps above to ensure `.repos/statsclaw-brain` exists and is up to date.
+If the brain repo is under a different owner (edge case), separate credential verification is needed.
 
-### Step 2 — Determine Target Folder Name
-
-```bash
-# Use the target repo name (basename of the remote URL)
-REPO_NAME=$(basename "$(git -C "$TARGET_REPO" remote get-url origin)" .git)
-```
-
-If a folder with that name already exists and belongs to a different owner, use `<owner>-<repo>` format.
-
-### Step 3 — Copy Artifacts
-
-```bash
-BRAIN_DIR=".repos/statsclaw-brain/${REPO_NAME}"
-mkdir -p "${BRAIN_DIR}/log"
-
-# Copy architecture diagram (overwrite — always latest)
-cp "${RUN_DIR}/architecture.md" "${BRAIN_DIR}/architecture.md"
-
-# Copy log entry (new file — accumulates)
-cp "${RUN_DIR}/log-entry.md" "${BRAIN_DIR}/log/<YYYY-MM-DD>-<slug>.md"
-```
-
-The log entry file is produced by scribe in the run directory. The filename follows the same `<YYYY-MM-DD>-<short-slug>.md` convention.
-
-### Step 4 — Commit and Push
-
-```bash
-cd .repos/statsclaw-brain
-git add "${REPO_NAME}/"
-git commit -m "sync: ${REPO_NAME} — <short description of the change>"
-git push origin main
-```
-
-### Step 5 — Record in github.md
-
-Add a section to `github.md` noting:
-- Brain repo URL
-- Files synced
-- Commit SHA in brain repo
-- Push status
-
----
-
-## Credential Sharing
-
-The brain repo uses the same GitHub credentials as the target repo (since both are under the same owner). No separate credential verification is needed — if `credentials.md` shows PASS for the target repo, the same token/SSH key works for the brain repo.
-
-If the brain repo is under a different owner (edge case), github agent MUST verify write access separately.
+The credential setup skill (`skills/credential-setup/SKILL.md`) configures git remotes with tokens. The same token configuration should be applied to the brain repo's remote URL.
 
 ---
 
@@ -224,11 +275,13 @@ The brain repo itself can also be symlinked if the user prefers a different loca
 
 ## Error Handling
 
-| Situation | Action |
-| --- | --- |
-| Brain repo creation fails (no permission) | Log warning, continue without brain sync. Note in github.md. |
-| Brain repo push fails | Retry up to 3 times with exponential backoff. If all fail, log warning and continue. |
-| No network access | Skip brain sync entirely. Artifacts remain in run directory for manual sync later. |
-| Target repo has no remote (local-only) | Use the directory name as the folder name in brain. |
+| Situation | Lead Action (Phase 1) | Github Action (Phase 2) |
+| --- | --- | --- |
+| Brain repo doesn't exist | Auto-create with `gh repo create` | N/A (already handled in Phase 1) |
+| Brain repo creation fails | **Warn user explicitly**, set `brain_available: false`, continue workflow | Skip brain sync, note in `github.md` |
+| Brain repo clone/pull fails (network) | Retry up to 3 times. If all fail, warn user, set `brain_available: false` | Skip brain sync, note in `github.md` |
+| Brain repo push fails | N/A | Retry up to 3 times with exponential backoff. If all fail, **warn user**, note in `github.md` |
+| Target repo has no remote (local-only) | Use directory name as folder name in brain | Use directory name as folder name |
+| `brain_available: false` in request.md | N/A | Skip brain sync entirely |
 
-Brain sync is a **best-effort** operation. It MUST NOT block the main workflow. If brain sync fails, the target repo push and PR creation still proceed normally.
+**Key rule**: Brain sync failures MUST NOT block the main workflow. Target repo code changes are always the priority. But the user MUST be explicitly informed when logs cannot be recorded — never silently skip.

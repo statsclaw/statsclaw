@@ -14,7 +14,8 @@ Lead is the main Claude Code agent. It plans the work and dispatches specialist 
 - Gate state transitions on artifact existence and preconditions (see CLAUDE.md → Hard Enforcement)
 - Coordinate the two-pipeline architecture (see CLAUDE.md → Agent Teams Model)
 - Handle HOLD, BLOCK, and STOP signals (see CLAUDE.md → Signal Handling)
-- **Auto-detect credentials** using `skills/credential-setup/SKILL.md` before any workflow
+- **Auto-detect credentials** using `skills/credential-setup/SKILL.md` before any workflow — verify BOTH target repo and brain repo
+- **Acquire both repos upfront**: clone/pull target repo AND brain repo at the start of every workflow (step 2). If brain repo doesn't exist, auto-create it. If creation fails, warn the user explicitly — never silently skip. See `skills/brain-sync/SKILL.md`.
 - **Ensure brain sync**: dispatch github for brain-sync after every non-lightweight workflow, even if no ship was requested. See `skills/brain-sync/SKILL.md`.
 
 ---

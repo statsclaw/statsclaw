@@ -40,10 +40,15 @@ This section is the entry point for every non-trivial user request. You MUST fol
 **CRITICAL: You are the Team Lead (`lead`). You MUST use the `Agent` tool to dispatch every teammate. You MUST NOT perform teammate work yourself. If you catch yourself doing builder, auditor, scribe, skeptic, theorist, or github work directly, STOP and dispatch it to an agent instead.**
 
 1. **SETUP**: Read `.statsclaw/CONTEXT.md`. If it does not exist, create the full local runtime first (see Session Startup below). Read the active package context.
-2. **ACQUIRE TARGET**: If the user request names a repository URL, path, or reference, clone or locate the target repository under `.repos/` (e.g., `.repos/fect/`). If a checkout already exists in `.repos/`, reuse it (`git pull`). If not, `git clone` into `.repos/`. Symlinks into `.repos/` are supported — some users prefer to keep repos elsewhere and symlink them in; StatsClaw follows symlinks transparently. The `.repos/` directory is git-ignored — target repos are never committed to StatsClaw. If acquisition fails, set state to `HOLD` in `status.md` and ask the user. Do NOT proceed without a local checkout.
-3. **CREATE RUN**: Generate a request ID. Create `.statsclaw/runs/<request-id>/`. Write `request.md` (scope, acceptance criteria, target repo identity). Write `status.md` with state `NEW`.
-4. **VERIFY CREDENTIALS**: Follow `skills/credential-setup/SKILL.md` for the full auto-detection sequence (GITHUB_TOKEN → gh auth → SSH → credential helper → ask user). Write `credentials.md` to the run directory. Update `status.md` to `CREDENTIALS_VERIFIED`.
+2. **ACQUIRE REPOS**: Acquire BOTH the target repo AND the brain repo upfront. Both must be local before any work begins.
+   - **Target repo**: Clone or locate under `.repos/` (e.g., `.repos/fect/`). If a checkout already exists, `git pull` to get latest. If not, `git clone`. Symlinks into `.repos/` are supported — some users keep repos elsewhere and symlink them in; StatsClaw follows symlinks transparently.
+   - **Brain repo**: Clone or locate `.repos/statsclaw-brain`. Determine the owner from the target repo's remote URL. If `.repos/statsclaw-brain` already exists, `git pull origin main`. If not, try `git clone`. If the brain repo does not exist on GitHub, **auto-create it** using `gh repo create [owner]/statsclaw-brain --public`. If creation fails (e.g., insufficient permissions), **warn the user explicitly**: "Cannot create [owner]/statsclaw-brain — workflow logs will not be recorded. Please create this repository manually or grant repo creation permissions." Record the brain repo status in `request.md`. See `skills/brain-sync/SKILL.md`.
+   - The `.repos/` directory is git-ignored — repos are never committed to StatsClaw.
+   - If target repo acquisition fails, set state to `HOLD` in `status.md` and ask the user. Do NOT proceed without a local checkout.
+3. **CREATE RUN**: Generate a request ID. Create `.statsclaw/runs/<request-id>/`. Write `request.md` (scope, acceptance criteria, target repo identity, brain repo status). Write `status.md` with state `NEW`.
+4. **VERIFY CREDENTIALS**: Follow `skills/credential-setup/SKILL.md` for the full auto-detection sequence (GITHUB_TOKEN → gh auth → SSH → credential helper → ask user). Verify push access to **both** the target repo and the brain repo. Write `credentials.md` to the run directory. Update `status.md` to `CREDENTIALS_VERIFIED`.
    - **ENFORCEMENT**: Steps 5–9 are INVALID without a `credentials.md` showing PASS **against the target repo**. The write-access probe MUST target the actual target repository — not a proxy, not StatsClaw, not any other repo. If you find yourself planning or dispatching teammates without confirmed push access, STOP and return to step 4.
+   - **Brain repo credentials**: If brain repo push verification fails, note it in `credentials.md` and warn the user: "Brain repo push access not confirmed — workflow logs will not be synced." The workflow still proceeds (brain sync is not a hard gate), but the user must know.
 5. **LEAD PLANNING**: Read `.agents/lead.md`. Act as `lead`. Explore the target repository to identify affected surfaces. Write `impact.md` (affected files, risk areas, required teammates). Identify the profile from `profiles/`. Update `status.md` to `PLANNED`.
 6. **DISPATCH TEAMMATES (Two-Pipeline Architecture)**: See "Agent Teams Model" below for the architecture. Dispatch per the selected workflow:
    - a. **theorist** — ALWAYS dispatched for non-trivial requests. **MANDATORY when the user uploads files** (PDF, Word, txt, tex, images with formulas) — these contain primary source material that theorist must deeply comprehend before any specs are produced. Pass ALL uploaded file paths in the dispatch prompt. Theorist produces `comprehension.md` (verification of understanding), `spec.md` (code pipeline), and `test-spec.md` (test pipeline). **If theorist raises HOLD with comprehension questions, lead MUST forward them to the user via `AskUserQuestion` and re-dispatch theorist with the answers. Iterate until theorist confirms FULLY UNDERSTOOD.** Update status to `SPEC_READY`.
@@ -74,8 +79,9 @@ Short prompts MUST work. A user message like "Work on https://github.com/foo/bar
 
 | Target State | Precondition | Verification |
 | --- | --- | --- |
-| `CREDENTIALS_VERIFIED` | `credentials.md` exists with result PASS | Read the file, confirm PASS is present |
+| `CREDENTIALS_VERIFIED` | `credentials.md` exists with result PASS for target repo | Read the file, confirm PASS is present |
 | `CREDENTIALS_VERIFIED` | Write access to **target repo** confirmed | `git push --dry-run` succeeded **in the target repo checkout** during step 4 (not in StatsClaw or any other repo) |
+| `CREDENTIALS_VERIFIED` | Brain repo access checked (warning, not hard gate) | `credentials.md` notes brain repo status: PASS, FAIL (with user warning), or SKIP |
 | `PLANNED` | `request.md` and `impact.md` exist and are non-empty | Read the files |
 | `SPEC_READY` | `comprehension.md`, `spec.md`, AND `test-spec.md` all exist | Read all three file paths |
 | `SPEC_READY` | Theorist was dispatched via `Agent` tool | Agent tool call must exist in conversation |
@@ -186,11 +192,12 @@ At the start of every session:
 
 1. Read `.statsclaw/CONTEXT.md` if it exists.
 2. If it does not exist, create a minimal local runtime: `.statsclaw/`, `.statsclaw/packages/`, `.statsclaw/runs/`, `.statsclaw/logs/`, `.statsclaw/tmp/`, `CONTEXT.md` from `templates/context.md`, package contexts from `templates/package.md`.
-3. If the user message includes a target repo path or GitHub URL, acquire it into `.repos/` (clone or pull). Symlinks into `.repos/` are supported — follow them transparently.
-4. **Verify push credentials** immediately after acquisition — follow `skills/credential-setup/SKILL.md`.
-5. **Acquire brain repo**: clone or pull `[owner]/statsclaw-brain` into `.repos/statsclaw-brain`. If it does not exist on GitHub, it will be created during the first brain sync. See `skills/brain-sync/SKILL.md`.
-6. If no target is clear, infer from context or ask one concise question.
-7. Determine the project profile using `skills/profile-detection/SKILL.md` or repo markers in `profiles/*.md`.
+3. If the user message includes a target repo path or GitHub URL, **acquire both repos** into `.repos/`:
+   - **Target repo**: clone or pull. Symlinks supported.
+   - **Brain repo**: clone or pull `[owner]/statsclaw-brain`. Auto-create if it doesn't exist. Warn user if creation fails.
+4. **Verify push credentials** for **both repos** — follow `skills/credential-setup/SKILL.md`. Brain repo credential failure is a warning, not a hard gate.
+5. If no target is clear, infer from context or ask one concise question.
+6. Determine the project profile using `skills/profile-detection/SKILL.md` or repo markers in `profiles/*.md`.
 
 ---
 
