@@ -6,13 +6,13 @@ This skill automates GitHub credential detection and configuration so users neve
 
 ## Trigger
 
-This skill is invoked automatically by lead at the start of every workflow that targets a GitHub repository. It is NOT user-facing — users never need to think about credentials.
+This skill is invoked automatically by leader at the start of every workflow that targets a GitHub repository. It is NOT user-facing — users never need to think about credentials.
 
 ---
 
 ## Detection Sequence
 
-Lead runs these checks in order. The first successful method is used.
+Leader runs these checks in order. The first successful method is used.
 
 ### Step 1 — Check Environment Variable
 

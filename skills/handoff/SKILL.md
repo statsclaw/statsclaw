@@ -1,20 +1,20 @@
 # Shared Skill: Handoff Protocol (Two-Pipeline Architecture)
 
-This protocol governs how work products pass between teammates, mediated by lead, in the two-pipeline architecture.
+This protocol governs how work products pass between teammates, mediated by leader, in the two-pipeline architecture.
 
 ---
 
 ## Core Principle
 
-Teammates never talk to each other directly. Every handoff flows through lead:
+Teammates never talk to each other directly. Every handoff flows through leader:
 
 ```
-upstream teammate → output artifact → lead reads → lead dispatches downstream → downstream reads artifact
+upstream teammate → output artifact → leader reads → leader dispatches downstream → downstream reads artifact
 ```
 
 Downstream teammates MUST reuse upstream artifacts. They MUST NOT re-discover or re-derive information that an upstream teammate already produced.
 
-**Pipeline isolation principle**: Lead MUST enforce that code pipeline artifacts never reach the test pipeline, and vice versa. Only skeptic (the convergence point) sees both sides.
+**Pipeline isolation principle**: Leader MUST enforce that code pipeline artifacts never reach the test pipeline, and vice versa. Only reviewer (the convergence point) sees both sides.
 
 ---
 
@@ -23,7 +23,7 @@ Downstream teammates MUST reuse upstream artifacts. They MUST NOT re-discover or
 **ALL artifacts passed between agents MUST use the `.md` (Markdown) file extension.** This is a hard requirement, not a style preference. Markdown ensures artifacts are human-readable, diff-friendly, and renderable on GitHub.
 
 Rules:
-- Every handoff artifact is a `.md` file: `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `review.md`, `docs.md`, `github.md`, `comprehension.md`, `architecture.md`, `mailbox.md`, `credentials.md`, `status.md`, `request.md`, `impact.md`
+- Every handoff artifact is a `.md` file: `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `review.md`, `docs.md`, `shipper.md`, `comprehension.md`, `architecture.md`, `mailbox.md`, `credentials.md`, `status.md`, `request.md`, `impact.md`
 - Log entries in the run directory MUST be `.md` files: `log-entry.md` (with a `<!-- filename: YYYY-MM-DD-slug.md -->` header for brain sync naming)
 - Lock files MUST be `.md` files
 - No agent may produce a handoff artifact in any other format (no `.txt`, `.json`, `.yaml`, `.html`)
@@ -36,16 +36,16 @@ Each teammate produces specific output artifacts per run stage:
 
 | Teammate | Artifact(s) | Path | Pipeline |
 | --- | --- | --- | --- |
-| theorist | `comprehension.md` | `.statsclaw/runs/<request-id>/comprehension.md` | Comprehension record |
-| theorist | `spec.md` | `.statsclaw/runs/<request-id>/spec.md` | → Code Pipeline |
-| theorist | `test-spec.md` | `.statsclaw/runs/<request-id>/test-spec.md` | → Test Pipeline |
+| planner | `comprehension.md` | `.statsclaw/runs/<request-id>/comprehension.md` | Comprehension record |
+| planner | `spec.md` | `.statsclaw/runs/<request-id>/spec.md` | → Code Pipeline |
+| planner | `test-spec.md` | `.statsclaw/runs/<request-id>/test-spec.md` | → Test Pipeline |
 | builder | `implementation.md` | `.statsclaw/runs/<request-id>/implementation.md` | Code Pipeline output |
-| auditor | `audit.md` | `.statsclaw/runs/<request-id>/audit.md` | Test Pipeline output |
-| scribe | `architecture.md` | `.statsclaw/runs/<request-id>/architecture.md` | Architecture (mandatory; synced to brain repo by github) |
-| scribe | `log-entry.md` | `.statsclaw/runs/<request-id>/log-entry.md` | Log entry with process record (mandatory; synced to brain repo by github) |
-| scribe | `docs.md` | `.statsclaw/runs/<request-id>/docs.md` | Documentation changes |
-| skeptic | `review.md` | `.statsclaw/runs/<request-id>/review.md` | Convergence output |
-| github | `github.md` | `.statsclaw/runs/<request-id>/github.md` | Externalization output |
+| tester | `audit.md` | `.statsclaw/runs/<request-id>/audit.md` | Test Pipeline output |
+| recorder | `architecture.md` | `.statsclaw/runs/<request-id>/architecture.md` | Architecture (mandatory; synced to brain repo by shipper) |
+| recorder | `log-entry.md` | `.statsclaw/runs/<request-id>/log-entry.md` | Log entry with process record (mandatory; synced to brain repo by shipper) |
+| recorder | `docs.md` | `.statsclaw/runs/<request-id>/docs.md` | Documentation changes |
+| reviewer | `review.md` | `.statsclaw/runs/<request-id>/review.md` | Convergence output |
+| shipper | `shipper.md` | `.statsclaw/runs/<request-id>/shipper.md` | Externalization output |
 
 ---
 
@@ -63,13 +63,13 @@ A clear status indicator:
 
 | Teammate | Possible Verdicts |
 | --- | --- |
-| theorist | `SPEC_COMPLETE` — comprehension verified, both specs produced | `HOLD` — needs user input to resolve ambiguity |
+| planner | `SPEC_COMPLETE` — comprehension verified, both specs produced | `HOLD` — needs user input to resolve ambiguity |
 | builder | `IMPLEMENTED` — code and unit tests written | `HOLD` — spec unclear or API conflict |
-| auditor | `PASS` — all validation checks green | `BLOCK` — validation failed (routes to builder/scribe/theorist) |
-| scribe (recorder) | `DOCUMENTED` — recording artifacts produced | `HOLD` — implementation unclear or contradicts spec |
-| scribe (implementer) | `IMPLEMENTED` + `DOCUMENTED` — docs written and recorded | `HOLD` — spec unclear or contradicts existing docs |
-| skeptic | `PASS` / `PASS WITH NOTE` — safe to ship | `STOP` — quality gate failed (routes per table) |
-| github | `SHIPPED` — pushed, PR created | `HOLD` — permission or access issue |
+| tester | `PASS` — all validation checks green | `BLOCK` — validation failed (routes to builder/recorder/planner) |
+| recorder (recorder) | `DOCUMENTED` — recording artifacts produced | `HOLD` — implementation unclear or contradicts spec |
+| recorder (implementer) | `IMPLEMENTED` + `DOCUMENTED` — docs written and recorded | `HOLD` — spec unclear or contradicts existing docs |
+| reviewer | `PASS` / `PASS WITH NOTE` — safe to ship | `STOP` — quality gate failed (routes per table) |
+| shipper | `SHIPPED` — pushed, PR created | `HOLD` — permission or access issue |
 
 ---
 
@@ -78,50 +78,50 @@ A clear status indicator:
 ### Code Workflows (1, 2, 4, 5)
 
 ```
-theorist
+planner
 ├── spec.md ──────────→ builder (code pipeline)
 │                           │
 │                           └── implementation.md
 │                                      │
-└── test-spec.md ─────→ auditor (test pipeline)    │
+└── test-spec.md ─────→ tester (test pipeline)    │
                             │                      │
                             └── audit.md           │
                                    │               │
                                    ▼               ▼
-                                scribe (recording)
+                                recorder (recording)
                          reads ALL artifacts from both pipelines
                          produces: architecture.md, log-entry.md, docs.md (all in run dir)
                                    │
                                    ▼
-                               skeptic (convergence)
+                               reviewer (convergence)
                                    │
                                    ▼
-                                github
+                                shipper
 ```
 
 ### Docs-Only Workflow (3)
 
 ```
-theorist
-└── spec.md ──────────→ scribe (implementer + recorder)
+planner
+└── spec.md ──────────→ recorder (implementer + recorder)
                             │
                             ├── documentation changes
                             ├── implementation.md
                             ├── architecture.md, log-entry.md, docs.md (all in run dir)
                             │
                             ▼
-                        skeptic (convergence)
+                        reviewer (convergence)
                             │
                             ▼
-                         github
+                         shipper
 ```
 
 **Key properties:**
-1. Theorist produces specs (only `spec.md` is used in docs-only; `test-spec.md` is unused)
-2. **Code workflows**: builder ∥ auditor in parallel, then scribe records
-3. **Docs-only**: scribe replaces builder as implementer. No auditor — docs don't need testing. Skeptic reviews directly.
-4. Scribe is MANDATORY — the single owner of all documentation and recording
-5. Skeptic is the convergence agent that cross-compares all outputs
+1. Planner produces specs (only `spec.md` is used in docs-only; `test-spec.md` is unused)
+2. **Code workflows**: builder ∥ tester in parallel, then recorder records
+3. **Docs-only**: recorder replaces builder as implementer. No tester — docs don't need testing. Reviewer reviews directly.
+4. Recorder is MANDATORY — the single owner of all documentation and recording
+5. Reviewer is the convergence agent that cross-compares all outputs
 
 ---
 
@@ -129,39 +129,39 @@ theorist
 
 ### Code Workflows (1, 2, 4, 5)
 
-**Theorist → Builder (Code Pipeline)**
-- Lead passes: `spec.md`, `request.md`, `impact.md`, `mailbox.md`
-- Lead MUST NOT pass: `test-spec.md`
+**Planner → Builder (Code Pipeline)**
+- Leader passes: `spec.md`, `request.md`, `impact.md`, `mailbox.md`
+- Leader MUST NOT pass: `test-spec.md`
 
-**Theorist → Auditor (Test Pipeline)**
-- Lead passes: `test-spec.md`, `request.md`, `impact.md`, `mailbox.md`
-- Lead MUST NOT pass: `spec.md`
+**Planner → Tester (Test Pipeline)**
+- Leader passes: `test-spec.md`, `request.md`, `impact.md`, `mailbox.md`
+- Leader MUST NOT pass: `spec.md`
 
-**Builder + Auditor → Scribe (Recording)**
-- Lead passes: ALL available artifacts — `comprehension.md`, `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `request.md`, `impact.md`, `mailbox.md`
-- Scribe reads everything to produce the process-record log entry, architecture diagram, and docs
+**Builder + Tester → Recorder (Recording)**
+- Leader passes: ALL available artifacts — `comprehension.md`, `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `request.md`, `impact.md`, `mailbox.md`
+- Recorder reads everything to produce the process-record log entry, architecture diagram, and docs
 
 ### Docs-Only Workflow (3)
 
-**Theorist → Scribe (Implementer + Recorder)**
-- Lead passes: `spec.md`, `request.md`, `impact.md`, `mailbox.md`, `comprehension.md`
-- Scribe receives `spec.md` as the implementer (replaces builder). Implements documentation AND produces recording artifacts.
-- No auditor is dispatched — docs don't need testing. Skeptic reviews directly after scribe.
+**Planner → Recorder (Implementer + Recorder)**
+- Leader passes: `spec.md`, `request.md`, `impact.md`, `mailbox.md`, `comprehension.md`
+- Recorder receives `spec.md` as the implementer (replaces builder). Implements documentation AND produces recording artifacts.
+- No tester is dispatched — docs don't need testing. Reviewer reviews directly after recorder.
 
 ### All Workflows
 
-**→ Skeptic (Convergence)**
-- Lead passes: ALL artifacts — `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `architecture.md`, `docs.md`, `request.md`, `impact.md`, `mailbox.md`, `comprehension.md`
-- Skeptic is the convergence agent that cross-compares both pipelines AND scribe's output
+**→ Reviewer (Convergence)**
+- Leader passes: ALL artifacts — `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `architecture.md`, `docs.md`, `request.md`, `impact.md`, `mailbox.md`, `comprehension.md`
+- Reviewer is the convergence agent that cross-compares both pipelines AND recorder's output
 
-**Skeptic → Github**
-- Lead passes: `review.md`, `credentials.md`, `implementation.md`, `audit.md`
+**Reviewer → Github**
+- Leader passes: `review.md`, `credentials.md`, `implementation.md`, `audit.md`
 
 ---
 
-## Lead Mediation Rules
+## Leader Mediation Rules
 
-After each teammate returns, lead MUST:
+After each teammate returns, leader MUST:
 
 1. **Read the output artifact** in full.
 2. **Check the verdict.** If the verdict is `HOLD`, `BLOCK`, or `STOP`, do NOT dispatch the next downstream teammate.
@@ -170,15 +170,15 @@ After each teammate returns, lead MUST:
 5. **Update `status.md`** to reflect the completed stage.
 6. **Dispatch the next teammate** with only the artifacts allowed by pipeline rules.
 
-### After Theorist Completes:
+### After Planner Completes:
 - Verify `spec.md` exists (and `test-spec.md` for code workflows)
-- **Code workflows**: Dispatch builder AND auditor IN PARALLEL in the same message. Give builder only `spec.md`; give auditor only `test-spec.md`.
-- **Docs-only workflow**: Dispatch scribe with `spec.md` (as implementer). After scribe completes, dispatch skeptic directly.
+- **Code workflows**: Dispatch builder AND tester IN PARALLEL in the same message. Give builder only `spec.md`; give tester only `test-spec.md`.
+- **Docs-only workflow**: Dispatch recorder with `spec.md` (as implementer). After recorder completes, dispatch reviewer directly.
 
-### After Builder and Auditor Both Complete (Code Workflows):
+### After Builder and Tester Both Complete (Code Workflows):
 - Read `implementation.md` and `audit.md`
-- Check for BLOCK from auditor (if so, respawn builder with failure details)
-- If both succeeded, dispatch scribe for recording with ALL artifacts. After scribe completes, dispatch skeptic.
+- Check for BLOCK from tester (if so, respawn builder with failure details)
+- If both succeeded, dispatch recorder for recording with ALL artifacts. After recorder completes, dispatch reviewer.
 
 ---
 
@@ -188,43 +188,43 @@ Three signals, three owners, three responses. They never overlap.
 
 ### HOLD — Need User Input
 
-**Owner**: theorist, builder, scribe. **Status**: `HOLD`.
+**Owner**: planner, builder, recorder. **Status**: `HOLD`.
 
-1. Lead reads the teammate's output artifact and `mailbox.md` (`HOLD_REQUEST` messages).
-2. Lead asks the user the specific question via `AskUserQuestion`.
-3. After the user responds, lead re-dispatches the same teammate with the answer.
+1. Leader reads the teammate's output artifact and `mailbox.md` (`HOLD_REQUEST` messages).
+2. Leader asks the user the specific question via `AskUserQuestion`.
+3. After the user responds, leader re-dispatches the same teammate with the answer.
 4. Max 3 HOLD rounds per teammate. After 3, teammate must proceed with stated assumptions or declare the task unspecifiable.
 
 ### BLOCK — Validation Failed
 
-**Owner**: auditor (exclusively). **Status**: `BLOCKED`.
+**Owner**: tester (exclusively). **Status**: `BLOCKED`.
 
-1. Lead reads `audit.md` to identify the failure and routing (builder, theorist, or scribe).
-2. **Lead respawns the responsible upstream teammate via `Agent` tool** with the failure description from `audit.md`.
-   - **Pipeline isolation**: lead may share the failure description (e.g., "function returns wrong value for input X") but MUST NOT share `test-spec.md` itself.
-   - **NO DIRECT FIXES**: Lead MUST NOT use Edit, Write, sed, or any tool to modify target repo files — even for seemingly trivial fixes. Always respawn the teammate. Reason: lead cannot run validation and may introduce new bugs.
-3. After the teammate fix, lead re-dispatches auditor to re-validate.
+1. Leader reads `audit.md` to identify the failure and routing (builder, planner, or recorder).
+2. **Leader respawns the responsible upstream teammate via `Agent` tool** with the failure description from `audit.md`.
+   - **Pipeline isolation**: leader may share the failure description (e.g., "function returns wrong value for input X") but MUST NOT share `test-spec.md` itself.
+   - **NO DIRECT FIXES**: Leader MUST NOT use Edit, Write, sed, or any tool to modify target repo files — even for seemingly trivial fixes. Always respawn the teammate. Reason: leader cannot run validation and may introduce new bugs.
+3. After the teammate fix, leader re-dispatches tester to re-validate.
 4. Max 3 BLOCK→respawn cycles. After 3, escalate to HOLD and ask user.
 
 ### STOP — Quality Gate Failed
 
-**Owner**: skeptic (exclusively). **Status**: `STOPPED`.
+**Owner**: reviewer (exclusively). **Status**: `STOPPED`.
 
-1. Lead reads `review.md` to identify the concern and routing.
-2. Lead respawns the teammate skeptic identifies.
-3. After the fix, lead re-runs from the appropriate stage:
-   - Builder respawned → re-run auditor → re-run skeptic
-   - Theorist respawned → re-run both pipelines from scratch
-   - Auditor respawned → re-run auditor → re-run skeptic
+1. Leader reads `review.md` to identify the concern and routing.
+2. Leader respawns the teammate reviewer identifies.
+3. After the fix, leader re-runs from the appropriate stage:
+   - Builder respawned → re-run tester → re-run reviewer
+   - Planner respawned → re-run both pipelines from scratch
+   - Tester respawned → re-run tester → re-run reviewer
 4. Max 3 STOP→respawn cycles. After 3, escalate to HOLD and ask user.
 
 ---
 
 ## Anti-Patterns
 
-- **Cross-pipeline leakage**: Lead passes `test-spec.md` to builder or `spec.md` to auditor. This breaks the adversarial verification model.
+- **Cross-pipeline leakage**: Leader passes `test-spec.md` to builder or `spec.md` to tester. This breaks the adversarial verification model.
 - **Re-discovery**: A downstream teammate re-reads the entire codebase instead of using the upstream artifact. This wastes tokens and risks inconsistency.
-- **Artifact skipping**: Lead dispatches a teammate without pointing it to required upstream artifacts. The teammate then works from incomplete information.
-- **Direct handoff**: Two teammates communicate without lead mediation (e.g., builder writes instructions for auditor inside a code comment). All coordination goes through artifacts and mailbox.
-- **Verdict ignoring**: Lead dispatches the next stage despite a `BLOCK` or `STOP` verdict. This violates the safety protocol.
-- **Sequential pipeline dispatch**: Lead dispatches builder first, waits for it to complete, then dispatches auditor. This misses the parallel opportunity and may inadvertently leak implementation details.
+- **Artifact skipping**: Leader dispatches a teammate without pointing it to required upstream artifacts. The teammate then works from incomplete information.
+- **Direct handoff**: Two teammates communicate without leader mediation (e.g., builder writes instructions for tester inside a code comment). All coordination goes through artifacts and mailbox.
+- **Verdict ignoring**: Leader dispatches the next stage despite a `BLOCK` or `STOP` verdict. This violates the safety protocol.
+- **Sequential pipeline dispatch**: Leader dispatches builder first, waits for it to complete, then dispatches tester. This misses the parallel opportunity and may inadvertently leak implementation details.

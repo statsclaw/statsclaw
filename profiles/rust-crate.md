@@ -48,7 +48,7 @@ Detect this profile when the target repository contains:
 - Do not add dependencies to `Cargo.toml` without noting it in the mailbox.
 - Use `thiserror` for library error types and `anyhow` for application error handling (if the project follows this pattern).
 
-## Auditor Notes
+## Tester Notes
 
 - `cargo test` must pass with zero failures.
 - `cargo clippy -- -D warnings` must produce zero warnings; treat all as blockers.

@@ -43,7 +43,7 @@ If the system uses `stata-mp` or `stata-se` instead of `stata`, substitute accor
 - Keep do-files modular: one logical task per do-file, orchestrated by a master do-file.
 - Do not hard-code file paths; use relative paths or globals set in the master do-file.
 
-## Auditor Notes
+## Tester Notes
 
 - Run `stata -b do master.do` and check the resulting log file for any `r(...)` return-code errors.
 - Treat any non-zero return code in the log as a blocker.

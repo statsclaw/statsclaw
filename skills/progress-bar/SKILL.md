@@ -1,6 +1,6 @@
 # Skill: Progress Bar
 
-Renders a visual progress bar to the user showing the current workflow state. Lead MUST call this after every `status.md` update to keep the user informed.
+Renders a visual progress bar to the user showing the current workflow state. Leader MUST call this after every `status.md` update to keep the user informed.
 
 ---
 
@@ -15,7 +15,7 @@ Renders a visual progress bar to the user showing the current workflow state. Le
 
 ## Progress Bar Format
 
-Lead outputs the progress bar directly as text (markdown) to the user. No tool call needed — just print it.
+Leader outputs the progress bar directly as text (markdown) to the user. No tool call needed — just print it.
 
 ### Full Pipeline (Workflows 1, 2, 4, 5)
 
@@ -26,7 +26,7 @@ Lead outputs the progress bar directly as text (markdown) to the user. No tool c
 │  [✔] Credentials ── [✔] Plan ── [▶] Specs ── [ ] Build/Test        │
 │       ── [ ] Docs ── [ ] Review ── [ ] Ship                        │
 │                                                                     │
-│  ▶ Active: theorist producing specs...                              │
+│  ▶ Active: planner producing specs...                              │
 │  ⏱ Elapsed: 2m 15s                                                  │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -40,7 +40,7 @@ Lead outputs the progress bar directly as text (markdown) to the user. No tool c
 │  [✔] Credentials ── [✔] Plan ── [▶] Specs ── [ ] Docs/Implement    │
 │       ── [ ] Review                                                 │
 │                                                                     │
-│  ▶ Active: theorist producing specs...                              │
+│  ▶ Active: planner producing specs...                              │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -52,7 +52,7 @@ Lead outputs the progress bar directly as text (markdown) to the user. No tool c
 │                                                                     │
 │  [▶] Validate ── [ ] Done                                          │
 │                                                                     │
-│  ▶ Active: auditor running validation...                            │
+│  ▶ Active: tester running validation...                            │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -78,11 +78,11 @@ Lead outputs the progress bar directly as text (markdown) to the user. No tool c
 | --- | --- | --- | --- |
 | `CREDENTIALS_VERIFIED` | 1 | Credentials | `[✔]` when passed |
 | `PLANNED` | 2 | Plan | `[✔]` when impact.md written |
-| `SPEC_READY` | 3 | Specs | `[✔]` when theorist completes |
-| `PIPELINES_COMPLETE` | 4 | Build/Test | `[✔]` when builder + auditor complete |
-| `DOCUMENTED` | 5 | Docs | `[✔]` when scribe completes |
-| `REVIEW_PASSED` | 6 | Review | `[✔]` when skeptic passes |
-| `DONE` | 7 | Ship | `[✔]` when github completes (or skipped) |
+| `SPEC_READY` | 3 | Specs | `[✔]` when planner completes |
+| `PIPELINES_COMPLETE` | 4 | Build/Test | `[✔]` when builder + tester complete |
+| `DOCUMENTED` | 5 | Docs | `[✔]` when recorder completes |
+| `REVIEW_PASSED` | 6 | Review | `[✔]` when reviewer passes |
+| `DONE` | 7 | Ship | `[✔]` when shipper completes (or skipped) |
 
 ### Docs-Only Pipeline
 
@@ -130,7 +130,7 @@ When a signal interrupts the workflow, the progress bar shows the interruption:
 │  [✔] Credentials ── [✔] Plan ── [⏸] Specs ── [ ] Build/Test        │
 │       ── [ ] Docs ── [ ] Review ── [ ] Ship                        │
 │                                                                     │
-│  ⏸ HOLD: theorist needs clarification (see question below)          │
+│  ⏸ HOLD: planner needs clarification (see question below)          │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -143,7 +143,7 @@ When a signal interrupts the workflow, the progress bar shows the interruption:
 │  [✔] Credentials ── [✔] Plan ── [✔] Specs ── [✘] Build/Test        │
 │       ── [ ] Docs ── [ ] Review ── [ ] Ship                        │
 │                                                                     │
-│  ✘ BLOCKED: auditor found test failures → respawning builder (1/3)  │
+│  ✘ BLOCKED: tester found test failures → respawning builder (1/3)  │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -156,7 +156,7 @@ When a signal interrupts the workflow, the progress bar shows the interruption:
 │  [✔] Credentials ── [✔] Plan ── [✔] Specs ── [✔] Build/Test        │
 │       ── [✔] Docs ── [✘] Review ── [ ] Ship                        │
 │                                                                     │
-│  ✘ STOPPED: skeptic found isolation breach → respawning builder     │
+│  ✘ STOPPED: reviewer found isolation breach → respawning builder     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -180,14 +180,14 @@ When a signal interrupts the workflow, the progress bar shows the interruption:
 
 ## Parallel Stage Indicator
 
-When builder and auditor run in parallel, show both:
+When builder and tester run in parallel, show both:
 
 ```
 │  [✔] Credentials ── [✔] Plan ── [✔] Specs ── [▶] Build/Test        │
 │                                                                     │
 │  ▶ Active (parallel):                                               │
 │    ├─ builder: implementing changes in worktree...                  │
-│    └─ auditor: running test scenarios...                            │
+│    └─ tester: running test scenarios...                            │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -195,8 +195,8 @@ When builder and auditor run in parallel, show both:
 
 ## Implementation Rule
 
-Lead MUST output the progress bar as markdown text directly after each state transition. This is a **text output**, not a tool call. Lead constructs the bar from `status.md` state and the active workflow type.
+Leader MUST output the progress bar as markdown text directly after each state transition. This is a **text output**, not a tool call. Leader constructs the bar from `status.md` state and the active workflow type.
 
 **Minimum frequency**: After EVERY `status.md` write. Optionally also when dispatching a teammate (to show the "Active" line changing).
 
-**No separate tool needed** — lead simply prints the formatted text block above as part of its response.
+**No separate tool needed** — leader simply prints the formatted text block above as part of its response.

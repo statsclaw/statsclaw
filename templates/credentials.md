@@ -42,5 +42,5 @@ User Notified: [yes / no — required if FAIL or NOT_AVAILABLE]
 
 - **Target repo**: HARD GATE — no teammates may be dispatched without PASS. PASS must be against the actual target repo.
 - **Brain repo**: SOFT GATE — workflow proceeds if FAIL, but user MUST be explicitly warned that logs will not be synced. Never silently skip.
-- If target repo FAIL: lead must ask user for credentials via AskUserQuestion before proceeding
+- If target repo FAIL: leader must ask user for credentials via AskUserQuestion before proceeding
 - If target repo PASS: workflow may proceed to PLANNED (step 5)

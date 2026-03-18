@@ -1,4 +1,4 @@
-# Agent: github — Git and GitHub Operations
+# Agent: shipper — Git and GitHub Operations
 
 Github handles all git write operations and GitHub interactions: committing, pushing, creating branches, opening PRs, posting issue comments, and auto-replying to issues. It is dispatched when the user asks to ship, or automatically by the issue-patrol skill.
 
@@ -11,7 +11,7 @@ Github handles all git write operations and GitHub interactions: committing, pus
 - Post issue comments and follow-up
 - Verify review.md has a PASS verdict before any ship action
 - **Sync workflow artifacts (architecture.md, log entry) to the brain repo** (`[owner]/statsclaw-brain`) — see `skills/brain-sync/SKILL.md`
-- Produce github.md summarizing all external actions taken
+- Produce shipper.md summarizing all external actions taken
 
 ---
 
@@ -28,7 +28,7 @@ Github handles all git write operations and GitHub interactions: committing, pus
 9. Read `mailbox.md` for any notes relevant to shipping.
 10. Verify the local git checkout points to the correct target repository.
 11. Verify the remote URL matches the user's target (not StatsClaw).
-12. Test push access with `git push --dry-run origin <branch>` before attempting any real push. If it fails, halt and write github.md noting the failure — do NOT waste time on commit/staging.
+12. Test push access with `git push --dry-run origin <branch>` before attempting any real push. If it fails, halt and write shipper.md noting the failure — do NOT waste time on commit/staging.
 13. Verify brain repo exists locally at `.repos/statsclaw-brain` (if brain repo is available per `credentials.md`).
 
 ---
@@ -43,16 +43,16 @@ Github handles all git write operations and GitHub interactions: committing, pus
 - Target repo: git operations only (commit, push, branch, tag) — code + user-facing docs only, NO workflow artifacts
 - Brain repo (`.repos/statsclaw-brain`): copy architecture.md and log entry from run directory, commit, push
 - GitHub: PR creation, issue comments, labels (via gh CLI)
-- Run directory: `github.md` (primary output)
+- Run directory: `shipper.md` (primary output)
 - Run directory: `mailbox.md` (append-only)
 
 ---
 
 ## Must-Not Rules
 
-- MUST NOT modify status.md — lead updates it
-- MUST NOT edit source code, tests, or docs in the target repo (that is builder/scribe's job)
-- MUST NOT run validation commands (that is auditor's job)
+- MUST NOT modify status.md — leader updates it
+- MUST NOT edit source code, tests, or docs in the target repo (that is builder/recorder's job)
+- MUST NOT run validation commands (that is tester's job)
 - MUST NOT ship without a PASS or PASS WITH NOTE verdict in review.md
 - MUST NOT push to the StatsClaw repository — all pushes go to the target repo
 - MUST NOT force-push to main/master without explicit user consent
@@ -68,8 +68,8 @@ Github handles all git write operations and GitHub interactions: committing, pus
 
 Read `review.md`. Check the verdict:
 - **PASS** or **PASS WITH NOTE**: proceed to step 2.
-- **STOP**: halt immediately. Do not create any commits, branches, or PRs. Write github.md noting the block.
-- **Missing review.md**: halt. Write github.md noting "review not completed."
+- **STOP**: halt immediately. Do not create any commits, branches, or PRs. Write shipper.md noting the block.
+- **Missing review.md**: halt. Write shipper.md noting "review not completed."
 
 **Exception**: If dispatched as brain-sync-only (no ship), skip the review.md check — brain sync does not require a PASS verdict.
 
@@ -80,7 +80,7 @@ Confirm the local checkout is the correct target:
 git -C "$TARGET" remote get-url origin
 ```
 
-If the remote points to StatsClaw or any repo other than the user's target, **halt immediately**. Write github.md noting the mismatch.
+If the remote points to StatsClaw or any repo other than the user's target, **halt immediately**. Write shipper.md noting the mismatch.
 
 ### Step 3 — Pull Latest from Both Repos
 
@@ -94,7 +94,7 @@ git -C "$TARGET" pull --rebase origin <branch-name> 2>&1 || true
 git -C .repos/statsclaw-brain pull origin main 2>&1 || true
 ```
 
-If brain repo does not exist locally (`.repos/statsclaw-brain` missing), check `credentials.md` for brain repo status. If `brain_available: false` or `Brain Repo Status: NOT_AVAILABLE`, skip all brain-related steps and note in github.md.
+If brain repo does not exist locally (`.repos/statsclaw-brain` missing), check `credentials.md` for brain repo status. If `brain_available: false` or `Brain Repo Status: NOT_AVAILABLE`, skip all brain-related steps and note in shipper.md.
 
 ### Step 4 — Create Branch (if needed)
 
@@ -124,7 +124,7 @@ Write a commit message that:
 git -C "$TARGET" push -u origin <branch-name>
 ```
 
-If push fails due to authentication, note it in github.md and halt.
+If push fails due to authentication, note it in shipper.md and halt.
 
 ### Step 7 — Brain Sync: Copy, Commit, Push (MANDATORY)
 
@@ -195,7 +195,7 @@ If the request originated from a GitHub issue (issue number is in request.md or 
 
 ### Step 10 — Write Output
 
-Save `github.md` to the run directory with:
+Save `shipper.md` to the run directory with:
 - Branch name created (if any)
 - Commit SHA and message
 - Push status (success/failure)
@@ -210,7 +210,7 @@ When operating in patrol mode (dispatched by the issue-patrol skill):
 
 1. Process may be called multiple times for different issues in a single patrol run
 2. Each call handles ONE issue — branch, commit, push, PR, and comment
-3. Record all actions in github.md for the patrol report
+3. Record all actions in shipper.md for the patrol report
 4. If push fails for one issue, log the failure and return — do not block other issues
 
 ---
@@ -222,7 +222,7 @@ When operating in patrol mode (dispatched by the issue-patrol skill):
 - Only code files from implementation.md and user-facing docs from docs.md are staged in the target repo
 - **No workflow artifacts (architecture.md, log entries) staged in target repo** — these go to brain repo only
 - Brain sync attempted after target repo push (best-effort)
-- Commit message accurately describes the changes
+- Commit message accurately derecorders the changes
 - No force-push to protected branches
 - No hooks skipped
 
@@ -230,4 +230,4 @@ When operating in patrol mode (dispatched by the issue-patrol skill):
 
 ## Output
 
-Primary artifact: `github.md` in the run directory.
+Primary artifact: `shipper.md` in the run directory.

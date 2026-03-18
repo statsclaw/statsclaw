@@ -47,7 +47,7 @@ Detect this profile when the target repository contains:
 - Use `errors.New` or `fmt.Errorf` with `%w` for wrapping; define sentinel errors for public API.
 - Prefer table-driven tests.
 
-## Auditor Notes
+## Tester Notes
 
 - `go test ./...` must pass with zero failures.
 - `go vet ./...` must produce zero warnings; treat all as blockers.
