@@ -35,7 +35,7 @@ Detect this profile when the target repository contains:
 
 ## Build Exclusions
 
-Go modules automatically ignore non-`.go` files, so `architecture.md` and `log/` require no explicit exclusion. However, these artifacts are still development-only and MUST NOT be treated as part of the module's source.
+**Note**: Architecture diagrams and workflow logs are NOT stored in the target repo — they are synced to the brain repo (`[owner]/statsclaw-brain`). No exclusions needed. See `skills/brain-sync/SKILL.md`.
 
 ## Builder Notes
 

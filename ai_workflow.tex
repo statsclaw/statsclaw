@@ -985,20 +985,20 @@ Table~\ref{tab:profiles} lists the currently supported profiles.
 \begin{tabular}{@{}llll@{}}
 \toprule
 \textbf{Profile} & \textbf{Validation Command} &
-  \textbf{Doc System} & \textbf{Release Exclusion} \\
+  \textbf{Doc System} & \textbf{Workflow Logs} \\
 \midrule
 R Package     & \texttt{R CMD check --as-cran}  & roxygen2
-  & \texttt{.Rbuildignore} \\
+  & brain repo \\
 Python        & \texttt{pytest --tb=short}      & docstrings/Sphinx
-  & \texttt{MANIFEST.in} \\
+  & brain repo \\
 TypeScript    & \texttt{npm test}               & JSDoc/TSDoc
-  & \texttt{.npmignore} \\
+  & brain repo \\
 Go Module     & \texttt{go test ./...}          & godoc
-  & (implicit) \\
+  & brain repo \\
 Rust Crate    & \texttt{cargo test}             & rustdoc
-  & \texttt{Cargo.toml} exclude \\
+  & brain repo \\
 Stata         & \texttt{do run\_tests.do}       & SMCL help files
-  & (manual) \\
+  & brain repo \\
 \bottomrule
 \end{tabular}
 \end{table}
