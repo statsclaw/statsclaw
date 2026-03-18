@@ -74,9 +74,9 @@ Brain sync has two distinct phases that bookend the entire workflow:
 │  ├── git pull target repo                               │
 │  └── git pull brain repo (or clone, or auto-create)     │
 ├─────────────────────────────────────────────────────────┤
-│  ... workflow runs (theorist → builder → auditor → ...) │
+│  ... workflow runs (planner → builder → tester → ...) │
 ├─────────────────────────────────────────────────────────┤
-│  PHASE 2: PUSH (end of workflow, github agent)          │
+│  PHASE 2: PUSH (end of workflow, shipper agent)          │
 │  ├── git push target repo (code + docs only)            │
 │  └── git push brain repo (architecture + log entry)     │
 └─────────────────────────────────────────────────────────┘
@@ -84,9 +84,9 @@ Brain sync has two distinct phases that bookend the entire workflow:
 
 ---
 
-## Phase 1: Acquire (Lead, Step 2 of Mandatory Protocol)
+## Phase 1: Acquire (Leader, Step 2 of Mandatory Protocol)
 
-Lead is responsible for acquiring BOTH repos at the START of every workflow. This happens in step 2 of the Mandatory Execution Protocol (ACQUIRE REPOS).
+Leader is responsible for acquiring BOTH repos at the START of every workflow. This happens in step 2 of the Mandatory Execution Protocol (ACQUIRE REPOS).
 
 ### Step 1 — Determine Brain Repo URL
 
@@ -174,7 +174,7 @@ Record result in `credentials.md` under a `Brain Repo` section.
 
 ## Phase 2: Push (Github Agent, End of Workflow)
 
-The github agent handles pushing to BOTH repos at the end of the workflow.
+The shipper agent handles pushing to BOTH repos at the end of the workflow.
 
 ### Order of Operations
 
@@ -190,7 +190,7 @@ The github agent handles pushing to BOTH repos at the end of the workflow.
 
 ### Target Repo Push (Steps 1–3)
 
-Standard github agent workflow — stage code + user-facing docs, commit, push. NO workflow artifacts.
+Standard shipper agent workflow — stage code + user-facing docs, commit, push. NO workflow artifacts.
 
 ### Brain Repo Push (Steps 4–6)
 
@@ -220,11 +220,11 @@ git push origin main
 
 ### Brain-Sync-Only Dispatch
 
-If the workflow does NOT include a ship step (workflows 1, 3, 6, 8), lead MUST still dispatch the github agent with a **brain-sync-only** task. In this case:
+If the workflow does NOT include a ship step (workflows 1, 3, 6, 8), leader MUST still dispatch the shipper agent with a **brain-sync-only** task. In this case:
 - Github skips steps 1–3 (no target repo push)
 - Github executes steps 4–6 (brain repo sync only)
 - No PR or issue comments
-- `github.md` records brain sync status only
+- `shipper.md` records brain sync status only
 
 ---
 
@@ -234,9 +234,9 @@ If the workflow does NOT include a ship step (workflows 1, 3, 6, 8), lead MUST s
 | --- | --- | --- | --- |
 | Source code changes | Yes | No | Builder's work |
 | Unit tests | Yes | No | Builder's work |
-| User-facing docs (README, help, vignettes) | Yes | No | Scribe's work |
-| `architecture.md` | **No** | Yes | Scribe writes to run dir; github syncs to brain |
-| `log/<date>-<slug>.md` | **No** | Yes | Scribe writes to run dir; github syncs to brain |
+| User-facing docs (README, help, vignettes) | Yes | No | Recorder's work |
+| `architecture.md` | **No** | Yes | Recorder writes to run dir; shipper syncs to brain |
+| `log/<date>-<slug>.md` | **No** | Yes | Recorder writes to run dir; shipper syncs to brain |
 | `.Rbuildignore` / `.npmignore` updates for log/architecture | **No longer needed** | N/A | Logs don't go to target repo |
 | Run directory artifacts (spec.md, audit.md, etc.) | No | No | Stay in `.statsclaw/runs/` locally |
 
@@ -275,12 +275,12 @@ The brain repo itself can also be symlinked if the user prefers a different loca
 
 ## Error Handling
 
-| Situation | Lead Action (Phase 1) | Github Action (Phase 2) |
+| Situation | Leader Action (Phase 1) | Github Action (Phase 2) |
 | --- | --- | --- |
 | Brain repo doesn't exist | Auto-create with `gh repo create` | N/A (already handled in Phase 1) |
-| Brain repo creation fails | **Warn user explicitly**, set `brain_available: false`, continue workflow | Skip brain sync, note in `github.md` |
-| Brain repo clone/pull fails (network) | Retry up to 3 times. If all fail, warn user, set `brain_available: false` | Skip brain sync, note in `github.md` |
-| Brain repo push fails | N/A | Retry up to 3 times with exponential backoff. If all fail, **warn user**, note in `github.md` |
+| Brain repo creation fails | **Warn user explicitly**, set `brain_available: false`, continue workflow | Skip brain sync, note in `shipper.md` |
+| Brain repo clone/pull fails (network) | Retry up to 3 times. If all fail, warn user, set `brain_available: false` | Skip brain sync, note in `shipper.md` |
+| Brain repo push fails | N/A | Retry up to 3 times with exponential backoff. If all fail, **warn user**, note in `shipper.md` |
 | Target repo has no remote (local-only) | Use directory name as folder name in brain | Use directory name as folder name |
 | `brain_available: false` in request.md | N/A | Skip brain sync entirely |
 

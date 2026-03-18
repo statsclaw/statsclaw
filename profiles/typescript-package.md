@@ -46,11 +46,11 @@ If the project uses `pnpm`, substitute `pnpm` for `npm` in all commands.
 - Respect the existing `tsconfig.json` strictness settings; do not relax them.
 - Export types alongside runtime values so consumers get full type information.
 - Place tests adjacent to source (`*.test.ts`) or under `tests/` depending on project convention.
-- Do not add new dependencies to `package.json` without noting it in the mailbox for lead review.
+- Do not add new dependencies to `package.json` without noting it in the mailbox for leader review.
 - Prefer `const` over `let`; avoid `var`.
 - Use async/await over raw Promises; handle errors explicitly.
 
-## Auditor Notes
+## Tester Notes
 
 - `tsc --noEmit` must pass with zero errors; type check failures are always blockers.
 - `npm test` must pass with zero failures.

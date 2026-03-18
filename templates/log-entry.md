@@ -16,7 +16,7 @@
 
 This section captures the full workflow history: what was proposed, what was tested, what problems arose, and how they were resolved. It provides a complete audit trail for traceability and post-mortem analysis.
 
-### Proposal (from theorist)
+### Proposal (from planner)
 
 **Implementation spec summary** (from `spec.md`):
 - [Key algorithm/approach proposed]
@@ -33,7 +33,7 @@ This section captures the full workflow history: what was proposed, what was tes
 - [Deviations from spec and why]
 - [Unit tests written]
 
-### Validation Results (from auditor)
+### Validation Results (from tester)
 
 **Per-Test Result Table** (copy from `audit.md` — every test with its specific metrics):
 
@@ -64,9 +64,9 @@ Additional notes:
 | --- | --- | --- | --- | --- |
 | 1 | [description of the problem] | [BLOCK / HOLD / STOP] | [teammate] | [how it was resolved] |
 
-### Review Summary (from skeptic, if available)
+### Review Summary (from reviewer, if available)
 
-[If `review.md` exists, fill in. If scribe runs before skeptic in the standard flow, write "Pending — skeptic review follows scribe." Github teammate will update this section before commit if needed.]
+[If `review.md` exists, fill in. If recorder runs before reviewer in the standard flow, write "Pending — reviewer review follows recorder." Github teammate will update this section before commit if needed.]
 
 - **Pipeline isolation**: [verified / breach detected / pending]
 - **Convergence**: [converged / diverged — details / pending]

@@ -6,7 +6,7 @@ This skill enables StatsClaw to automatically scan open GitHub issues in a targe
 
 ## Trigger Phrases
 
-Any of the following user intents activate this skill. **Exact wording is NOT required** — lead routes semantically:
+Any of the following user intents activate this skill. **Exact wording is NOT required** — leader routes semantically:
 
 - "Monitor issues on [repo]"
 - "Check issues and fix bugs in [repo]"
@@ -27,7 +27,7 @@ A short prompt like `"patrol fect issues on cfe"` is sufficient.
 3. **Prioritize** — Orders actionable issues by severity (crashes > test failures > warnings > minor bugs)
 4. **Fix Loop** — For each actionable issue, runs the full StatsClaw workflow:
    - Creates a fix branch from the specified base branch
-   - Dispatches theorist → [builder ∥ auditor] → skeptic → github
+   - Dispatches planner → [builder ∥ tester] → reviewer → shipper
    - Pushes the fix and opens a PR
    - Posts a comment on the original issue linking the PR and summarizing the fix
 5. **Report** — Produces a patrol report summarizing all actions taken
@@ -48,13 +48,13 @@ A short prompt like `"patrol fect issues on cfe"` is sufficient.
 | `auto_pr` | No | `true` | Automatically create pull requests |
 | `loop_interval` | No | `0` (one-shot) | Minutes between patrol runs (0 = run once) |
 
-Lead extracts these from the user's natural language prompt. Missing parameters use defaults.
+Leader extracts these from the user's natural language prompt. Missing parameters use defaults.
 
 ---
 
-## Lead Execution Protocol
+## Leader Execution Protocol
 
-When this skill is activated, lead follows this sequence:
+When this skill is activated, leader follows this sequence:
 
 ### Phase 1 — Setup
 
@@ -71,7 +71,7 @@ When this skill is activated, lead follows this sequence:
    gh issue list --repo <owner/repo> --state open --limit <max_issues> --json number,title,body,labels,createdAt
    ```
 2. For each issue, classify intent:
-   - **Actionable**: describes a bug, error, crash, test failure, or incorrect behavior with enough detail to reproduce
+   - **Actionable**: derecorders a bug, error, crash, test failure, or incorrect behavior with enough detail to reproduce
    - **Non-actionable**: feature request, enhancement, question, discussion, or too vague to act on
 3. Write `patrol-triage.md` to the run directory with the classification table
 
@@ -82,13 +82,13 @@ For each actionable issue (in priority order):
 1. Create a sub-run: `.statsclaw/runs/PATROL-<timestamp>/issue-<number>/`
 2. Write `request.md` scoped to this specific issue
 3. Write `impact.md` based on the issue description and codebase exploration
-4. Run the full workflow: theorist → [builder ∥ auditor] → skeptic
-   - Theorist produces `spec.md` and `test-spec.md` for the issue
-   - Builder and auditor are dispatched in parallel with isolated specs
-5. If skeptic PASS:
-   - Dispatch github to create fix branch (`<branch_prefix>-issue-<number>-<short-desc>` from `<base_branch>`), push, create PR, and comment on the issue
-   - The github agent MUST post a comment on the issue (see github agent's Issue Auto-Reply section)
-6. If skeptic STOP:
+4. Run the full workflow: planner → [builder ∥ tester] → reviewer
+   - Planner produces `spec.md` and `test-spec.md` for the issue
+   - Builder and tester are dispatched in parallel with isolated specs
+5. If reviewer PASS:
+   - Dispatch shipper to create fix branch (`<branch_prefix>-issue-<number>-<short-desc>` from `<base_branch>`), push, create PR, and comment on the issue
+   - The shipper agent MUST post a comment on the issue (see shipper agent's Issue Auto-Reply section)
+6. If reviewer STOP:
    - Log the failure in the patrol report
    - Move to the next issue
 
@@ -123,7 +123,7 @@ Short description is derived from the issue title, lowercased, spaces replaced w
 
 ## Issue Auto-Reply Format
 
-When github posts a comment on the issue, use this template:
+When shipper posts a comment on the issue, use this template:
 
 ```markdown
 ## Automated Fix Available
@@ -150,9 +150,9 @@ Please review the PR and let us know if the fix addresses your concern.
 
 - **Never close issues** — only comment and link PRs. Closure is a human decision.
 - **Never force-push** — always use regular push.
-- **Skip ambiguous issues** — if the issue doesn't clearly describe a bug, skip it and log why.
+- **Skip ambiguous issues** — if the issue doesn't clearly derecorder a bug, skip it and log why.
 - **One branch per issue** — never mix fixes for different issues in the same branch.
-- **Respect the full workflow** — every fix goes through theorist → [builder ∥ auditor] → skeptic. No shortcuts.
+- **Respect the full workflow** — every fix goes through planner → [builder ∥ tester] → reviewer. No shortcuts.
 - **Credential gate** — do not attempt any GitHub operations without verified credentials.
 
 ---
