@@ -9,7 +9,7 @@ All runtime state is local under `.statsclaw/` and ignored by git.
 ## What You Install
 
 - `CLAUDE.md` — orchestration policy (the authoritative reference)
-- `.agents/` — agent definitions (lead, theorist, builder, auditor, scribe, skeptic, github)
+- `agents/` — agent definitions (leader, planner, builder, tester, recorder, reviewer, shipper)
 - `skills/` — shared protocol skills (credential-setup, isolation, handoff, mailbox, issue-patrol, profile-detection)
 - `profiles/` — language-specific execution rules (R, Python, TypeScript, Stata, Go, Rust)
 - `templates/` — runtime artifact templates (context, package, status, credentials, mailbox, lock, log-entry, architecture)
@@ -20,39 +20,39 @@ Agent Teams is enabled at the project level through `.claude/settings.json`.
 
 ## Two-Pipeline Architecture
 
-StatsClaw uses two fully isolated execution pipelines that converge at the skeptic:
+StatsClaw uses two fully isolated execution pipelines that converge at the reviewer:
 
 ```
-                    theorist (bridge)
+                    planner (bridge)
                    /                \
         spec.md  /                    \  test-spec.md
                /                        \
-          builder                      auditor
+          builder                      tester
       (code pipeline)            (test pipeline)
                \                        /
                 \                      /
-                   scribe (recording)
+                   recorder (recording)
                        |
-                   skeptic (convergence)
+                   reviewer (convergence)
                        |
-                     github
+                     shipper
 ```
 
 | Layer | Agent | Pipeline | Role |
 | --- | --- | --- | --- |
-| Control | `lead` | — | Plans work, dispatches teammates, manages state |
-| Analysis | `theorist` | Bridge | Produces `spec.md` AND `test-spec.md` from requirements |
+| Control | `leader` | — | Plans work, dispatches teammates, manages state |
+| Analysis | `planner` | Bridge | Produces `spec.md` AND `test-spec.md` from requirements |
 | Code | `builder` | Code | Implements from `spec.md` only (never sees test-spec.md) |
-| Test | `auditor` | Test | Validates from `test-spec.md` only (never sees spec.md) |
-| Recording | `scribe` | Both | Architecture, process-record log, documentation (mandatory) |
-| Convergence | `skeptic` | Both | Cross-compares both pipelines; issues ship verdict |
-| Ship | `github` | — | Commits, pushes, PRs, issue comments (conditional) |
+| Test | `tester` | Test | Validates from `test-spec.md` only (never sees spec.md) |
+| Recording | `recorder` | Both | Architecture, process-record log, documentation (mandatory) |
+| Convergence | `reviewer` | Both | Cross-compares both pipelines; issues ship verdict |
+| Ship | `shipper` | — | Commits, pushes, PRs, issue comments (conditional) |
 
 **Key properties:**
-- **Theorist is always mandatory** — it bridges both pipelines
-- **Builder handles code, scribe handles docs** — for docs-only requests, scribe replaces builder as implementer
-- **Builder and auditor run in parallel** (code workflows) — each with its own isolated spec
-- **Pipeline isolation is enforced** — builder/scribe never sees test-spec.md, auditor never sees spec.md
+- **Planner is always mandatory** — it bridges both pipelines
+- **Builder handles code, recorder handles docs** — for docs-only requests, recorder replaces builder as implementer
+- **Builder and tester run in parallel** (code workflows) — each with its own isolated spec
+- **Pipeline isolation is enforced** — builder/recorder never sees test-spec.md, tester never sees spec.md
 - **Adversarial verification** — if both pipelines converge independently, confidence is high
 
 ---
@@ -60,8 +60,8 @@ StatsClaw uses two fully isolated execution pipelines that converge at the skept
 ## Workflow
 
 ```text
-Code:      lead → theorist → [builder ∥ auditor] → scribe → skeptic → github?
-Docs-only: lead → theorist → scribe → skeptic → github?
+Code:      leader → planner → [builder ∥ tester] → recorder → reviewer → shipper?
+Docs-only: leader → planner → recorder → reviewer → shipper?
 ```
 
 States: `CREDENTIALS_VERIFIED → NEW → PLANNED → SPEC_READY → PIPELINES_COMPLETE → DOCUMENTED → REVIEW_PASSED → READY_TO_SHIP → DONE`
@@ -98,15 +98,16 @@ ship it
 │   ├── request.md          # scope and acceptance criteria
 │   ├── status.md           # state machine
 │   ├── impact.md           # affected files and risk areas
-│   ├── comprehension.md    # comprehension verification (from theorist, mandatory)
-│   ├── spec.md             # code pipeline input (from theorist)
-│   ├── test-spec.md        # test pipeline input (from theorist)
+│   ├── comprehension.md    # comprehension verification (from planner, mandatory)
+│   ├── spec.md             # code pipeline input (from planner)
+│   ├── test-spec.md        # test pipeline input (from planner)
 │   ├── implementation.md   # code pipeline output (from builder)
-│   ├── audit.md            # test pipeline output (from auditor)
-│   ├── architecture.md     # system architecture diagram (from scribe, mandatory)
-│   ├── docs.md             # documentation changes (from scribe)
-│   ├── review.md           # convergence verdict (from skeptic)
-│   ├── github.md           # ship actions (from github)
+│   ├── audit.md            # test pipeline output (from tester)
+│   ├── architecture.md     # system architecture diagram (from recorder; synced to brain repo)
+│   ├── log-entry.md        # process record (from recorder; synced to brain repo)
+│   ├── docs.md             # documentation changes (from recorder)
+│   ├── review.md           # convergence verdict (from reviewer)
+│   ├── shipper.md           # ship actions (from shipper)
 │   ├── mailbox.md          # inter-teammate communication
 │   └── locks/              # write surface locks
 ├── logs/
@@ -121,24 +122,43 @@ ship it
 StatsClaw/
 ├── CLAUDE.md           # orchestration policy
 ├── README.md
-├── .agents/            # agent definitions
-├── skills/             # shared protocol skills (6 skills)
+├── agents/            # agent definitions
+├── skills/             # shared protocol skills (9 skills)
 ├── profiles/           # language execution rules (6 languages)
 ├── templates/          # runtime artifact templates
-├── .repo/              # target repo checkouts (git-ignored)
+├── .repos/             # target repo checkouts + brain repo (git-ignored; symlinks supported)
 └── .statsclaw/         # local runtime state (git-ignored)
 ```
+
+## Brain Repository
+
+Workflow logs, process records, and architecture diagrams are NOT stored in target repos. Instead, they are synced to a centralized `[owner]/statsclaw-brain` GitHub repository:
+
+```text
+statsclaw-brain/
+├── fect/
+│   ├── architecture.md     # latest architecture diagram
+│   └── log/
+│       └── 2026-03-15-fix-tests.md
+├── panelview/
+│   ├── architecture.md
+│   └── log/
+│       └── 2026-03-17-add-feature.md
+└── README.md
+```
+
+This keeps target repos clean (code + essential docs only) while preserving full traceability in one place.
 
 ---
 
 ## Design Principles
 
 - **Credentials first, work second.** Verify push access before creating a run.
-- **Team Lead dispatches, never does.** Lead plans and coordinates; teammates do the work.
+- **Team Leader dispatches, never does.** Leader plans and coordinates; teammates do the work.
 - **Two pipelines, fully isolated.** Code pipeline and test pipeline never see each other's specs.
-- **Theorist first, always.** Every non-trivial request starts with dual-spec production.
+- **Planner first, always.** Every non-trivial request starts with dual-spec production.
 - **Adversarial verification by design.** Independent convergence proves correctness.
 - **Hard gates, not soft advice.** State transitions have preconditions; artifacts are verified.
-- **Worktree isolation for writers.** Builder and scribe run in isolated git worktrees.
+- **Worktree isolation for writers.** Builder and recorder run in isolated git worktrees.
 - **Surgical scope.** Each run modifies only what the request requires.
 - **Explicit ship actions.** Nothing is pushed without user instruction or active patrol skill.

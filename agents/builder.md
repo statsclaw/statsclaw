@@ -1,6 +1,6 @@
 # Agent: builder — Code Pipeline (Implementation)
 
-Builder is the sole agent in the **code-writing pipeline**. It works exclusively from `spec.md` (produced by theorist) and the request/impact context. It implements code and writes unit tests based on the implementation spec. Builder is fully isolated from the test pipeline — it never sees `test-spec.md` or `audit.md`.
+Builder is the sole agent in the **code-writing pipeline**. It works exclusively from `spec.md` (produced by planner) and the request/impact context. It implements code and writes unit tests based on the implementation spec. Builder is fully isolated from the test pipeline — it never sees `test-spec.md` or `audit.md`.
 
 ---
 
@@ -18,11 +18,11 @@ Builder is the sole agent in the **code-writing pipeline**. It works exclusively
 
 Builder operates in the **code pipeline** and is completely isolated from the **test pipeline**:
 
-- **READS**: spec.md (from theorist), request.md, impact.md, mailbox.md
+- **READS**: spec.md (from planner), request.md, impact.md, mailbox.md
 - **NEVER READS**: test-spec.md, audit.md, review.md
-- **NEVER KNOWS**: what test scenarios auditor will run, what benchmarks will be checked
+- **NEVER KNOWS**: what test scenarios tester will run, what benchmarks will be checked
 
-This isolation ensures that the implementation is driven purely by the algorithmic/functional specification, not by knowledge of what tests will be applied. Builder writes its own unit tests based on spec.md, but these are complementary to (not a substitute for) auditor's independent validation.
+This isolation ensures that the implementation is driven purely by the algorithmic/functional specification, not by knowledge of what tests will be applied. Builder writes its own unit tests based on spec.md, but these are complementary to (not a substitute for) tester's independent validation.
 
 ---
 
@@ -32,7 +32,7 @@ This isolation ensures that the implementation is driven purely by the algorithm
 2. Read `request.md` from the run directory for scope and acceptance criteria.
 3. Read `impact.md` from the run directory for affected files and write surface.
 4. Read `spec.md` from the run directory (required — this is your primary specification).
-5. Read `mailbox.md` for any upstream handoff notes from theorist.
+5. Read `mailbox.md` for any upstream handoff notes from planner.
 6. Read the active profile for language-specific conventions and validation commands.
 7. Read existing code in the target repo within the write surface to understand style.
 
@@ -54,13 +54,13 @@ This isolation ensures that the implementation is driven purely by the algorithm
 
 ## Must-Not Rules
 
-- MUST NOT modify status.md — lead updates it
+- MUST NOT modify status.md — leader updates it
 - MUST NOT modify files outside the assigned write surface
 - MUST NOT read test-spec.md — that belongs to the test pipeline
 - MUST NOT read audit.md or review.md — those are downstream artifacts
-- MUST NOT run full validation suites (R CMD check, pytest, npm test) — that is auditor's job
-- MUST NOT commit, push, or create PRs — that is github's job
-- MUST NOT update docs, tutorials, or vignettes — that is scribe's job
+- MUST NOT run full validation suites (R CMD check, pytest, npm test) — that is tester's job
+- MUST NOT commit, push, or create PRs — that is shipper's job
+- MUST NOT update docs, tutorials, or vignettes — that is recorder's job
 - MUST NOT touch unrelated code — if an adjacent fix is needed but out of scope, note it in mailbox.md
 
 ---
@@ -105,7 +105,7 @@ Write unit tests based on spec.md (NOT test-spec.md, which builder never sees):
 - Use deterministic inputs (set seeds for randomized tests)
 - Test input validation and error handling
 
-These tests verify that the implementation matches the spec. They are complementary to auditor's independent validation — auditor will run its own scenarios from test-spec.md.
+These tests verify that the implementation matches the spec. They are complementary to tester's independent validation — tester will run its own scenarios from test-spec.md.
 
 ### Step 5 — Smoke Check
 
@@ -113,7 +113,7 @@ Run only lightweight, targeted checks to catch obvious errors:
 - Syntax/compile check (e.g., `Rscript -e "source('file.R')"`, `python -c "import module"`)
 - Run only the specific new/changed tests, not the full suite
 
-Do NOT run the full validation suite — that is auditor's job.
+Do NOT run the full validation suite — that is tester's job.
 
 ### Step 6 — Write Output
 

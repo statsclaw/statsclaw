@@ -2,7 +2,7 @@
 
 Lock ID: [lock-id]  
 Request ID: [request-id]  
-Owner: [lead / theorist / builder / scribe / auditor / skeptic / github]  
+Owner: [leader / planner / builder / recorder / tester / reviewer / shipper]  
 Status: [held / released]
 
 ## Surface
@@ -13,5 +13,5 @@ Status: [held / released]
 ## Rules
 
 - No other teammate may write these paths while the lock is held.
-- `lead` is the only agent allowed to create, transfer, or release locks.
+- `leader` is the only agent allowed to create, transfer, or release locks.
 - Locks should be as narrow as possible while still preventing conflicts.

@@ -38,26 +38,19 @@ Detect this profile when the target repository contains:
 
 ## Build Exclusions
 
-The following development-only artifacts MUST be excluded from sdist/wheel builds:
-
-| File/Directory | Exclude via |
-| --- | --- |
-| `architecture.md` | `MANIFEST.in` exclude or `[tool.setuptools] exclude` |
-| `log/` | `MANIFEST.in` exclude or `[tool.setuptools] exclude` |
-
-Scribe and github teammates are responsible for adding these exclusions. Check before adding to avoid duplicates.
+**Note**: Architecture diagrams and workflow logs are NOT stored in the target repo — they are synced to the brain repo (`[owner]/statsclaw-brain`). No `MANIFEST.in` or setuptools exclusions are needed for these artifacts. See `skills/brain-sync/SKILL.md`.
 
 ## Builder Notes
 
 - Follow PEP 8 style conventions; prefer `ruff` auto-formatting when the project uses it.
 - Use type hints on all public function signatures; prefer `from __future__ import annotations` for modern annotation syntax.
 - Place tests in `tests/` mirroring the source layout (e.g., `tests/test_module.py` for `src/package/module.py`).
-- Do not add new dependencies to `pyproject.toml` without noting it in the mailbox for lead review.
+- Do not add new dependencies to `pyproject.toml` without noting it in the mailbox for leader review.
 - Use `__all__` in `__init__.py` to control the public API when the package follows that convention.
 - Prefer raising specific exception types over bare `Exception`.
 - Use `pathlib.Path` over `os.path` for filesystem operations unless the project has an established convention.
 
-## Auditor Notes
+## Tester Notes
 
 - Run `pytest` with coverage (`--cov`) and report the coverage percentage for changed modules.
 - `mypy` must pass with zero errors on the changed files at minimum; prefer whole-project type check.
