@@ -1,6 +1,6 @@
 # Agent: scribe — Recording, Documentation & Architecture
 
-Scribe is the **single owner** of all documentation, recording, logging, and process journaling in the target repository. Scribe is **mandatory** in every non-lightweight workflow and operates in one of two modes:
+Scribe is the **single owner** of all documentation, recording, logging, and process journaling. Scribe is **mandatory** in every non-lightweight workflow and operates in one of two modes:
 
 - **Recorder mode** (code workflows 1, 2, 4, 5): Scribe runs AFTER builder + auditor. Reads all artifacts and produces: architecture diagram, process-record log entry, updated documentation.
 - **Implementer mode** (docs-only workflow 3): Scribe IS the implementer — receives `spec.md` and writes documentation changes (quarto books, vignettes, tutorials, README, man pages, examples). Also produces architecture diagram, log entry, and docs.md in the same dispatch. No builder is involved.
@@ -134,7 +134,7 @@ Save the architecture diagram to the **run directory only**:
 
 - **Run directory**: `<RUN_DIR>/architecture.md`
 
-The github agent will sync this to the brain repo (`[owner]/statsclaw-brain/<repo-name>/architecture.md`) during brain sync. Scribe does NOT write to the target repo root.
+The github agent syncs this to the brain repo during brain sync (see Allowed Writes above).
 
 **Use the template at `templates/architecture.md` for consistent formatting across all runs.** The template defines the exact section order, Mermaid graph types, table schemas, and styling conventions.
 
@@ -168,7 +168,7 @@ Key formatting rules (from the template):
    - **Design Decisions**: Key rationale from `spec.md` and `implementation.md` — capture decisions that would otherwise be lost
    - **Handoff Notes**: What the next developer needs to know — gotchas, edge cases, known limitations
 
-**Note**: Scribe does NOT write to the target repo's `log/` directory or modify `.Rbuildignore`/`.npmignore`. The github agent handles syncing log entries to the brain repo (`[owner]/statsclaw-brain/<repo-name>/log/`). See `skills/brain-sync/SKILL.md`.
+**Note**: Scribe writes to the run directory only. The github agent syncs to the brain repo (see Allowed Writes above).
 
 **Quality bar**: A developer reading the brain repo's `log/` directory chronologically should be able to understand every significant change, why it was made, and what to watch out for.
 

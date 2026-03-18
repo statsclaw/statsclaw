@@ -32,7 +32,7 @@ If the system uses `stata-mp` or `stata-se` instead of `stata`, substitute accor
 
 ## Build Exclusions
 
-Stata projects typically do not have a package build system. The `architecture.md` and `log/` directory are development-only artifacts committed to the repository for traceability. No build exclusion is needed, but they MUST NOT be referenced by do-files or ado-files.
+**Note**: Architecture diagrams and workflow logs are NOT stored in the target repo — they are synced to the brain repo (`[owner]/statsclaw-brain`). No exclusions needed. See `skills/brain-sync/SKILL.md`.
 
 ## Builder Notes
 

@@ -36,14 +36,7 @@ Detect this profile when the target repository contains:
 
 ## Build Exclusions
 
-The following development-only artifacts MUST be excluded from crate packages via `Cargo.toml` `[package] exclude`:
-
-| Entry | Purpose |
-| --- | --- |
-| `architecture.md` | Architecture diagram (development-only) |
-| `log/` | Change log entries with handoff docs and design notes (development-only) |
-
-Scribe and github teammates are responsible for adding these entries. Check before adding to avoid duplicates.
+**Note**: Architecture diagrams and workflow logs are NOT stored in the target repo — they are synced to the brain repo (`[owner]/statsclaw-brain`). No `Cargo.toml` exclusions are needed for these artifacts. See `skills/brain-sync/SKILL.md`.
 
 ## Builder Notes
 
