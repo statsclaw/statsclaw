@@ -25,7 +25,7 @@ StatsClaw does **not** version user runtime state. All request state, project co
 
 ### How It Works
 
-1. Leader reads the prompt and detects intent (see `.agents/leader.md` → Simple Prompt Routing)
+1. Leader reads the prompt and detects intent (see `agents/leader.md` → Simple Prompt Routing)
 2. Leader resolves package names to repos (e.g., `fect` → `xuyiqing/fect` via `packages/fect.md`)
 3. Leader auto-detects credentials (see `skills/credential-setup/SKILL.md`) — no manual PAT setup needed if the environment is configured
 4. Leader activates the appropriate skill or workflow
@@ -49,7 +49,7 @@ This section is the entry point for every non-trivial user request. You MUST fol
 4. **VERIFY CREDENTIALS**: Follow `skills/credential-setup/SKILL.md` for the full auto-detection sequence (GITHUB_TOKEN → gh auth → SSH → credential helper → ask user). Verify push access to **both** the target repo and the brain repo. Write `credentials.md` to the run directory. Update `status.md` to `CREDENTIALS_VERIFIED`.
    - **ENFORCEMENT**: Steps 5–9 are INVALID without a `credentials.md` showing PASS **against the target repo**. The write-access probe MUST target the actual target repository — not a proxy, not StatsClaw, not any other repo. If you find yourself planning or dispatching teammates without confirmed push access, STOP and return to step 4.
    - **Brain repo credentials**: If brain repo push verification fails, note it in `credentials.md` and warn the user: "Brain repo push access not confirmed — workflow logs will not be synced." The workflow still proceeds (brain sync is not a hard gate), but the user must know.
-5. **LEADER PLANNING**: Read `.agents/leader.md`. Act as `leader`. Explore the target repository to identify affected surfaces. Write `impact.md` (affected files, risk areas, required teammates). Identify the profile from `profiles/`. Update `status.md` to `PLANNED`.
+5. **LEADER PLANNING**: Read `agents/leader.md`. Act as `leader`. Explore the target repository to identify affected surfaces. Write `impact.md` (affected files, risk areas, required teammates). Identify the profile from `profiles/`. Update `status.md` to `PLANNED`.
 6. **DISPATCH TEAMMATES (Two-Pipeline Architecture)**: See "Agent Teams Model" below for the architecture. Dispatch per the selected workflow:
    - a. **planner** — ALWAYS dispatched for non-trivial requests. **MANDATORY when the user uploads files** (PDF, Word, txt, tex, images with formulas) — these contain primary source material that planner must deeply comprehend before any specs are produced. Pass ALL uploaded file paths in the dispatch prompt. Planner produces `comprehension.md` (verification of understanding), `spec.md` (code pipeline), and `test-spec.md` (test pipeline). **If planner raises HOLD with comprehension questions, leader MUST forward them to the user via `AskUserQuestion` and re-dispatch planner with the answers. Iterate until planner confirms FULLY UNDERSTOOD.** Update status to `SPEC_READY`.
    - b. **Code changes** (source files, algorithms, features, bug fixes): dispatch **builder + tester IN PARALLEL** in the same message. Builder gets `spec.md` only. Tester gets `test-spec.md` only.
@@ -140,7 +140,7 @@ When spawning a teammate via the `Agent` tool:
 ```
 You are the [ROLE] teammate in a StatsClaw workflow.
 
-Read your agent definition at [STATSCLAW_PATH]/.agents/[role].md and follow its rules exactly.
+Read your agent definition at [STATSCLAW_PATH]/agents/[role].md and follow its rules exactly.
 
 ## Context
 - StatsClaw repo: [STATSCLAW_PATH]
@@ -225,13 +225,13 @@ StatsClaw uses Agent Teams exclusively. You are the Team Leader (`leader`). You 
 
 | Layer | Agent | Pipeline | Role | Definition |
 | --- | --- | --- | --- | --- |
-| Control | `leader` | — | Plans, dispatches, manages state | `.agents/leader.md` |
-| Analysis | `planner` | Bridge | Produces `spec.md` AND `test-spec.md` | `.agents/planner.md` |
-| Code | `builder` | Code | Implements from `spec.md` only (worktree) | `.agents/builder.md` |
-| Test | `tester` | Test | Validates from `test-spec.md` only | `.agents/tester.md` |
-| Recording | `recorder` | Both | Architecture, process-record log, documentation (mandatory, worktree) | `.agents/recorder.md` |
-| Convergence | `reviewer` | Both | Cross-compares both pipelines; ship verdict | `.agents/reviewer.md` |
-| Ship | `shipper` | — | Commits, pushes, PRs, issue comments (conditional) | `.agents/shipper.md` |
+| Control | `leader` | — | Plans, dispatches, manages state | `agents/leader.md` |
+| Analysis | `planner` | Bridge | Produces `spec.md` AND `test-spec.md` | `agents/planner.md` |
+| Code | `builder` | Code | Implements from `spec.md` only (worktree) | `agents/builder.md` |
+| Test | `tester` | Test | Validates from `test-spec.md` only | `agents/tester.md` |
+| Recording | `recorder` | Both | Architecture, process-record log, documentation (mandatory, worktree) | `agents/recorder.md` |
+| Convergence | `reviewer` | Both | Cross-compares both pipelines; ship verdict | `agents/reviewer.md` |
+| Ship | `shipper` | — | Commits, pushes, PRs, issue comments (conditional) | `agents/shipper.md` |
 
 **Mandatory teammates** (never skip for non-trivial requests): planner, recorder, reviewer.
 
@@ -239,7 +239,7 @@ StatsClaw uses Agent Teams exclusively. You are the Team Leader (`leader`). You 
 
 **Recorder dual role**: Recorder is ALWAYS mandatory. In code workflows, recorder is the recorder (runs after builder + tester). In docs-only workflows, recorder is ALSO the implementer (replaces builder, receives `spec.md`). No tester is dispatched for docs-only — reviewer provides the quality gate directly.
 
-Each agent's full workflow, allowed reads/writes, and must-not rules are defined in its `.agents/*.md` file. Pipeline isolation rules are in `skills/isolation/SKILL.md`. Artifact handoff rules are in `skills/handoff/SKILL.md`.
+Each agent's full workflow, allowed reads/writes, and must-not rules are defined in its `agents/*.md` file. Pipeline isolation rules are in `skills/isolation/SKILL.md`. Artifact handoff rules are in `skills/handoff/SKILL.md`.
 
 ---
 
@@ -265,7 +265,7 @@ Each agent's full workflow, allowed reads/writes, and must-not rules are defined
 - **Workflow 3** (docs-only): Recorder IS the implementer — receives `spec.md` and writes documentation. No builder, no tester. Reviewer provides the quality gate directly.
 - **Workflows 4–5** (issues): Standard code pipeline per issue. Recorder records each fix.
 
-**Workflow details**: Each workflow's agent cooperation, artifacts, and state transitions are documented in the respective agent definitions (`.agents/*.md`) and skills (`skills/*.md`). Key references:
+**Workflow details**: Each workflow's agent cooperation, artifacts, and state transitions are documented in the respective agent definitions (`agents/*.md`) and skills (`skills/*.md`). Key references:
 
 - **Workflows 1–5**: Two-pipeline flow. See `skills/handoff/SKILL.md` for artifact flow between agents.
 - **Workflow 3**: Docs-only — recorder replaces builder as the implementer. Recorder receives `spec.md` (what docs to write), produces documentation changes + recording artifacts (architecture.md, log entry, docs.md). No builder or tester is dispatched. Reviewer reviews directly after recorder. State goes `SPEC_READY` → `DOCUMENTED` (skips `PIPELINES_COMPLETE`).
@@ -470,7 +470,7 @@ For non-trivial requests, you MUST continue through the selected workflow withou
 StatsClaw/
 ├── CLAUDE.md
 ├── README.md
-├── .agents/
+├── agents/
 │   ├── leader.md
 │   ├── planner.md
 │   ├── builder.md

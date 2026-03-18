@@ -9,7 +9,7 @@ All runtime state is local under `.statsclaw/` and ignored by git.
 ## What You Install
 
 - `CLAUDE.md` — orchestration policy (the authoritative reference)
-- `.agents/` — agent definitions (leader, planner, builder, tester, recorder, reviewer, shipper)
+- `agents/` — agent definitions (leader, planner, builder, tester, recorder, reviewer, shipper)
 - `skills/` — shared protocol skills (credential-setup, isolation, handoff, mailbox, issue-patrol, profile-detection)
 - `profiles/` — language-specific execution rules (R, Python, TypeScript, Stata, Go, Rust)
 - `templates/` — runtime artifact templates (context, package, status, credentials, mailbox, lock, log-entry, architecture)
@@ -122,7 +122,7 @@ ship it
 StatsClaw/
 ├── CLAUDE.md           # orchestration policy
 ├── README.md
-├── .agents/            # agent definitions
+├── agents/            # agent definitions
 ├── skills/             # shared protocol skills (9 skills)
 ├── profiles/           # language execution rules (6 languages)
 ├── templates/          # runtime artifact templates
