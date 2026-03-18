@@ -6,13 +6,13 @@ This skill determines the correct language profile for a target repository by in
 
 ## Trigger
 
-This skill is invoked automatically by lead during Session Startup (step 6) and Lead Planning (step 5) when the profile is not already set in the package context.
+This skill is invoked automatically by leader during Session Startup (step 6) and Leader Planning (step 5) when the profile is not already set in the package context.
 
 ---
 
 ## Detection Algorithm
 
-Lead checks for repo markers in order. The **first matching profile** is selected.
+Leader checks for repo markers in order. The **first matching profile** is selected.
 
 ### Step 1 — Check for Profile Override
 
@@ -49,4 +49,4 @@ Once detected, write the profile to:
 
 ## Fallback
 
-If no markers match any profile, log a note in `.statsclaw/logs/` and proceed without a profile. Teammates will use general-purpose conventions. Lead should mention the missing profile to the user.
+If no markers match any profile, log a note in `.statsclaw/logs/` and proceed without a profile. Teammates will use general-purpose conventions. Leader should mention the missing profile to the user.

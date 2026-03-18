@@ -1,7 +1,8 @@
 # StatsClaw runtime state (never committed)
 .statsclaw/
 
-# Target repositories (user's working copies, never committed)
+# Target repositories, brain repo, and symlinks (user's working copies, never committed)
+.repos/
 .repo/
 
 # R artifacts

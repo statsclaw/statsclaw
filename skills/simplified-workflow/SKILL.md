@@ -6,7 +6,7 @@ A lightweight workflow for small, well-understood changes where the full two-pip
 
 ## When to Offer
 
-Lead MUST evaluate every incoming request against these **smallness criteria** before committing to a full workflow. If ALL of the following are true, lead SHOULD offer the simplified workflow:
+Leader MUST evaluate every incoming request against these **smallness criteria** before committing to a full workflow. If ALL of the following are true, leader SHOULD offer the simplified workflow:
 
 | Criterion | Test |
 | --- | --- |
@@ -39,23 +39,23 @@ Lead MUST evaluate every incoming request against these **smallness criteria** b
 
 ## How to Offer
 
-When lead detects a small request, it MUST ask the user before proceeding:
+When leader detects a small request, it MUST ask the user before proceeding:
 
 ```
-Lead uses AskUserQuestion with:
+Leader uses AskUserQuestion with:
   question: "This looks like a small change (≤3 files, routine pattern). Use simplified workflow?"
   options:
     - label: "Simplified (faster)"
-      description: "Skip theorist/scribe. Direct: plan → build → validate → ship."
+      description: "Skip planner/recorder. Direct: plan → build → validate → ship."
     - label: "Full workflow"
       description: "Run the complete two-pipeline architecture with all teammates."
 ```
 
-If the user chooses "Full workflow" or provides a custom answer suggesting thoroughness, lead proceeds with the standard workflow (1–9).
+If the user chooses "Full workflow" or provides a custom answer suggesting thoroughness, leader proceeds with the standard workflow (1–9).
 
-If the user chooses "Simplified", lead uses Workflow 10.
+If the user chooses "Simplified", leader uses Workflow 10.
 
-**If lead is uncertain** whether the request is small, it MUST ask. The default is always to offer the choice — never silently downgrade to simplified.
+**If leader is uncertain** whether the request is small, it MUST ask. The default is always to offer the choice — never silently downgrade to simplified.
 
 ---
 
@@ -64,10 +64,10 @@ If the user chooses "Simplified", lead uses Workflow 10.
 ### Agent Sequence
 
 ```
-lead → builder → auditor → github?
+leader → builder → tester → shipper?
 ```
 
-No theorist, no scribe, no skeptic. Lead writes a lightweight spec directly in `request.md` (extended with acceptance criteria).
+No planner, no recorder, no reviewer. Leader writes a lightweight spec directly in `request.md` (extended with acceptance criteria).
 
 ### State Model (Simplified)
 
@@ -75,21 +75,21 @@ No theorist, no scribe, no skeptic. Lead writes a lightweight spec directly in `
 CREDENTIALS_VERIFIED → PLANNED → PIPELINES_COMPLETE → REVIEW_PASSED → DONE
 ```
 
-Skipped states: `SPEC_READY`, `DOCUMENTED`. No `comprehension.md`, `spec.md`, `test-spec.md`, `architecture.md`, `docs.md`, or `review.md` from skeptic.
+Skipped states: `SPEC_READY`, `DOCUMENTED`. No `comprehension.md`, `spec.md`, `test-spec.md`, `architecture.md`, `docs.md`, or `review.md` from reviewer.
 
 ### Steps
 
 1. **CREDENTIALS** — Same as full workflow (step 4 in CLAUDE.md). Hard gate.
-2. **PLAN** — Lead writes `request.md` with:
+2. **PLAN** — Leader writes `request.md` with:
    - Clear description of the change
    - Acceptance criteria (what "done" looks like)
    - Affected files (the write surface)
    - Expected validation outcome
-   Lead writes `impact.md` as in the full workflow. Status → `PLANNED`.
+   Leader writes `impact.md` as in the full workflow. Status → `PLANNED`.
 3. **BUILD** — Dispatch builder with `isolation: "worktree"`. Builder receives `request.md` as its spec (no separate `spec.md`). Builder implements and writes `implementation.md`. Status → `PIPELINES_COMPLETE`.
-4. **VALIDATE** — Dispatch auditor. Auditor runs profile validation commands and verifies acceptance criteria from `request.md`. Auditor writes `audit.md`. If BLOCK → respawn builder (max 3). Auditor acts as the quality gate (replaces skeptic for simplified workflow).
+4. **VALIDATE** — Dispatch tester. Tester runs profile validation commands and verifies acceptance criteria from `request.md`. Tester writes `audit.md`. If BLOCK → respawn builder (max 3). Tester acts as the quality gate (replaces reviewer for simplified workflow).
    - For audit pass: status → `REVIEW_PASSED`.
-5. **SHIP** (if requested) — Dispatch github. Status → `DONE`.
+5. **SHIP** (if requested) — Dispatch shipper. Status → `DONE`.
 
 ### Preconditions (Simplified)
 
@@ -98,16 +98,16 @@ Skipped states: `SPEC_READY`, `DOCUMENTED`. No `comprehension.md`, `spec.md`, `t
 | `PLANNED` | `request.md` with acceptance criteria AND `impact.md` exist |
 | `PIPELINES_COMPLETE` | `implementation.md` exists |
 | `REVIEW_PASSED` | `audit.md` exists with verdict PASS |
-| `DONE` | `github.md` exists (if ship requested) |
+| `DONE` | `shipper.md` exists (if ship requested) |
 
 ### What Is Skipped
 
 | Component | Reason |
 | --- | --- |
-| theorist | No theoretical analysis needed for routine changes |
-| scribe | No architecture/process-record needed for small changes |
-| skeptic | Auditor provides sufficient quality gate |
-| `spec.md` / `test-spec.md` | Builder uses `request.md` directly; auditor validates against acceptance criteria |
+| planner | No theoretical analysis needed for routine changes |
+| recorder | No architecture/process-record needed for small changes |
+| reviewer | Tester provides sufficient quality gate |
+| `spec.md` / `test-spec.md` | Builder uses `request.md` directly; tester validates against acceptance criteria |
 | `comprehension.md` | No uploaded material to comprehend |
 | `architecture.md` | Small change doesn't warrant architecture documentation |
 | Log entry | No process record for routine changes |
@@ -116,11 +116,11 @@ Skipped states: `SPEC_READY`, `DOCUMENTED`. No `comprehension.md`, `spec.md`, `t
 
 If at any point during the simplified workflow:
 - Builder raises HOLD (spec ambiguity) more than once
-- Auditor blocks more than once on the same issue
+- Tester blocks more than once on the same issue
 - The change turns out to affect more files than estimated
 
-Lead MUST escalate to the full workflow. This means:
-1. Dispatch theorist with all context accumulated so far
+Leader MUST escalate to the full workflow. This means:
+1. Dispatch planner with all context accumulated so far
 2. Continue from `SPEC_READY` onward using the full pipeline
 3. Update `status.md` to reflect the escalation
 

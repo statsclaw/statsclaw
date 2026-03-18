@@ -1,6 +1,6 @@
 # Shared Skill: Mailbox Communication Protocol
 
-This protocol governs how teammates communicate with each other and with lead through the shared mailbox during a run.
+This protocol governs how teammates communicate with each other and with leader through the shared mailbox during a run.
 
 ---
 
@@ -12,7 +12,7 @@ The mailbox for each run lives at:
 .statsclaw/runs/<request-id>/mailbox.md
 ```
 
-Lead creates this file when the run starts. If it does not exist when a teammate needs to write, the teammate creates it.
+Leader creates this file when the run starts. If it does not exist when a teammate needs to write, the teammate creates it.
 
 ---
 
@@ -47,9 +47,9 @@ Each message follows this exact format:
 
 | Type | Meaning | Action Required |
 | --- | --- | --- |
-| `INFO` | Non-blocking observation or note for downstream teammates | Lead reads and forwards if relevant |
-| `HOLD_REQUEST` | The sender cannot continue without user input — corresponds to a HOLD signal | Lead must ask the user the specific question before dispatching downstream work |
-| `INTERFACE_CHANGE` | A function signature, file path, export, or API surface changed in a way that affects other teammates | Lead must notify affected downstream teammates in their dispatch prompt |
+| `INFO` | Non-blocking observation or note for downstream teammates | Leader reads and forwards if relevant |
+| `HOLD_REQUEST` | The sender cannot continue without user input — corresponds to a HOLD signal | Leader must ask the user the specific question before dispatching downstream work |
+| `INTERFACE_CHANGE` | A function signature, file path, export, or API surface changed in a way that affects other teammates | Leader must notify affected downstream teammates in their dispatch prompt |
 
 ### Relationship to Workflow Signals
 
@@ -57,9 +57,9 @@ Mailbox message types are **not** workflow signals. They are communication recor
 
 | Mailbox Type | Corresponding Signal | Who Acts |
 | --- | --- | --- |
-| `HOLD_REQUEST` | HOLD (raised by the teammate) | Lead asks user, re-dispatches teammate |
-| `INFO` | (none — no signal raised) | Lead reads and optionally forwards |
-| `INTERFACE_CHANGE` | (none — no signal raised) | Lead includes in downstream dispatch |
+| `HOLD_REQUEST` | HOLD (raised by the teammate) | Leader asks user, re-dispatches teammate |
+| `INFO` | (none — no signal raised) | Leader reads and optionally forwards |
+| `INTERFACE_CHANGE` | (none — no signal raised) | Leader includes in downstream dispatch |
 
 Note: BLOCK and STOP are NOT mailbox types. They are verdicts written directly in `audit.md` (BLOCK) and `review.md` (STOP). The mailbox is for inter-teammate communication, not for verdict delivery.
 
@@ -72,21 +72,21 @@ Teammates SHOULD write to the mailbox when:
 - They need user input to continue (type: `HOLD_REQUEST`)
 - They change a function signature, file name, or export that downstream teammates depend on (type: `INTERFACE_CHANGE`)
 - They discover an upstream artifact is incomplete but can work around it (type: `INFO`)
-- They make a judgment call not covered by the spec and want to document it for skeptic (type: `INFO`)
+- They make a judgment call not covered by the spec and want to document it for reviewer (type: `INFO`)
 - They notice an out-of-scope issue for a future run (type: `INFO`)
 
 Teammates SHOULD NOT use the mailbox for:
 
 - Routine progress updates (the output artifact covers this)
 - Duplicating information already in their output artifact
-- Communicating directly with the user (only lead talks to the user)
+- Communicating directly with the user (only leader talks to the user)
 - Delivering BLOCK or STOP verdicts (those go in audit.md and review.md)
 
 ---
 
-## Lead Responsibilities
+## Leader Responsibilities
 
-After each teammate completes, lead MUST:
+After each teammate completes, leader MUST:
 
 1. Read the teammate's output artifact.
 2. Read `mailbox.md` for any new messages since the last check.
@@ -105,11 +105,11 @@ After each teammate completes, lead MUST:
 **Type:** INTERFACE_CHANGE
 **Subject:** Renamed `calc_stats()` to `compute_statistics()`
 
-The function `calc_stats()` in `src/stats.R` was renamed to `compute_statistics()` to match the naming convention used elsewhere in the package. All internal callers have been updated. Scribe should update any documentation or examples that reference the old name.
+The function `calc_stats()` in `src/stats.R` was renamed to `compute_statistics()` to match the naming convention used elsewhere in the package. All internal callers have been updated. Recorder should update any documentation or examples that reference the old name.
 
 ---
 **Timestamp:** 2026-03-13 14:45 UTC
-**From:** theorist
+**From:** planner
 **Type:** HOLD_REQUEST
 **Subject:** Undefined symbol in equation (3)
 

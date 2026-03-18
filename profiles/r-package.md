@@ -38,14 +38,7 @@ Detect this profile when the target repository contains:
 
 ## Build Exclusions
 
-The following development-only artifacts MUST be excluded from CRAN tarballs via `.Rbuildignore`:
-
-| Pattern | Purpose |
-| --- | --- |
-| `^architecture\.md$` | Architecture diagram (development-only) |
-| `^log$` | Change log entries with handoff docs and design notes (development-only) |
-
-Scribe and github teammates are responsible for appending these patterns. Check before appending to avoid duplicates.
+**Note**: Architecture diagrams and workflow logs are NOT stored in the target repo — they are synced to the brain repo (`[owner]/statsclaw-brain`). No `.Rbuildignore` exclusions are needed for these artifacts. See `skills/brain-sync/SKILL.md`.
 
 ## Builder Notes
 
@@ -54,9 +47,9 @@ Scribe and github teammates are responsible for appending these patterns. Check 
 - When adding or changing function signatures, update the corresponding roxygen2 block and run `devtools::document()`.
 - Place internal helpers in files prefixed with `utils-` or mark them with `@noRd` / `@keywords internal`.
 - Use `testthat` edition 3 conventions (`test_that()`, `expect_*()`) unless the package explicitly uses an earlier edition.
-- Do not add new package dependencies without noting it in the mailbox for lead review.
+- Do not add new package dependencies without noting it in the mailbox for leader review.
 
-## Auditor Notes
+## Tester Notes
 
 - Prefer `R CMD check --as-cran` over a plain `R CMD check`; the stricter flags catch issues that CRAN submission would reject.
 - Treat all WARNINGs as blockers. NOTEs should be reviewed and reported but are not automatic blockers.
@@ -69,7 +62,7 @@ Scribe and github teammates are responsible for appending these patterns. Check 
 
 ## CRAN Submission Checklist
 
-This checklist is derived from the [CRAN Cookbook](https://contributor.r-project.org/cran-cookbook/). Auditor MUST verify all applicable items during `R CMD check --as-cran`. Builder MUST follow these rules when writing code. Theorist SHOULD reference these constraints when producing specs for R packages.
+This checklist is derived from the [CRAN Cookbook](https://contributor.r-project.org/cran-cookbook/). Tester MUST verify all applicable items during `R CMD check --as-cran`. Builder MUST follow these rules when writing code. Planner SHOULD reference these constraints when producing specs for R packages.
 
 ### DESCRIPTION File
 
@@ -119,9 +112,9 @@ All wrappers must be inside `\examples{}`. Prefer unwrapped examples for fast co
 - Host large datasets externally (GitHub, separate data package).
 - Document size justification in `cran-comments.md` if over 5 MB.
 
-### Auditor CRAN Verification Steps
+### Tester CRAN Verification Steps
 
-In addition to the standard validation commands, auditor MUST check:
+In addition to the standard validation commands, tester MUST check:
 
 1. **`R CMD check --as-cran` output**: Zero ERRORs, zero WARNINGs. Review all NOTEs.
 2. **DESCRIPTION compliance**: Verify Description length (2+ sentences), Title Case, `Authors@R` format, quoted software names.
