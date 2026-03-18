@@ -42,6 +42,7 @@ Interrupt states:
 | implementation.md | builder | Code | pending | |
 | audit.md | auditor | Test | pending | |
 | architecture.md | scribe | Architecture | pending | |
+| log-entry.md | scribe | Process Record | pending | |
 | docs.md | scribe | Code | pending | |
 | review.md | skeptic | Convergence | pending | |
 | github.md | github | — | pending | |
@@ -72,7 +73,8 @@ _Not blocked._
 ## Repo Boundary
 
 - Framework repo: StatsClaw (runtime state only, no target code changes)
-- Target repo: [target repository]
+- Target repo: [target repository] (code + user-facing docs only)
+- Brain repo: [owner]/statsclaw-brain (workflow logs, architecture diagrams, process records)
 - Ship target: [target repository]
 
 ## Persistence Rule

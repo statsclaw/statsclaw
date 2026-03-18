@@ -24,7 +24,7 @@ Downstream teammates MUST reuse upstream artifacts. They MUST NOT re-discover or
 
 Rules:
 - Every handoff artifact is a `.md` file: `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `review.md`, `docs.md`, `github.md`, `comprehension.md`, `architecture.md`, `mailbox.md`, `credentials.md`, `status.md`, `request.md`, `impact.md`
-- Log entries in `<target-repo>/log/` MUST be `.md` files: `log/<YYYY-MM-DD>-<short-slug>.md`
+- Log entries in the run directory MUST be `.md` files: `log-entry.md` (with a `<!-- filename: YYYY-MM-DD-slug.md -->` header for brain sync naming)
 - Lock files MUST be `.md` files
 - No agent may produce a handoff artifact in any other format (no `.txt`, `.json`, `.yaml`, `.html`)
 
@@ -41,8 +41,8 @@ Each teammate produces specific output artifacts per run stage:
 | theorist | `test-spec.md` | `.statsclaw/runs/<request-id>/test-spec.md` | → Test Pipeline |
 | builder | `implementation.md` | `.statsclaw/runs/<request-id>/implementation.md` | Code Pipeline output |
 | auditor | `audit.md` | `.statsclaw/runs/<request-id>/audit.md` | Test Pipeline output |
-| scribe | `architecture.md` | `.statsclaw/runs/<request-id>/architecture.md` | Architecture (mandatory) |
-| scribe | `log/<date>-<slug>.md` | `<TARGET_REPO>/log/<YYYY-MM-DD>-<short-slug>.md` | Log entry with process record (mandatory, target repo) |
+| scribe | `architecture.md` | `.statsclaw/runs/<request-id>/architecture.md` | Architecture (mandatory; synced to brain repo by github) |
+| scribe | `log-entry.md` | `.statsclaw/runs/<request-id>/log-entry.md` | Log entry with process record (mandatory; synced to brain repo by github) |
 | scribe | `docs.md` | `.statsclaw/runs/<request-id>/docs.md` | Documentation changes |
 | skeptic | `review.md` | `.statsclaw/runs/<request-id>/review.md` | Convergence output |
 | github | `github.md` | `.statsclaw/runs/<request-id>/github.md` | Externalization output |
@@ -90,7 +90,7 @@ theorist
                                    ▼               ▼
                                 scribe (recording)
                          reads ALL artifacts from both pipelines
-                         produces: architecture.md, log/, docs.md
+                         produces: architecture.md, log-entry.md, docs.md (all in run dir)
                                    │
                                    ▼
                                skeptic (convergence)
@@ -107,7 +107,7 @@ theorist
                             │
                             ├── documentation changes
                             ├── implementation.md
-                            ├── architecture.md, log/, docs.md
+                            ├── architecture.md, log-entry.md, docs.md (all in run dir)
                             │
                             ▼
                         skeptic (convergence)

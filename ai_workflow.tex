@@ -252,8 +252,8 @@ Builder   & Execution   & Code      & Yes  & \texttt{implementation.md}
   & Never sees \texttt{test-spec.md} or \texttt{audit.md} \\
 Auditor   & Execution   & Test      & No   & \texttt{audit.md}
   & Never sees \texttt{spec.md} or \texttt{implementation.md} \\
-Scribe    & Recording   & Both      & Yes  & \texttt{architecture.md}, \texttt{log/*.md}
-  & Reads all artifacts; writes docs only \\
+Scribe    & Recording   & Both      & Yes  & \texttt{architecture.md}, \texttt{log-entry.md}
+  & Reads all artifacts; writes to run dir (synced to brain repo) \\
 Skeptic   & Convergence & Both      & No   & \texttt{review.md}
   & Only agent reading both pipelines; never writes code \\
 GitHub    & Ship        & ---       & No   & \texttt{github.md}
@@ -533,7 +533,7 @@ Figure~\ref{fig:state-machine} shows the state diagram.
 \node[right=0.15cm of pipe.north east, font=\tiny\sffamily, text=cGray,
       anchor=south west] {$\triangleright$ \texttt{impl.md} $\wedge$ \texttt{audit.md}};
 \node[right=0.15cm of doc.north east, font=\tiny\sffamily, text=cGray,
-      anchor=south west] {$\triangleright$ \texttt{arch.md} $\wedge$ \texttt{log/}};
+      anchor=south west] {$\triangleright$ \texttt{arch.md} $\wedge$ \texttt{log-entry.md} (run dir)};
 
 \end{tikzpicture}
 \caption{%
@@ -580,9 +580,8 @@ for critical state transitions.
   (Builder prompt $\not\ni$ \texttt{test-spec.md}; Auditor prompt
   $\not\ni$ \texttt{spec.md}); Lead ran no validation commands \\
 \textsc{documented} &
-  \texttt{architecture.md} in both run dir and target repo root;
-  log entry with process record in \texttt{<repo>/log/};
-  Scribe dispatched; dev artifacts excluded from release \\
+  \texttt{architecture.md} and \texttt{log-entry.md} in run dir;
+  Scribe dispatched; github agent syncs to brain repo \\
 \textsc{review\_passed} &
   \texttt{review.md} with verdict \textsc{pass} or
   \textsc{pass with note}; Skeptic dispatched \\
@@ -867,7 +866,7 @@ graph across a standard workflow run.
 
 % row 4: scribe
 \node[art, below=1.0cm of $(implmd)!0.5!(auditmd)$] (arch) {architecture.md};
-\node[art, left=of arch] (logmd) {log/*.md};
+\node[art, left=of arch] (logmd) {log-entry.md};
 \node[art, right=of arch] (docs) {docs.md};
 \node[ag=cGray, left=0.3cm of logmd] {Scribe:};
 
@@ -945,19 +944,22 @@ A system-level view of the codebase rendered as Mermaid diagrams:
 module structure with layer groupings, function call graphs tracing
 public entry points to internal helpers, and data-flow charts with
 decision diamonds. Changed modules are visually highlighted. This
-artifact is committed to the target repository root (excluded from
-release packages via \texttt{.Rbuildignore}, \texttt{.npmignore},
-etc.).
+artifact is written to the run directory and synced to the brain
+repository (\texttt{[owner]/statsclaw-brain/<repo>/architecture.md})
+by the GitHub agent---it is \emph{not} committed to the target repository,
+keeping target repos clean.
 
-\paragraph{Process-record log (\texttt{log/*.md}).}
+\paragraph{Process-record log (\texttt{log-entry.md}).}
 A chronological log entry capturing the entire workflow: Theorist's
 proposals, Builder's implementation decisions, Auditor's validation
 results with exact tolerances, all \textsc{block}/\textsc{hold}/\textsc{stop}
 signals and their resolutions, and Skeptic's review verdict. Log
-entries accumulate in \texttt{<repo>/log/} as a traceable record of
+entries are synced to the brain repository
+(\texttt{[owner]/statsclaw-brain/<repo>/log/}) as a traceable record of
 all code changes, enabling any future developer to understand not
 just \emph{what} changed, but \emph{why} and \emph{how it was
-verified}.
+verified}. The brain repo accumulates logs across all target
+repositories in one place.
 
 
 % =====================================================================

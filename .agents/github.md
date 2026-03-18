@@ -10,6 +10,7 @@ Github handles all git write operations and GitHub interactions: committing, pus
 - Open pull requests with descriptive titles and bodies
 - Post issue comments and follow-up
 - Verify review.md has a PASS verdict before any ship action
+- **Sync workflow artifacts (architecture.md, log entry) to the brain repo** (`[owner]/statsclaw-brain`) — see `skills/brain-sync/SKILL.md`
 - Produce github.md summarizing all external actions taken
 
 ---
@@ -38,8 +39,8 @@ Github handles all git write operations and GitHub interactions: committing, pus
 
 ## Allowed Writes
 
-- Target repo: git operations only (commit, push, branch, tag)
-- Target repo: NO direct file writes — scribe has already produced `architecture.md` and `log/` entries. Github only uses git operations to stage, commit, and push.
+- Target repo: git operations only (commit, push, branch, tag) — code + user-facing docs only, NO workflow artifacts
+- Brain repo (`.repos/statsclaw-brain`): copy architecture.md and log entry from run directory, commit, push
 - GitHub: PR creation, issue comments, labels (via gh CLI)
 - Run directory: `github.md` (primary output)
 - Run directory: `mailbox.md` (append-only)
@@ -87,11 +88,12 @@ git -C "$TARGET" checkout -b <branch-name>
 
 Branch naming: use descriptive names (e.g., `fix/issue-42-null-check`, `feat/twoway-fe`).
 
-### Step 4 — Stage and Commit
+### Step 4 — Stage and Commit (Target Repo)
 
-Stage the files listed in implementation.md, docs.md, `architecture.md` (if it exists at the target repo root), and any `log/` entries:
+Stage ONLY code changes and user-facing docs listed in implementation.md and docs.md. Do NOT stage `architecture.md` or `log/` entries — those go to the brain repo.
+
 ```bash
-git -C "$TARGET" add <specific-files>
+git -C "$TARGET" add <specific-code-and-doc-files>
 ```
 
 Write a commit message that:
@@ -99,13 +101,33 @@ Write a commit message that:
 - References the request ID or issue number if applicable
 - Includes a brief body if the change is non-trivial
 
-### Step 5 — Push
+### Step 5 — Push (Target Repo)
 
 ```bash
 git -C "$TARGET" push -u origin <branch-name>
 ```
 
 If push fails due to authentication, note it in github.md and halt.
+
+### Step 5b — Brain Sync (MANDATORY)
+
+After pushing the target repo (or as a standalone brain-sync task), sync workflow artifacts to the brain repo. Follow `skills/brain-sync/SKILL.md`:
+
+1. **Acquire brain repo**: clone or pull `[owner]/statsclaw-brain` into `.repos/statsclaw-brain`
+2. **Create brain repo if needed**: `gh repo create [owner]/statsclaw-brain --public --description "StatsClaw workflow logs"`
+3. **Determine target folder**: use target repo name as folder name (e.g., `fect`)
+4. **Copy architecture.md**: from run directory to `.repos/statsclaw-brain/<repo-name>/architecture.md` (overwrite)
+5. **Copy log entry**: from run directory `log-entry.md` to `.repos/statsclaw-brain/<repo-name>/log/<YYYY-MM-DD>-<slug>.md` (extract filename from `<!-- filename: ... -->` header in the log entry)
+6. **Commit and push**:
+   ```bash
+   cd .repos/statsclaw-brain
+   git add <repo-name>/
+   git commit -m "sync: <repo-name> — <short description>"
+   git push origin main
+   ```
+7. **Record in github.md**: note brain repo URL, files synced, commit SHA, push status
+
+Brain sync is best-effort — if it fails, log the failure in github.md but do NOT block the main workflow.
 
 ### Step 6 — Create PR (if requested)
 
@@ -162,6 +184,7 @@ Save `github.md` to the run directory with:
 - Push status (success/failure)
 - PR URL (if created)
 - Issue comments posted (issue number, comment URL, comment body summary)
+- **Brain sync status**: brain repo URL, files synced, brain commit SHA, push status (or failure reason)
 - Any errors encountered
 
 ### Step 9 — Patrol Mode Extensions (if dispatched by issue-patrol)
@@ -179,7 +202,9 @@ When operating in patrol mode (dispatched by the issue-patrol skill):
 
 - review.md has PASS verdict before any ship action
 - Remote URL matches the user's target repository
-- Only files from implementation.md, docs.md, architecture.md, and log/ entries are staged
+- Only code files from implementation.md and user-facing docs from docs.md are staged in the target repo
+- **No workflow artifacts (architecture.md, log entries) staged in target repo** — these go to brain repo only
+- Brain sync attempted after target repo push (best-effort)
 - Commit message accurately describes the changes
 - No force-push to protected branches
 - No hooks skipped
