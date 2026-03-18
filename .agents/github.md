@@ -18,10 +18,10 @@ Github handles all git write operations and GitHub interactions: committing, pus
 ## Startup Checklist
 
 1. Read your agent definition (this file).
-2. Read `credentials.md` from the run directory — **hard gate: do not proceed without PASS result**. If credentials.md is missing or shows FAIL, halt immediately and write github.md noting "credentials not verified."
+2. Read `credentials.md` from the run directory — **hard gate: do not proceed without PASS result for target repo**. Also check brain repo status (PASS/FAIL/NOT_AVAILABLE). If brain repo is not available, note that brain sync will be skipped.
 3. Read `request.md` from the run directory for scope and target repo identity.
 4. Read `impact.md` from the run directory for affected files.
-5. Read `review.md` from the run directory — **hard gate: do not proceed without PASS verdict**.
+5. Read `review.md` from the run directory — **hard gate: do not proceed without PASS verdict** (skip if brain-sync-only dispatch).
 6. Read `implementation.md` for the change summary (used in commit messages and PR body).
 7. Read `audit.md` for validation evidence (referenced in PR body).
 8. Read `docs.md` if it exists for documentation change summary.
@@ -29,6 +29,7 @@ Github handles all git write operations and GitHub interactions: committing, pus
 10. Verify the local git checkout points to the correct target repository.
 11. Verify the remote URL matches the user's target (not StatsClaw).
 12. Test push access with `git push --dry-run origin <branch>` before attempting any real push. If it fails, halt and write github.md noting the failure — do NOT waste time on commit/staging.
+13. Verify brain repo exists locally at `.repos/statsclaw-brain` (if brain repo is available per `credentials.md`).
 
 ---
 
@@ -70,6 +71,8 @@ Read `review.md`. Check the verdict:
 - **STOP**: halt immediately. Do not create any commits, branches, or PRs. Write github.md noting the block.
 - **Missing review.md**: halt. Write github.md noting "review not completed."
 
+**Exception**: If dispatched as brain-sync-only (no ship), skip the review.md check — brain sync does not require a PASS verdict.
+
 ### Step 2 — Verify Repository Identity
 
 Confirm the local checkout is the correct target:
@@ -79,7 +82,21 @@ git -C "$TARGET" remote get-url origin
 
 If the remote points to StatsClaw or any repo other than the user's target, **halt immediately**. Write github.md noting the mismatch.
 
-### Step 3 — Create Branch (if needed)
+### Step 3 — Pull Latest from Both Repos
+
+Before any commits, pull latest from BOTH repos to avoid conflicts:
+
+```bash
+# Pull target repo (get any remote changes)
+git -C "$TARGET" pull --rebase origin <branch-name> 2>&1 || true
+
+# Pull brain repo (get any concurrent brain syncs)
+git -C .repos/statsclaw-brain pull origin main 2>&1 || true
+```
+
+If brain repo does not exist locally (`.repos/statsclaw-brain` missing), check `credentials.md` for brain repo status. If `brain_available: false` or `Brain Repo Status: NOT_AVAILABLE`, skip all brain-related steps and note in github.md.
+
+### Step 4 — Create Branch (if needed)
 
 If working on a feature or fix branch:
 ```bash
@@ -88,7 +105,7 @@ git -C "$TARGET" checkout -b <branch-name>
 
 Branch naming: use descriptive names (e.g., `fix/issue-42-null-check`, `feat/twoway-fe`).
 
-### Step 4 — Stage and Commit (Target Repo)
+### Step 5 — Stage and Commit (Target Repo)
 
 Stage ONLY code changes and user-facing docs listed in implementation.md and docs.md. Do NOT stage `architecture.md` or `log/` entries — those go to the brain repo.
 
@@ -101,7 +118,7 @@ Write a commit message that:
 - References the request ID or issue number if applicable
 - Includes a brief body if the change is non-trivial
 
-### Step 5 — Push (Target Repo)
+### Step 6 — Push Target Repo
 
 ```bash
 git -C "$TARGET" push -u origin <branch-name>
@@ -109,27 +126,27 @@ git -C "$TARGET" push -u origin <branch-name>
 
 If push fails due to authentication, note it in github.md and halt.
 
-### Step 5b — Brain Sync (MANDATORY)
+### Step 7 — Brain Sync: Copy, Commit, Push (MANDATORY)
 
-After pushing the target repo (or as a standalone brain-sync task), sync workflow artifacts to the brain repo. Follow `skills/brain-sync/SKILL.md`:
+After pushing the target repo (or as a standalone brain-sync task), sync workflow artifacts to the brain repo. Follow `skills/brain-sync/SKILL.md` Phase 2.
 
-1. **Acquire brain repo**: clone or pull `[owner]/statsclaw-brain` into `.repos/statsclaw-brain`
-2. **Create brain repo if needed**: `gh repo create [owner]/statsclaw-brain --public --description "StatsClaw workflow logs"`
-3. **Determine target folder**: use target repo name as folder name (e.g., `fect`)
-4. **Copy architecture.md**: from run directory to `.repos/statsclaw-brain/<repo-name>/architecture.md` (overwrite)
-5. **Copy log entry**: from run directory `log-entry.md` to `.repos/statsclaw-brain/<repo-name>/log/<YYYY-MM-DD>-<slug>.md` (extract filename from `<!-- filename: ... -->` header in the log entry)
-6. **Commit and push**:
+**Skip this step entirely if** `credentials.md` shows `Brain Repo Status: NOT_AVAILABLE` or `FAIL` (user was already warned during Phase 1).
+
+1. **Determine target folder**: use target repo name as folder name (e.g., `fect`)
+2. **Copy architecture.md**: from run directory to `.repos/statsclaw-brain/<repo-name>/architecture.md` (overwrite)
+3. **Copy log entry**: from run directory `log-entry.md` to `.repos/statsclaw-brain/<repo-name>/log/<YYYY-MM-DD>-<slug>.md` (extract filename from `<!-- filename: ... -->` header in the log entry)
+4. **Commit and push brain repo**:
    ```bash
    cd .repos/statsclaw-brain
    git add <repo-name>/
    git commit -m "sync: <repo-name> — <short description>"
    git push origin main
    ```
-7. **Record in github.md**: note brain repo URL, files synced, commit SHA, push status
+5. If brain push fails, retry up to 3 times with exponential backoff (2s, 4s, 8s). If all retries fail, **warn the user**: "Brain repo push failed — workflow logs for this run were not synced. Artifacts remain in the local run directory."
 
-Brain sync is best-effort — if it fails, log the failure in github.md but do NOT block the main workflow.
+**Brain sync is non-blocking** — a brain sync failure MUST NOT undo or block the target repo push, PR, or issue comments.
 
-### Step 6 — Create PR (if requested)
+### Step 8 — Create PR (if requested)
 
 Use the gh CLI:
 ```bash
@@ -142,7 +159,7 @@ PR body should include:
 - Review verdict (from review.md)
 - Any PASS WITH NOTE concerns
 
-### Step 7 — Issue Auto-Reply
+### Step 9 — Issue Auto-Reply
 
 If the request originated from a GitHub issue (issue number is in request.md or dispatch prompt):
 
@@ -176,7 +193,7 @@ If the request originated from a GitHub issue (issue number is in request.md or 
 
 4. **Do NOT close the issue** — closure is a human decision. Only comment.
 
-### Step 8 — Write Output
+### Step 10 — Write Output
 
 Save `github.md` to the run directory with:
 - Branch name created (if any)
@@ -187,7 +204,7 @@ Save `github.md` to the run directory with:
 - **Brain sync status**: brain repo URL, files synced, brain commit SHA, push status (or failure reason)
 - Any errors encountered
 
-### Step 9 — Patrol Mode Extensions (if dispatched by issue-patrol)
+### Step 11 — Patrol Mode Extensions (if dispatched by issue-patrol)
 
 When operating in patrol mode (dispatched by the issue-patrol skill):
 

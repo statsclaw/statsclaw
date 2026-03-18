@@ -106,7 +106,9 @@ git remote set-url origin "git@github.com:<owner>/<repo>.git"
 
 ## Verification
 
-After configuration, ALWAYS verify **in the target repository checkout**:
+After configuration, verify push access for **both** the target repo and the brain repo.
+
+### Target Repo Verification (HARD GATE)
 
 ```bash
 # MUST run these commands inside the target repo checkout, NOT in StatsClaw or any other repo
@@ -125,6 +127,26 @@ git ls-remote origin 2>&1
 
 If verification fails, retry with the next detection method or ask the user.
 
+### Brain Repo Verification (SOFT GATE — warning, not blocking)
+
+If the brain repo (`.repos/statsclaw-brain`) was acquired in step 2, also verify push access:
+
+```bash
+cd .repos/statsclaw-brain
+
+# Configure remote with same token (if using token-based auth)
+git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/<owner>/statsclaw-brain.git"
+
+# Test write access
+git push --dry-run origin main 2>&1
+```
+
+If brain repo push verification fails:
+- **Do NOT block the workflow** — brain sync is not a hard gate
+- **Warn the user**: "Brain repo push access not confirmed — workflow logs will not be synced to `[owner]/statsclaw-brain`."
+- **Record in `credentials.md`**: `Brain Repo: FAIL — push access not confirmed`
+- The workflow continues normally; brain sync is skipped at the end
+
 ---
 
 ## Write Credentials Record
@@ -134,21 +156,32 @@ After successful verification, write `credentials.md`:
 ```markdown
 # Credential Verification
 
+## Target Repository
 Target Repository: <owner/repo>
 Remote URL Tested: <url>
 Method: <PAT / SSH / gh-cli / env-token>
-Test Command: git ls-remote <url>
+Test Command: git push --dry-run origin <branch>
 Result: PASS
 Timestamp: <YYYY-MM-DD HH:MM>
 
-## Verification Log
+### Verification Log
 <exact output>
 
-## Permissions Verified
+### Permissions Verified
 - [x] Read access (git ls-remote)
 - [ ] Write access (git push --dry-run — check if confirmed, or deferred to first real push)
 - [x] Issue access (gh issue list)
 - [x] PR access (gh pr list)
+
+## Brain Repository
+Brain Repository: <owner>/statsclaw-brain
+Brain Repo Status: <PASS / FAIL / NOT_AVAILABLE>
+Test Command: git push --dry-run origin main
+Result: <PASS / FAIL — reason>
+Timestamp: <YYYY-MM-DD HH:MM>
+
+### Notes
+<If FAIL or NOT_AVAILABLE: reason and whether user was notified>
 ```
 
 ---
