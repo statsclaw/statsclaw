@@ -63,11 +63,11 @@ A clear status indicator:
 
 | Teammate | Possible Verdicts |
 | --- | --- |
-| planner | `SPEC_COMPLETE` — comprehension verified, both specs produced | `HOLD` — needs user input to resolve ambiguity |
+| planner | `SPEC_READY` — comprehension verified, both specs produced | `HOLD` — needs user input to resolve ambiguity |
 | builder | `IMPLEMENTED` — code and unit tests written | `HOLD` — spec unclear or API conflict |
 | tester | `PASS` — all validation checks green | `BLOCK` — validation failed (routes to builder/recorder/planner) |
-| recorder (recorder) | `DOCUMENTED` — recording artifacts produced | `HOLD` — implementation unclear or contradicts spec |
-| recorder (implementer) | `IMPLEMENTED` + `DOCUMENTED` — docs written and recorded | `HOLD` — spec unclear or contradicts existing docs |
+| recorder (recording mode) | `DOCUMENTED` — recording artifacts produced | `HOLD` — implementation unclear or contradicts spec |
+| recorder (implementer mode) | `IMPLEMENTED` + `DOCUMENTED` — docs written and recorded | `HOLD` — spec unclear or contradicts existing docs |
 | reviewer | `PASS` / `PASS WITH NOTE` — safe to ship | `STOP` — quality gate failed (routes per table) |
 | shipper | `SHIPPED` — pushed, PR created | `HOLD` — permission or access issue |
 
@@ -154,7 +154,7 @@ planner
 - Leader passes: ALL artifacts — `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `architecture.md`, `docs.md`, `request.md`, `impact.md`, `mailbox.md`, `comprehension.md`
 - Reviewer is the convergence agent that cross-compares both pipelines AND recorder's output
 
-**Reviewer → Github**
+**Reviewer → Shipper**
 - Leader passes: `review.md`, `credentials.md`, `implementation.md`, `audit.md`
 
 ---

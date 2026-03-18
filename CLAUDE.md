@@ -60,8 +60,8 @@ This section is the entry point for every non-trivial user request. You MUST fol
      - Update status to `DOCUMENTED` after recorder completes.
      - **Log entry**: Every recorder run MUST produce a log entry in the run directory using the template at `templates/log-entry.md`. The log entry includes a **process record** (complete audit trail of proposals, tests, problems, and resolutions), a **handoff document** (what the next developer needs to know), and a **design note** (key decisions and rationale). The shipper agent later syncs this log entry to the brain repo (`[owner]/statsclaw-brain`) — logs do NOT go to the target repo. See `skills/brain-sync/SKILL.md`.
    - d. **reviewer** — ALWAYS dispatched after recorder completes. Reads ALL available artifacts. Produces `review.md` with verdict. Update status to `REVIEW_PASSED` or `STOPPED`.
-   - e. **shipper** — ONLY if the user asked to ship, or issue-patrol is active. Produces `shipper.md`. Github commits code changes to the target repo (clean — no logs or architecture.md), then syncs workflow artifacts (architecture.md, log entry) to the brain repo (`[owner]/statsclaw-brain`). See `skills/brain-sync/SKILL.md`.
-   - f. **brain sync** — If the workflow does NOT include a ship step (workflows 1, 3, 6, 8), leader MUST still dispatch shipper with a **brain-sync-only** task after the last mandatory step (reviewer or tester). This ensures workflow logs are always pushed to the brain repo even when no code is shipped.
+   - e. **shipper** — ONLY if the user asked to ship, or issue-patrol is active. Produces `shipper.md`. Shipper commits code changes to the target repo (clean — no logs or architecture.md), then syncs workflow artifacts (architecture.md, log entry) to the brain repo (`[owner]/statsclaw-brain`). See `skills/brain-sync/SKILL.md`.
+   - f. **brain sync** — If the workflow does NOT include a ship step (workflows 1, 3, 6, 8, 10), leader MUST still dispatch shipper with a **brain-sync-only** task after the last mandatory step (reviewer or tester). This ensures workflow logs are always pushed to the brain repo even when no code is shipped.
    - **PIPELINE ISOLATION**: builder NEVER receives `test-spec.md`. Tester NEVER receives `spec.md` or `implementation.md`. In docs-only workflows, recorder receives `spec.md` (as implementer); no tester is dispatched. See `skills/isolation/SKILL.md`.
 7. **GATE**: Update `status.md` after EVERY teammate completes. Read the output artifact. Do NOT proceed past `STOP` or `BLOCK` signals. Respawn the responsible teammate on failure (max 3 retries per teammate before `HOLD`).
 8. **AUTONOMOUS CONTINUATION**: Do NOT pause between stages to ask the user "should I continue?". Continue automatically through the full workflow until `DONE`, `HOLD`, or `STOP`.
@@ -83,18 +83,18 @@ Short prompts MUST work. A user message like "Work on https://github.com/foo/bar
 | `CREDENTIALS_VERIFIED` | Write access to **target repo** confirmed | `git push --dry-run` succeeded **in the target repo checkout** during step 4 (not in StatsClaw or any other repo) |
 | `CREDENTIALS_VERIFIED` | Brain repo access checked (warning, not hard gate) | `credentials.md` notes brain repo status: PASS, FAIL (with user warning), or SKIP |
 | `PLANNED` | `request.md` and `impact.md` exist and are non-empty | Read the files |
-| `SPEC_READY` | `comprehension.md`, `spec.md`, AND `test-spec.md` all exist | Read all three file paths |
+| `SPEC_READY` | `comprehension.md` and `spec.md` exist; `test-spec.md` also exists (except docs-only workflow 3, where it is not produced) | Read file paths; for workflow 3, only `comprehension.md` + `spec.md` required |
 | `SPEC_READY` | Planner was dispatched via `Agent` tool | Agent tool call must exist in conversation |
-| `PIPELINES_COMPLETE` | `implementation.md` and `audit.md` exist | Read both file paths |
-| `PIPELINES_COMPLETE` | Builder dispatched with `isolation: "worktree"`, tester dispatched | Agent tool calls must exist |
-| `PIPELINES_COMPLETE` | Pipeline isolation verified | Builder prompt has no test-spec.md; tester prompt has no spec.md |
+| `PIPELINES_COMPLETE` | `implementation.md` and `audit.md` exist (code workflows only; docs-only workflow 3 skips this state) | Read both file paths |
+| `PIPELINES_COMPLETE` | Builder dispatched with `isolation: "worktree"`, tester dispatched (code workflows only) | Agent tool calls must exist |
+| `PIPELINES_COMPLETE` | Pipeline isolation verified (code workflows only) | Builder prompt has no test-spec.md; tester prompt has no spec.md |
 | `PIPELINES_COMPLETE` | Leader did NOT run any validation command directly | Self-check: no Bash calls to R CMD check, pytest, npm test, etc. |
 | `DOCUMENTED` | `architecture.md` exists in run directory; `docs.md` exists in run directory; log entry with process record exists in run directory | Read all file paths; verify log entry contains Process Record section |
 | `DOCUMENTED` | Recorder was dispatched via `Agent` tool | Agent tool call must exist |
 | `REVIEW_PASSED` | `review.md` exists with verdict `PASS` or `PASS WITH NOTE` | Read the file, check verdict |
 | `REVIEW_PASSED` | Reviewer was dispatched via `Agent` tool | Agent tool call must exist |
 | `READY_TO_SHIP` | Status is `REVIEW_PASSED` | Read current status |
-| `DONE` | Github teammate dispatched (if ship requested) | Agent tool call must exist |
+| `DONE` | Shipper teammate dispatched (if ship requested) | Agent tool call must exist |
 
 **Before every `status.md` update**: read current status, verify ALL preconditions, read required artifacts, then write.
 

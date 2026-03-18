@@ -71,7 +71,7 @@ When this skill is activated, leader follows this sequence:
    gh issue list --repo <owner/repo> --state open --limit <max_issues> --json number,title,body,labels,createdAt
    ```
 2. For each issue, classify intent:
-   - **Actionable**: derecorders a bug, error, crash, test failure, or incorrect behavior with enough detail to reproduce
+   - **Actionable**: describes a bug, error, crash, test failure, or incorrect behavior with enough detail to reproduce
    - **Non-actionable**: feature request, enhancement, question, discussion, or too vague to act on
 3. Write `patrol-triage.md` to the run directory with the classification table
 
@@ -150,7 +150,7 @@ Please review the PR and let us know if the fix addresses your concern.
 
 - **Never close issues** — only comment and link PRs. Closure is a human decision.
 - **Never force-push** — always use regular push.
-- **Skip ambiguous issues** — if the issue doesn't clearly derecorder a bug, skip it and log why.
+- **Skip ambiguous issues** — if the issue doesn't clearly describe a bug, skip it and log why.
 - **One branch per issue** — never mix fixes for different issues in the same branch.
 - **Respect the full workflow** — every fix goes through planner → [builder ∥ tester] → reviewer. No shortcuts.
 - **Credential gate** — do not attempt any GitHub operations without verified credentials.
