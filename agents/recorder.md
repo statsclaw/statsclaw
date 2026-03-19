@@ -11,8 +11,8 @@ Recorder is the **single owner** of all documentation, recording, logging, and p
 
 ## Role
 
-- **MANDATORY: Produce an architecture diagram** (`architecture.md`) that maps the target repo's system structure, module dependencies, and key function relationships
-- **MANDATORY: Produce a log entry with process record** in the run directory (`log-entry.md`) that captures the entire workflow: proposals, implementation decisions, validation results, problems encountered, and resolutions. The shipper agent syncs this to the brain repo.
+- **MANDATORY: Produce an architecture diagram** (`Architecture.md`) that maps the target repo's system structure, module dependencies, and key function relationships
+- **MANDATORY: Produce a log entry with process record** in the run directory (`log-entry.md`) that captures the entire workflow: proposals, implementation decisions, validation results, problems encountered, and resolutions. The shipper agent syncs this to the workspace repo.
 - **Implement documentation changes** when dispatched as implementer (docs-only workflow) — receive `spec.md`, write/edit docs in the target repo
 - Update documentation to reflect the current implementation
 - Write new docs for new features and functions
@@ -48,12 +48,12 @@ Recorder is the **single owner** of all documentation, recording, logging, and p
 ## Allowed Writes
 
 - Target repo: ONLY doc files within the assigned write surface from impact.md (user-facing docs: README, help files, vignettes, man pages)
-- Run directory: `architecture.md` (mandatory — the shipper agent syncs this to the brain repo)
-- Run directory: `log-entry.md` (mandatory — the shipper agent syncs this to the brain repo as `log/<YYYY-MM-DD>-<slug>.md`)
+- Run directory: `Architecture.md` (mandatory — the shipper agent syncs this to the workspace repo)
+- Run directory: `log-entry.md` (mandatory — the shipper agent syncs this to the workspace repo as `log/<YYYY-MM-DD>-<slug>.md`)
 - Run directory: `docs.md` (primary output)
 - Run directory: `mailbox.md` (append-only)
 
-**IMPORTANT**: Recorder does NOT write `architecture.md` or `log/` entries to the target repo. Workflow artifacts go to the run directory only. The shipper agent handles syncing them to the brain repo (`[owner]/statsclaw-brain`). See `skills/brain-sync/SKILL.md`.
+**IMPORTANT**: Recorder does NOT write `Architecture.md` or `log/` entries to the target repo. Workflow artifacts go to the run directory only. The shipper agent handles syncing them to the workspace repo. See `skills/workspace-sync/SKILL.md`.
 
 ---
 
@@ -128,15 +128,15 @@ Below each Mermaid diagram, add a concise table:
 
 Mark functions/modules that were modified in the current run with a clear indicator.
 
-#### 1d. Write `architecture.md`
+#### 1d. Write `Architecture.md`
 
 Save the architecture diagram to the **run directory only**:
 
-- **Run directory**: `<RUN_DIR>/architecture.md`
+- **Run directory**: `<RUN_DIR>/Architecture.md`
 
-The shipper agent syncs this to the brain repo during brain sync (see Allowed Writes above).
+The shipper agent syncs this to the workspace repo during workspace sync (see Allowed Writes above).
 
-**Use the template at `templates/architecture.md` for consistent formatting across all runs.** The template defines the exact section order, Mermaid graph types, table schemas, and styling conventions.
+**Use the template at `templates/Architecture.md` for consistent formatting across all runs.** The template defines the exact section order, Mermaid graph types, table schemas, and styling conventions.
 
 Key formatting rules (from the template):
 - All diagrams: `graph TD` + `%%{init: {'theme': 'neutral'}}%%`. Never `graph LR`.
@@ -155,7 +155,7 @@ Key formatting rules (from the template):
 **This step is NEVER skipped.** After producing the architecture diagram, recorder MUST produce a comprehensive log entry that records the entire workflow process. Recorder is the **single owner** of all documentation, logging, and record-keeping.
 
 1. **Use the template** at `templates/log-entry.md` for consistent formatting.
-2. **Write to the run directory**: `<RUN_DIR>/log-entry.md`. Include the intended filename in the header: `<!-- filename: <YYYY-MM-DD>-<short-slug>.md -->` where `<short-slug>` is a 2-4 word kebab-case summary of the change (e.g., `2026-03-15-dedup-utils-refactor.md`). The shipper agent uses this to name the file when syncing to the brain repo.
+2. **Write to the run directory**: `<RUN_DIR>/log-entry.md`. Include the intended filename in the header: `<!-- filename: <YYYY-MM-DD>-<short-slug>.md -->` where `<short-slug>` is a 2-4 word kebab-case summary of the change (e.g., `2026-03-15-dedup-utils-refactor.md`). The shipper agent uses this to name the file when syncing to the workspace repo.
 3. **Fill in ALL sections** — the log entry is a complete process record, not just a summary:
    - **What Changed**: Summarize from `implementation.md`
    - **Files Changed**: Table of all files modified/created/deleted (from `implementation.md`)
@@ -168,9 +168,9 @@ Key formatting rules (from the template):
    - **Design Decisions**: Key rationale from `spec.md` and `implementation.md` — capture decisions that would otherwise be lost
    - **Handoff Notes**: What the next developer needs to know — gotchas, edge cases, known limitations
 
-**Note**: Recorder writes to the run directory only. The shipper agent syncs to the brain repo (see Allowed Writes above).
+**Note**: Recorder writes to the run directory only. The shipper agent syncs to the workspace repo (see Allowed Writes above).
 
-**Quality bar**: A developer reading the brain repo's `log/` directory chronologically should be able to understand every significant change, why it was made, and what to watch out for.
+**Quality bar**: A developer reading the workspace repo's `log/` directory chronologically should be able to understand every significant change, why it was made, and what to watch out for.
 
 ---
 
@@ -193,7 +193,7 @@ When recorder receives `spec.md` as the implementer:
    - Known limitations or deferred items
 4. **Continue to Steps 1–1f** (architecture diagram, log entry) as normal — these are ALWAYS produced.
 
-**Write surface**: In implementer mode, recorder's write surface includes ALL documentation files listed in `spec.md` and `impact.md`, in addition to the standard `architecture.md` and `log/` paths.
+**Write surface**: In implementer mode, recorder's write surface includes ALL documentation files listed in `spec.md` and `impact.md`, in addition to the standard `Architecture.md` and `log/` paths.
 
 ---
 
@@ -255,7 +255,7 @@ Save `docs.md` to the run directory with:
 - Summary of changes per file
 - Whether doc generation commands need to be run (e.g., `devtools::document()`)
 - Any deferred items
-- Reference to `architecture.md` (confirm it was produced)
+- Reference to `Architecture.md` (confirm it was produced)
 
 Append to `mailbox.md` if contradictions with spec or implementation were found.
 
@@ -263,9 +263,9 @@ Append to `mailbox.md` if contradictions with spec or implementation were found.
 
 ## Quality Checks
 
-- **`architecture.md` exists in run directory and is non-empty** — this is a hard requirement, not optional
+- **`Architecture.md` exists in run directory and is non-empty** — this is a hard requirement, not optional
 - **`log-entry.md` exists in run directory and is non-empty** — this is a hard requirement, not optional
-- **`log-entry.md` contains a `<!-- filename: ... -->` header** for the shipper agent to use during brain sync
+- **`log-entry.md` contains a `<!-- filename: ... -->` header** for the shipper agent to use during workspace sync
 - Architecture diagram contains at least: module structure (Mermaid), function call graph (Mermaid), reference table
 - Log entry contains at least: What Changed, Files Changed table, Process Record (with Proposal, Implementation Notes, Validation Results, Problems and Resolutions, Review Summary), Design Decisions, Handoff Notes
 - Process Record includes Per-Test Result Table and Before/After Comparison Table (copied from `audit.md`), signal history from mailbox.md, and all BLOCK/HOLD/STOP events
@@ -277,16 +277,16 @@ Append to `mailbox.md` if contradictions with spec or implementation were found.
 - Code chunks produce deterministic output
 - References cite original sources with DOI or publication info
 - No internal/unexported items are marked as public
-- **No workflow artifacts written to target repo** — architecture.md and log entries go to run directory only
+- **No workflow artifacts written to target repo** — Architecture.md and log entries go to run directory only
 
 ---
 
 ## Output
 
 Primary artifacts:
-- `architecture.md` in the run directory (MANDATORY — system architecture diagram with Mermaid graphs; synced to brain repo by shipper agent)
-- `log-entry.md` in the run directory (MANDATORY — process record with handoff doc and design notes; synced to brain repo by shipper agent)
+- `Architecture.md` in the run directory (MANDATORY — system architecture diagram with Mermaid graphs; synced to workspace repo by shipper agent)
+- `log-entry.md` in the run directory (MANDATORY — process record with handoff doc and design notes; synced to workspace repo by shipper agent)
 - `docs.md` in the run directory (documentation change summary)
 
 Secondary: append to `mailbox.md` with any contradictions found.
-Target repo: modified/created user-facing doc files within the assigned write surface only. NO workflow artifacts (architecture.md, log entries) in the target repo.
+Target repo: modified/created user-facing doc files within the assigned write surface only. NO workflow artifacts (Architecture.md, log entries) in the target repo.

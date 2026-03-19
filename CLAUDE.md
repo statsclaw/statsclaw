@@ -4,7 +4,7 @@ StatsClaw is a reusable workflow framework for building, validating, documenting
 
 StatsClaw does **not** version user runtime state. All request state, project contexts, generated specs, shared task lists, mailboxes, locks, and run artifacts live under a local `.statsclaw/` directory that is ignored by git by default.
 
-**Workflow logs go to Brain, not the target repo.** All workflow-generated logs, process records, and architecture diagrams are pushed to a centralized `[username]/statsclaw-brain` GitHub repository — NOT to the target repo. This keeps target repos clean (code + essential user-facing docs only). See `skills/brain-sync/SKILL.md` for details.
+**Workflow logs go to the workspace repo, not the target repo.** All workflow-generated logs, process records, and architecture diagrams are pushed to a user-specified **workspace repository** on GitHub (e.g., `[username]/workspace`) — NOT to the target repo. The user tells StatsClaw which repo to use. This keeps target repos clean (code + essential user-facing docs only). See `skills/workspace-sync/SKILL.md` for details.
 
 ---
 
@@ -40,28 +40,28 @@ This section is the entry point for every non-trivial user request. You MUST fol
 **CRITICAL: You are the Team Leader (`leader`). You MUST use the `Agent` tool to dispatch every teammate. You MUST NOT perform teammate work yourself. If you catch yourself doing builder, tester, recorder, reviewer, planner, or shipper work directly, STOP and dispatch it to an agent instead.**
 
 1. **SETUP**: Read `.statsclaw/CONTEXT.md`. If it does not exist, create the full local runtime first (see Session Startup below). Read the active package context.
-2. **ACQUIRE REPOS**: Acquire BOTH the target repo AND the brain repo upfront. Both must be local before any work begins.
+2. **ACQUIRE REPOS**: Acquire BOTH the target repo AND the workspace repo upfront. Both must be local before any work begins.
    - **Target repo**: Clone or locate under `.repos/` (e.g., `.repos/fect/`). If a checkout already exists, `git pull` to get latest. If not, `git clone`. Symlinks into `.repos/` are supported — some users keep repos elsewhere and symlink them in; StatsClaw follows symlinks transparently.
-   - **Brain repo**: Clone or locate `.repos/statsclaw-brain`. Determine the owner from the target repo's remote URL. If `.repos/statsclaw-brain` already exists, `git pull origin main`. If not, try `git clone`. If the brain repo does not exist on GitHub, **auto-create it** using `gh repo create [owner]/statsclaw-brain --public`. If creation fails (e.g., insufficient permissions), **warn the user explicitly**: "Cannot create [owner]/statsclaw-brain — workflow logs will not be recorded. Please create this repository manually or grant repo creation permissions." Record the brain repo status in `request.md`. See `skills/brain-sync/SKILL.md`.
+   - **Workspace repo**: Read workspace repo name from `.statsclaw/CONTEXT.md` (`workspace_repo` field). If not configured, ask the user which GitHub repo to use as workspace. Clone or locate `.repos/workspace`. If `.repos/workspace` already exists, `git pull origin main`. If not, try `git clone`. If the workspace repo does not exist on GitHub, **auto-create it** using `gh repo create <workspace-repo> --public`. If creation fails (e.g., insufficient permissions), **warn the user explicitly**: "Cannot create the workspace repo — workflow logs will not be recorded. Please create this repository manually or grant repo creation permissions." Record the workspace repo status in `request.md`. See `skills/workspace-sync/SKILL.md`.
    - The `.repos/` directory is git-ignored — repos are never committed to StatsClaw.
    - If target repo acquisition fails, set state to `HOLD` in `status.md` and ask the user. Do NOT proceed without a local checkout.
-3. **CREATE RUN**: Generate a request ID. Create `.statsclaw/runs/<request-id>/`. Write `request.md` (scope, acceptance criteria, target repo identity, brain repo status). Write `status.md` with state `NEW`.
-4. **VERIFY CREDENTIALS**: Follow `skills/credential-setup/SKILL.md` for the full auto-detection sequence (GITHUB_TOKEN → gh auth → SSH → credential helper → ask user). Verify push access to **both** the target repo and the brain repo. Write `credentials.md` to the run directory. Update `status.md` to `CREDENTIALS_VERIFIED`.
+3. **CREATE RUN**: Generate a request ID. Create `.statsclaw/runs/<request-id>/`. Write `request.md` (scope, acceptance criteria, target repo identity, workspace repo status). Write `status.md` with state `NEW`.
+4. **VERIFY CREDENTIALS**: Follow `skills/credential-setup/SKILL.md` for the full auto-detection sequence (GITHUB_TOKEN → gh auth → SSH → credential helper → ask user). Verify push access to **both** the target repo and the workspace repo. Write `credentials.md` to the run directory. Update `status.md` to `CREDENTIALS_VERIFIED`.
    - **ENFORCEMENT**: Steps 5–9 are INVALID without a `credentials.md` showing PASS **against the target repo**. The write-access probe MUST target the actual target repository — not a proxy, not StatsClaw, not any other repo. If you find yourself planning or dispatching teammates without confirmed push access, STOP and return to step 4.
-   - **Brain repo credentials**: If brain repo push verification fails, note it in `credentials.md` and warn the user: "Brain repo push access not confirmed — workflow logs will not be synced." The workflow still proceeds (brain sync is not a hard gate), but the user must know.
+   - **Workspace repo credentials**: If workspace repo push verification fails, note it in `credentials.md` and warn the user: "Workspace repo push access not confirmed — workflow logs will not be synced." The workflow still proceeds (workspace sync is not a hard gate), but the user must know.
 5. **LEADER PLANNING**: Read `agents/leader.md`. Act as `leader`. Explore the target repository to identify affected surfaces. Write `impact.md` (affected files, risk areas, required teammates). Identify the profile from `profiles/`. Update `status.md` to `PLANNED`.
 6. **DISPATCH TEAMMATES (Two-Pipeline Architecture)**: See "Agent Teams Model" below for the architecture. Dispatch per the selected workflow:
    - a. **planner** — ALWAYS dispatched for non-trivial requests. **MANDATORY when the user uploads files** (PDF, Word, txt, tex, images with formulas) — these contain primary source material that planner must deeply comprehend before any specs are produced. Pass ALL uploaded file paths in the dispatch prompt. Planner produces `comprehension.md` (verification of understanding), `spec.md` (code pipeline), and `test-spec.md` (test pipeline). **If planner raises HOLD with comprehension questions, leader MUST forward them to the user via `AskUserQuestion` and re-dispatch planner with the answers. Iterate until planner confirms FULLY UNDERSTOOD.** Update status to `SPEC_READY`.
    - b. **Code changes** (source files, algorithms, features, bug fixes): dispatch **builder + tester IN PARALLEL** in the same message. Builder gets `spec.md` only. Tester gets `test-spec.md` only.
      - **Docs-only changes** (quarto books, vignettes, tutorials, README, examples, man pages — NO source code): dispatch **recorder** only (from `spec.md`). Recorder implements the docs AND produces recording artifacts. No builder, no tester — docs don't need testing. After recorder, go directly to reviewer.
    - c. **recorder** — **ALWAYS dispatched** in every non-lightweight workflow. Dispatch with `isolation: "worktree"`. Recorder is the **single owner** of all documentation, logging, and process recording.
-     - **In code workflows (1, 2, 4, 5)**: recorder is dispatched AFTER both builder and tester complete. Reads ALL available run artifacts. Produces `architecture.md`, log entry with process record, and `docs.md`.
-     - **In docs-only workflow (3)**: recorder IS the implementer — receives `spec.md` and implements documentation changes. Also produces `architecture.md`, log entry, and `docs.md` in the same dispatch.
+     - **In code workflows (1, 2, 4, 5)**: recorder is dispatched AFTER both builder and tester complete. Reads ALL available run artifacts. Produces `Architecture.md`, log entry with process record, and `docs.md`.
+     - **In docs-only workflow (3)**: recorder IS the implementer — receives `spec.md` and implements documentation changes. Also produces `Architecture.md`, log entry, and `docs.md` in the same dispatch.
      - Update status to `DOCUMENTED` after recorder completes.
-     - **Log entry**: Every recorder run MUST produce a log entry in the run directory using the template at `templates/log-entry.md`. The log entry includes a **process record** (complete audit trail of proposals, tests, problems, and resolutions), a **handoff document** (what the next developer needs to know), and a **design note** (key decisions and rationale). The shipper agent later syncs this log entry to the brain repo (`[owner]/statsclaw-brain`) — logs do NOT go to the target repo. See `skills/brain-sync/SKILL.md`.
+     - **Log entry**: Every recorder run MUST produce a log entry in the run directory using the template at `templates/log-entry.md`. The log entry includes a **process record** (complete audit trail of proposals, tests, problems, and resolutions), a **handoff document** (what the next developer needs to know), and a **design note** (key decisions and rationale). The shipper agent later syncs this log entry to the workspace repo — logs do NOT go to the target repo. See `skills/workspace-sync/SKILL.md`.
    - d. **reviewer** — ALWAYS dispatched after recorder completes. Reads ALL available artifacts. Produces `review.md` with verdict. Update status to `REVIEW_PASSED` or `STOPPED`.
-   - e. **shipper** — ONLY if the user asked to ship, or issue-patrol is active. Produces `shipper.md`. Shipper commits code changes to the target repo (clean — no logs or architecture.md), then syncs workflow artifacts (architecture.md, log entry) to the brain repo (`[owner]/statsclaw-brain`). See `skills/brain-sync/SKILL.md`.
-   - f. **brain sync** — If the workflow does NOT include a ship step (workflows 1, 3, 6, 8, 10), leader MUST still dispatch shipper with a **brain-sync-only** task after the last mandatory step (reviewer or tester). This ensures workflow logs are always pushed to the brain repo even when no code is shipped.
+   - e. **shipper** — ONLY if the user asked to ship, or issue-patrol is active. Produces `shipper.md`. Shipper commits code changes to the target repo (clean — no logs or Architecture.md), then syncs workflow artifacts (Architecture.md, log entry) to the workspace repo. See `skills/workspace-sync/SKILL.md`.
+   - f. **workspace sync** — If the workflow does NOT include a ship step (workflows 1, 3, 6, 8, 10), leader MUST still dispatch shipper with a **workspace-sync-only** task after the last mandatory step (reviewer or tester). This ensures workflow logs are always pushed to the workspace repo even when no code is shipped.
    - **PIPELINE ISOLATION**: builder NEVER receives `test-spec.md`. Tester NEVER receives `spec.md` or `implementation.md`. In docs-only workflows, recorder receives `spec.md` (as implementer); no tester is dispatched. See `skills/isolation/SKILL.md`.
 7. **GATE**: Update `status.md` after EVERY teammate completes. Read the output artifact. Do NOT proceed past `STOP` or `BLOCK` signals. Respawn the responsible teammate on failure (max 3 retries per teammate before `HOLD`).
 8. **AUTONOMOUS CONTINUATION**: Do NOT pause between stages to ask the user "should I continue?". Continue automatically through the full workflow until `DONE`, `HOLD`, or `STOP`.
@@ -81,7 +81,7 @@ Short prompts MUST work. A user message like "Work on https://github.com/foo/bar
 | --- | --- | --- |
 | `CREDENTIALS_VERIFIED` | `credentials.md` exists with result PASS for target repo | Read the file, confirm PASS is present |
 | `CREDENTIALS_VERIFIED` | Write access to **target repo** confirmed | `git push --dry-run` succeeded **in the target repo checkout** during step 4 (not in StatsClaw or any other repo) |
-| `CREDENTIALS_VERIFIED` | Brain repo access checked (warning, not hard gate) | `credentials.md` notes brain repo status: PASS, FAIL (with user warning), or SKIP |
+| `CREDENTIALS_VERIFIED` | Workspace repo access checked (warning, not hard gate) | `credentials.md` notes workspace repo status: PASS, FAIL (with user warning), or SKIP |
 | `PLANNED` | `request.md` and `impact.md` exist and are non-empty | Read the files |
 | `SPEC_READY` | `comprehension.md` and `spec.md` exist; `test-spec.md` also exists (except docs-only workflow 3, where it is not produced) | Read file paths; for workflow 3, only `comprehension.md` + `spec.md` required |
 | `SPEC_READY` | Planner was dispatched via `Agent` tool | Agent tool call must exist in conversation |
@@ -89,7 +89,7 @@ Short prompts MUST work. A user message like "Work on https://github.com/foo/bar
 | `PIPELINES_COMPLETE` | Builder dispatched with `isolation: "worktree"`, tester dispatched (code workflows only) | Agent tool calls must exist |
 | `PIPELINES_COMPLETE` | Pipeline isolation verified (code workflows only) | Builder prompt has no test-spec.md; tester prompt has no spec.md |
 | `PIPELINES_COMPLETE` | Leader did NOT run any validation command directly | Self-check: no Bash calls to R CMD check, pytest, npm test, etc. |
-| `DOCUMENTED` | `architecture.md` exists in run directory; `docs.md` exists in run directory; log entry with process record exists in run directory | Read all file paths; verify log entry contains Process Record section |
+| `DOCUMENTED` | `Architecture.md` exists in run directory; `docs.md` exists in run directory; log entry with process record exists in run directory | Read all file paths; verify log entry contains Process Record section |
 | `DOCUMENTED` | Recorder was dispatched via `Agent` tool | Agent tool call must exist |
 | `REVIEW_PASSED` | `review.md` exists with verdict `PASS` or `PASS WITH NOTE` | Read the file, check verdict |
 | `REVIEW_PASSED` | Reviewer was dispatched via `Agent` tool | Agent tool call must exist |
@@ -171,7 +171,7 @@ Write your artifact to: [STATSCLAW_PATH]/.statsclaw/runs/[REQUEST_ID]/[artifact]
 - Do NOT modify status.md — leader will update it
 - Append to mailbox.md if you encounter blockers or interface changes
 - For shipper teammate: read credentials.md first — do NOT attempt push without PASS
-- For shipper teammate: after target repo push, sync logs to brain repo per skills/brain-sync/SKILL.md
+- For shipper teammate: after target repo push, sync logs to workspace repo per skills/workspace-sync/SKILL.md
 ```
 
 **Note**: When dispatching builder or recorder, include `isolation: "worktree"` in the `Agent` tool call.
@@ -194,8 +194,8 @@ At the start of every session:
 2. If it does not exist, create a minimal local runtime: `.statsclaw/`, `.statsclaw/packages/`, `.statsclaw/runs/`, `.statsclaw/logs/`, `.statsclaw/tmp/`, `CONTEXT.md` from `templates/context.md`, package contexts from `templates/package.md`.
 3. If the user message includes a target repo path or GitHub URL, **acquire both repos** into `.repos/`:
    - **Target repo**: clone or pull. Symlinks supported.
-   - **Brain repo**: clone or pull `[owner]/statsclaw-brain`. Auto-create if it doesn't exist. Warn user if creation fails.
-4. **Verify push credentials** for **both repos** — follow `skills/credential-setup/SKILL.md`. Brain repo credential failure is a warning, not a hard gate.
+   - **Workspace repo**: clone or pull the user's workspace repo. Auto-create if it doesn't exist. Warn user if creation fails.
+4. **Verify push credentials** for **both repos** — follow `skills/credential-setup/SKILL.md`. Workspace repo credential failure is a warning, not a hard gate.
 5. If no target is clear, infer from context or ask one concise question.
 6. Determine the project profile using `skills/profile-detection/SKILL.md` or repo markers in `profiles/*.md`.
 
@@ -268,7 +268,7 @@ Each agent's full workflow, allowed reads/writes, and must-not rules are defined
 **Workflow details**: Each workflow's agent cooperation, artifacts, and state transitions are documented in the respective agent definitions (`agents/*.md`) and skills (`skills/*.md`). Key references:
 
 - **Workflows 1–5**: Two-pipeline flow. See `skills/handoff/SKILL.md` for artifact flow between agents.
-- **Workflow 3**: Docs-only — recorder replaces builder as the implementer. Recorder receives `spec.md` (what docs to write), produces documentation changes + recording artifacts (architecture.md, log entry, docs.md). No builder or tester is dispatched. Reviewer reviews directly after recorder. State goes `SPEC_READY` → `DOCUMENTED` (skips `PIPELINES_COMPLETE`).
+- **Workflow 3**: Docs-only — recorder replaces builder as the implementer. Recorder receives `spec.md` (what docs to write), produces documentation changes + recording artifacts (Architecture.md, log entry, docs.md). No builder or tester is dispatched. Reviewer reviews directly after recorder. State goes `SPEC_READY` → `DOCUMENTED` (skips `PIPELINES_COMPLETE`).
 - **Workflow 4**: See `skills/issue-patrol/SKILL.md` for patrol phases (scan, triage, fix loop, report).
 - **Workflow 6**: Lightweight — no planner, builder, or reviewer. Tester runs profile validation commands directly. State jumps directly from `PLANNED` to `PIPELINES_COMPLETE` (tester-only).
 - **Workflows 7–8**: Lightweight — skip the full pipeline. These are for already-completed work that needs shipping or review. State model requirements for `SPEC_READY` and `PIPELINES_COMPLETE` are waived; reviewer reads whatever artifacts are available.
@@ -392,7 +392,7 @@ Interrupt states (can occur at any point):
 - When the user target is a repository other than `StatsClaw`, versioned `StatsClaw` files are not part of the write surface
 - All target code changes, validation runs, commits, pushes, and PRs must happen in the target repository under `.repos/`
 - `StatsClaw` only receives local runtime updates under `.statsclaw/`
-- **Workflow logs and process records do NOT go into target repos.** They are synced to the brain repo (`[owner]/statsclaw-brain`). Target repos contain only code + essential user-facing documentation.
+- **Workflow logs and process records do NOT go into target repos.** They are synced to the workspace repo. Target repos contain only code + essential user-facing documentation.
 
 ---
 
@@ -422,7 +422,7 @@ For non-trivial requests, you MUST continue through the selected workflow withou
 - **Worktree isolation for writers.** `isolation: "worktree"` for builder and recorder.
 - **Ship actions are explicit.** Do not push unless the user asked, issue-patrol is active, or a single-issue fix was requested (workflow 5 — fixing an issue implies pushing the fix).
 - **Surgical scope.** Each run modifies only what the request requires.
-- **Clean target repos.** Workflow logs, process records, and architecture diagrams go to the brain repo — never the target repo. Target repos contain only code + essential user-facing docs.
+- **Clean target repos.** Workflow logs, process records, and architecture diagrams go to the workspace repo — never the target repo. Target repos contain only code + essential user-facing docs.
 - **Parallel when possible.** Builder and tester are ALWAYS dispatched in parallel.
 - **Tolerance integrity is absolute.** Tester MUST NEVER relax tolerances, thresholds, or acceptance criteria to make a failing test pass. The only valid response to a genuine failure is BLOCK. Reviewer cross-audits every tolerance against test-spec.md.
 
@@ -446,8 +446,8 @@ For non-trivial requests, you MUST continue through the selected workflow withou
 │       ├── test-spec.md      # test pipeline input (from planner)
 │       ├── implementation.md # code pipeline output (from builder)
 │       ├── audit.md          # test pipeline output (from tester)
-│       ├── architecture.md   # from recorder; synced to brain repo by shipper agent
-│       ├── log-entry.md      # from recorder; synced to brain repo by shipper agent
+│       ├── Architecture.md   # from recorder; synced to workspace repo by shipper agent
+│       ├── log-entry.md      # from recorder; synced to workspace repo by shipper agent
 │       ├── docs.md
 │       ├── review.md
 │       ├── shipper.md
@@ -487,7 +487,7 @@ StatsClaw/
 │   ├── profile-detection/SKILL.md
 │   ├── progress-bar/SKILL.md
 │   ├── simplified-workflow/SKILL.md
-│   └── brain-sync/SKILL.md
+│   └── workspace-sync/SKILL.md
 ├── profiles/
 │   ├── r-package.md
 │   ├── python-package.md
@@ -503,7 +503,7 @@ StatsClaw/
 │   ├── mailbox.md
 │   ├── lock.md
 │   ├── log-entry.md
-│   └── architecture.md
-├── .repos/                # target repo checkouts + brain repo, git-ignored; symlinks supported
+│   └── Architecture.md
+├── .repos/                # target repo checkouts + workspace repo, git-ignored; symlinks supported
 └── .statsclaw/           # local runtime state, auto-created, git-ignored
 ```

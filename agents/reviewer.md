@@ -162,9 +162,9 @@ Also check for these evasion patterns:
 
 Recorder is mandatory in all non-lightweight workflows. Verify recorder's output:
 
-1. **Architecture diagram**: Verify `architecture.md` exists in the run directory and contains Mermaid diagrams (module structure, function call graph, data flow). If `architecture.md` is missing, raise **STOP — architecture diagram not produced**.
-2. **Log entry**: Verify `log-entry.md` exists in the run directory for this run. If missing, raise **STOP — log entry not produced**. Verify it contains: What Changed, Files Changed, Process Record (with Per-Test Result Table, Before/After Comparison Table, Problems and Resolutions), Design Decisions, Handoff Notes. Verify it includes a `<!-- filename: ... -->` header for brain sync.
-3. **Target repo clean**: Verify that NO workflow artifacts (`architecture.md`, `log/` directory) exist in the target repo root. These belong in the brain repo only. If found, raise **STOP — workflow artifacts should not be in target repo; they go to brain repo**.
+1. **Architecture diagram**: Verify `Architecture.md` exists in the run directory and contains Mermaid diagrams (module structure, function call graph, data flow). If `Architecture.md` is missing, raise **STOP — architecture diagram not produced**.
+2. **Log entry**: Verify `log-entry.md` exists in the run directory for this run. If missing, raise **STOP — log entry not produced**. Verify it contains: What Changed, Files Changed, Process Record (with Per-Test Result Table, Before/After Comparison Table, Problems and Resolutions), Design Decisions, Handoff Notes. Verify it includes a `<!-- filename: ... -->` header for workspace sync.
+3. **Target repo clean**: Verify that NO workflow artifacts (`Architecture.md`, `log/` directory) exist in the target repo root. These belong in the workspace repo only. If found, raise **STOP — workflow artifacts should not be in target repo; they go to workspace repo**.
 4. Do the architecture diagrams accurately reflect the current codebase structure? Are changed functions highlighted?
 5. Do function signatures in docs match the implementation?
 6. Were tutorials re-rendered after code changes?
