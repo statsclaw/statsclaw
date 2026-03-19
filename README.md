@@ -103,8 +103,8 @@ ship it
 │   ├── test-spec.md        # test pipeline input (from planner)
 │   ├── implementation.md   # code pipeline output (from builder)
 │   ├── audit.md            # test pipeline output (from tester)
-│   ├── architecture.md     # system architecture diagram (from recorder; synced to brain repo)
-│   ├── log-entry.md        # process record (from recorder; synced to brain repo)
+│   ├── Architecture.md     # system architecture diagram (from recorder; synced to workspace repo)
+│   ├── log-entry.md        # process record (from recorder; synced to workspace repo)
 │   ├── docs.md             # documentation changes (from recorder)
 │   ├── review.md           # convergence verdict (from reviewer)
 │   ├── shipper.md           # ship actions (from shipper)
@@ -126,22 +126,22 @@ StatsClaw/
 ├── skills/             # shared protocol skills (9 skills)
 ├── profiles/           # language execution rules (6 languages)
 ├── templates/          # runtime artifact templates
-├── .repos/             # target repo checkouts + brain repo (git-ignored; symlinks supported)
+├── .repos/             # target repo checkouts + workspace repo (git-ignored; symlinks supported)
 └── .statsclaw/         # local runtime state (git-ignored)
 ```
 
-## Brain Repository
+## Workspace Repository
 
-Workflow logs, process records, and architecture diagrams are NOT stored in target repos. Instead, they are synced to a centralized `[owner]/statsclaw-brain` GitHub repository:
+Workflow logs, process records, and architecture diagrams are NOT stored in target repos. Instead, they are synced to a user-specified **workspace repository** on GitHub (e.g., `[username]/workspace`):
 
 ```text
-statsclaw-brain/
+workspace/
 ├── fect/
-│   ├── architecture.md     # latest architecture diagram
+│   ├── Architecture.md     # latest architecture diagram
 │   └── log/
 │       └── 2026-03-15-fix-tests.md
 ├── panelview/
-│   ├── architecture.md
+│   ├── Architecture.md
 │   └── log/
 │       └── 2026-03-17-add-feature.md
 └── README.md

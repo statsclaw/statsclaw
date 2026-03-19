@@ -38,7 +38,7 @@ If the project uses `pnpm`, substitute `pnpm` for `npm` in all commands.
 
 ## Build Exclusions
 
-**Note**: Architecture diagrams and workflow logs are NOT stored in the target repo — they are synced to the brain repo (`[owner]/statsclaw-brain`). No `.npmignore` exclusions are needed for these artifacts. See `skills/brain-sync/SKILL.md`.
+**Note**: Architecture diagrams and workflow logs are NOT stored in the target repo — they are synced to the workspace repo. No `.npmignore` exclusions are needed for these artifacts. See `skills/workspace-sync/SKILL.md`.
 
 ## Builder Notes
 

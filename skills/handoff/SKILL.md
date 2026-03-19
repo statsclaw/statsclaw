@@ -23,8 +23,8 @@ Downstream teammates MUST reuse upstream artifacts. They MUST NOT re-discover or
 **ALL artifacts passed between agents MUST use the `.md` (Markdown) file extension.** This is a hard requirement, not a style preference. Markdown ensures artifacts are human-readable, diff-friendly, and renderable on GitHub.
 
 Rules:
-- Every handoff artifact is a `.md` file: `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `review.md`, `docs.md`, `shipper.md`, `comprehension.md`, `architecture.md`, `mailbox.md`, `credentials.md`, `status.md`, `request.md`, `impact.md`
-- Log entries in the run directory MUST be `.md` files: `log-entry.md` (with a `<!-- filename: YYYY-MM-DD-slug.md -->` header for brain sync naming)
+- Every handoff artifact is a `.md` file: `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `review.md`, `docs.md`, `shipper.md`, `comprehension.md`, `Architecture.md`, `mailbox.md`, `credentials.md`, `status.md`, `request.md`, `impact.md`
+- Log entries in the run directory MUST be `.md` files: `log-entry.md` (with a `<!-- filename: YYYY-MM-DD-slug.md -->` header for workspace sync naming)
 - Lock files MUST be `.md` files
 - No agent may produce a handoff artifact in any other format (no `.txt`, `.json`, `.yaml`, `.html`)
 
@@ -41,8 +41,8 @@ Each teammate produces specific output artifacts per run stage:
 | planner | `test-spec.md` | `.statsclaw/runs/<request-id>/test-spec.md` | → Test Pipeline |
 | builder | `implementation.md` | `.statsclaw/runs/<request-id>/implementation.md` | Code Pipeline output |
 | tester | `audit.md` | `.statsclaw/runs/<request-id>/audit.md` | Test Pipeline output |
-| recorder | `architecture.md` | `.statsclaw/runs/<request-id>/architecture.md` | Architecture (mandatory; synced to brain repo by shipper) |
-| recorder | `log-entry.md` | `.statsclaw/runs/<request-id>/log-entry.md` | Log entry with process record (mandatory; synced to brain repo by shipper) |
+| recorder | `Architecture.md` | `.statsclaw/runs/<request-id>/Architecture.md` | Architecture (mandatory; synced to workspace repo by shipper) |
+| recorder | `log-entry.md` | `.statsclaw/runs/<request-id>/log-entry.md` | Log entry with process record (mandatory; synced to workspace repo by shipper) |
 | recorder | `docs.md` | `.statsclaw/runs/<request-id>/docs.md` | Documentation changes |
 | reviewer | `review.md` | `.statsclaw/runs/<request-id>/review.md` | Convergence output |
 | shipper | `shipper.md` | `.statsclaw/runs/<request-id>/shipper.md` | Externalization output |
@@ -90,7 +90,7 @@ planner
                                    ▼               ▼
                                 recorder (recording)
                          reads ALL artifacts from both pipelines
-                         produces: architecture.md, log-entry.md, docs.md (all in run dir)
+                         produces: Architecture.md, log-entry.md, docs.md (all in run dir)
                                    │
                                    ▼
                                reviewer (convergence)
@@ -107,7 +107,7 @@ planner
                             │
                             ├── documentation changes
                             ├── implementation.md
-                            ├── architecture.md, log-entry.md, docs.md (all in run dir)
+                            ├── Architecture.md, log-entry.md, docs.md (all in run dir)
                             │
                             ▼
                         reviewer (convergence)
@@ -151,7 +151,7 @@ planner
 ### All Workflows
 
 **→ Reviewer (Convergence)**
-- Leader passes: ALL artifacts — `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `architecture.md`, `docs.md`, `request.md`, `impact.md`, `mailbox.md`, `comprehension.md`
+- Leader passes: ALL artifacts — `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `Architecture.md`, `docs.md`, `request.md`, `impact.md`, `mailbox.md`, `comprehension.md`
 - Reviewer is the convergence agent that cross-compares both pipelines AND recorder's output
 
 **Reviewer → Shipper**

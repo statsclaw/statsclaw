@@ -35,7 +35,7 @@ Detect this profile when the target repository contains:
 
 ## Build Exclusions
 
-**Note**: Architecture diagrams and workflow logs are NOT stored in the target repo — they are synced to the brain repo (`[owner]/statsclaw-brain`). No exclusions needed. See `skills/brain-sync/SKILL.md`.
+**Note**: Architecture diagrams and workflow logs are NOT stored in the target repo — they are synced to the workspace repo. No exclusions needed. See `skills/workspace-sync/SKILL.md`.
 
 ## Builder Notes
 

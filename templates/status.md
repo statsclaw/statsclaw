@@ -41,7 +41,7 @@ Interrupt states:
 | test-spec.md | planner | → Test | pending | |
 | implementation.md | builder | Code | pending | |
 | audit.md | tester | Test | pending | |
-| architecture.md | recorder | Architecture | pending | |
+| Architecture.md | recorder | Architecture | pending | |
 | log-entry.md | recorder | Process Record | pending | |
 | docs.md | recorder | Code | pending | |
 | review.md | reviewer | Convergence | pending | |
@@ -74,7 +74,7 @@ _Not blocked._
 
 - Framework repo: StatsClaw (runtime state only, no target code changes)
 - Target repo: [target repository] (code + user-facing docs only)
-- Brain repo: [owner]/statsclaw-brain (workflow logs, architecture diagrams, process records)
+- Workspace repo: [user-specified workspace repo] (workflow logs, architecture diagrams, process records)
 - Ship target: [target repository]
 
 ## Persistence Rule
