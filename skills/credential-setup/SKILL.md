@@ -106,7 +106,7 @@ git remote set-url origin "git@github.com:<owner>/<repo>.git"
 
 ## Verification
 
-After configuration, verify push access for **both** the target repo and the brain repo.
+After configuration, verify push access for **both** the target repo and the workspace repo.
 
 ### Target Repo Verification (HARD GATE)
 
@@ -127,25 +127,25 @@ git ls-remote origin 2>&1
 
 If verification fails, retry with the next detection method or ask the user.
 
-### Brain Repo Verification (SOFT GATE — warning, not blocking)
+### Workspace Repo Verification (SOFT GATE — warning, not blocking)
 
-If the brain repo (`.repos/statsclaw-brain`) was acquired in step 2, also verify push access:
+If the workspace repo (`.repos/workspace`) was acquired in step 2, also verify push access:
 
 ```bash
-cd .repos/statsclaw-brain
+cd .repos/workspace
 
 # Configure remote with same token (if using token-based auth)
-git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/<owner>/statsclaw-brain.git"
+git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/<workspace-repo>.git"
 
 # Test write access
 git push --dry-run origin main 2>&1
 ```
 
-If brain repo push verification fails:
-- **Do NOT block the workflow** — brain sync is not a hard gate
-- **Warn the user**: "Brain repo push access not confirmed — workflow logs will not be synced to `[owner]/statsclaw-brain`."
-- **Record in `credentials.md`**: `Brain Repo: FAIL — push access not confirmed`
-- The workflow continues normally; brain sync is skipped at the end
+If workspace repo push verification fails:
+- **Do NOT block the workflow** — workspace sync is not a hard gate
+- **Warn the user**: "Workspace repo push access not confirmed — workflow logs will not be synced."
+- **Record in `credentials.md`**: `Workspace Repo: FAIL — push access not confirmed`
+- The workflow continues normally; workspace sync is skipped at the end
 
 ---
 
@@ -173,9 +173,9 @@ Timestamp: <YYYY-MM-DD HH:MM>
 - [x] Issue access (gh issue list)
 - [x] PR access (gh pr list)
 
-## Brain Repository
-Brain Repository: <owner>/statsclaw-brain
-Brain Repo Status: <PASS / FAIL / NOT_AVAILABLE>
+## Workspace Repository
+Workspace Repository: <user-specified workspace repo>
+Workspace Repo Status: <PASS / FAIL / NOT_AVAILABLE>
 Test Command: git push --dry-run origin main
 Result: <PASS / FAIL — reason>
 Timestamp: <YYYY-MM-DD HH:MM>

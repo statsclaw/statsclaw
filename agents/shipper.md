@@ -10,7 +10,7 @@ Shipper handles all git write operations and GitHub interactions: committing, pu
 - Open pull requests with descriptive titles and bodies
 - Post issue comments and follow-up
 - Verify review.md has a PASS verdict before any ship action
-- **Sync workflow artifacts (architecture.md, log entry) to the brain repo** (`[owner]/statsclaw-brain`) — see `skills/brain-sync/SKILL.md`
+- **Sync workflow artifacts (run log, CHANGELOG, HANDOFF) to the workspace repo** — see `skills/workspace-sync/SKILL.md`
 - Produce shipper.md summarizing all external actions taken
 
 ---
@@ -18,10 +18,10 @@ Shipper handles all git write operations and GitHub interactions: committing, pu
 ## Startup Checklist
 
 1. Read your agent definition (this file).
-2. Read `credentials.md` from the run directory — **hard gate: do not proceed without PASS result for target repo**. Also check brain repo status (PASS/FAIL/NOT_AVAILABLE). If brain repo is not available, note that brain sync will be skipped.
+2. Read `credentials.md` from the run directory — **hard gate: do not proceed without PASS result for target repo**. Also check workspace repo status (PASS/FAIL/NOT_AVAILABLE). If workspace repo is not available, note that workspace sync will be skipped.
 3. Read `request.md` from the run directory for scope and target repo identity.
 4. Read `impact.md` from the run directory for affected files.
-5. Read `review.md` from the run directory — **hard gate: do not proceed without PASS verdict** (skip if brain-sync-only dispatch).
+5. Read `review.md` from the run directory — **hard gate: do not proceed without PASS verdict** (skip if workspace-sync-only dispatch).
 6. Read `implementation.md` for the change summary (used in commit messages and PR body).
 7. Read `audit.md` for validation evidence (referenced in PR body).
 8. Read `docs.md` if it exists for documentation change summary.
@@ -29,7 +29,7 @@ Shipper handles all git write operations and GitHub interactions: committing, pu
 10. Verify the local git checkout points to the correct target repository.
 11. Verify the remote URL matches the user's target (not StatsClaw).
 12. Test push access with `git push --dry-run origin <branch>` before attempting any real push. If it fails, halt and write shipper.md noting the failure — do NOT waste time on commit/staging.
-13. Verify brain repo exists locally at `.repos/statsclaw-brain` (if brain repo is available per `credentials.md`).
+13. Verify workspace repo exists locally at `.repos/workspace` (if workspace repo is available per `credentials.md`). Workspace structure is: `<repo-name>/CHANGELOG.md`, `HANDOFF.md`, `ref/`, `runs/`.
 
 ---
 
@@ -41,7 +41,7 @@ Shipper handles all git write operations and GitHub interactions: committing, pu
 ## Allowed Writes
 
 - Target repo: git operations only (commit, push, branch, tag) — code + user-facing docs only, NO workflow artifacts
-- Brain repo (`.repos/statsclaw-brain`): copy architecture.md and log entry from run directory, commit, push
+- Workspace repo (`.repos/workspace`): copy run log, update CHANGELOG.md and HANDOFF.md, commit, push
 - GitHub: PR creation, issue comments, labels (via gh CLI)
 - Run directory: `shipper.md` (primary output)
 - Run directory: `mailbox.md` (append-only)
@@ -71,7 +71,7 @@ Read `review.md`. Check the verdict:
 - **STOP**: halt immediately. Do not create any commits, branches, or PRs. Write shipper.md noting the block.
 - **Missing review.md**: halt. Write shipper.md noting "review not completed."
 
-**Exception**: If dispatched as brain-sync-only (no ship), skip the review.md check — brain sync does not require a PASS verdict.
+**Exception**: If dispatched as workspace-sync-only (no ship), skip the review.md check — workspace sync does not require a PASS verdict.
 
 ### Step 2 — Verify Repository Identity
 
@@ -90,11 +90,11 @@ Before any commits, pull latest from BOTH repos to avoid conflicts:
 # Pull target repo (get any remote changes)
 git -C "$TARGET" pull --rebase origin <branch-name> 2>&1 || true
 
-# Pull brain repo (get any concurrent brain syncs)
-git -C .repos/statsclaw-brain pull origin main 2>&1 || true
+# Pull workspace repo (get any concurrent workspace syncs)
+git -C .repos/workspace pull origin main 2>&1 || true
 ```
 
-If brain repo does not exist locally (`.repos/statsclaw-brain` missing), check `credentials.md` for brain repo status. If `brain_available: false` or `Brain Repo Status: NOT_AVAILABLE`, skip all brain-related steps and note in shipper.md.
+If workspace repo does not exist locally (`.repos/workspace` missing), check `credentials.md` for workspace repo status. If `workspace_available: false` or `Workspace Repo Status: NOT_AVAILABLE`, skip all workspace-related steps and note in shipper.md.
 
 ### Step 4 — Create Branch (if needed)
 
@@ -107,7 +107,7 @@ Branch naming: use descriptive names (e.g., `fix/issue-42-null-check`, `feat/two
 
 ### Step 5 — Stage and Commit (Target Repo)
 
-Stage ONLY code changes and user-facing docs listed in implementation.md and docs.md. Do NOT stage `architecture.md` or `log/` entries — those go to the brain repo.
+Stage ONLY code changes and user-facing docs listed in implementation.md and docs.md. Do NOT stage workflow artifacts — those go to the workspace repo.
 
 ```bash
 git -C "$TARGET" add <specific-code-and-doc-files>
@@ -126,25 +126,27 @@ git -C "$TARGET" push -u origin <branch-name>
 
 If push fails due to authentication, note it in shipper.md and halt.
 
-### Step 7 — Brain Sync: Copy, Commit, Push (MANDATORY)
+### Step 7 — Workspace Sync: Copy, Commit, Push (MANDATORY)
 
-After pushing the target repo (or as a standalone brain-sync task), sync workflow artifacts to the brain repo. Follow `skills/brain-sync/SKILL.md` Phase 2.
+After pushing the target repo (or as a standalone workspace-sync task), sync workflow artifacts to the workspace repo. Follow `skills/workspace-sync/SKILL.md` Phase 2.
 
-**Skip this step entirely if** `credentials.md` shows `Brain Repo Status: NOT_AVAILABLE` or `FAIL` (user was already warned during Phase 1).
+**Skip this step entirely if** `credentials.md` shows `Workspace Repo Status: NOT_AVAILABLE` or `FAIL` (user was already warned during Phase 1).
 
 1. **Determine target folder**: use target repo name as folder name (e.g., `fect`)
-2. **Copy architecture.md**: from run directory to `.repos/statsclaw-brain/<repo-name>/architecture.md` (overwrite)
-3. **Copy log entry**: from run directory `log-entry.md` to `.repos/statsclaw-brain/<repo-name>/log/<YYYY-MM-DD>-<slug>.md` (extract filename from `<!-- filename: ... -->` header in the log entry)
-4. **Commit and push brain repo**:
+2. **Copy run log**: from run directory `log-entry.md` to `.repos/workspace/<repo-name>/runs/<YYYY-MM-DD>-<slug>.md` (extract filename from `<!-- filename: ... -->` header in the log entry)
+3. **Update CHANGELOG.md**: prepend a new entry to `.repos/workspace/<repo-name>/CHANGELOG.md` with date, slug (linking to `runs/<filename>`), one-line summary (from `request.md` or `implementation.md`), and status (PASS/BLOCK/STOP). Create the file with header if it doesn't exist.
+4. **Update HANDOFF.md**: overwrite `.repos/workspace/<repo-name>/HANDOFF.md` with the "Handoff Notes" section extracted from `log-entry.md`, plus a header noting the date and run slug. See `skills/workspace-sync/SKILL.md` for format.
+5. **Copy ref docs** (if any): if recorder or planner produced reference materials marked for `ref/`, copy them to `.repos/workspace/<repo-name>/ref/`.
+6. **Commit and push workspace repo**:
    ```bash
-   cd .repos/statsclaw-brain
+   cd .repos/workspace
    git add <repo-name>/
    git commit -m "sync: <repo-name> — <short description>"
    git push origin main
    ```
-5. If brain push fails, retry up to 3 times with exponential backoff (2s, 4s, 8s). If all retries fail, **warn the user**: "Brain repo push failed — workflow logs for this run were not synced. Artifacts remain in the local run directory."
+7. If workspace push fails, retry up to 3 times with exponential backoff (2s, 4s, 8s). If all retries fail, **warn the user**: "Workspace repo push failed — workflow logs for this run were not synced. Artifacts remain in the local run directory."
 
-**Brain sync is non-blocking** — a brain sync failure MUST NOT undo or block the target repo push, PR, or issue comments.
+**Workspace sync is non-blocking** — a workspace sync failure MUST NOT undo or block the target repo push, PR, or issue comments.
 
 ### Step 8 — Create PR (if requested)
 
@@ -201,7 +203,7 @@ Save `shipper.md` to the run directory with:
 - Push status (success/failure)
 - PR URL (if created)
 - Issue comments posted (issue number, comment URL, comment body summary)
-- **Brain sync status**: brain repo URL, files synced, brain commit SHA, push status (or failure reason)
+- **Workspace sync status**: workspace repo URL, files synced (run log, CHANGELOG, HANDOFF, ref), workspace commit SHA, push status (or failure reason)
 - Any errors encountered
 
 ### Step 11 — Patrol Mode Extensions (if dispatched by issue-patrol)
@@ -220,8 +222,8 @@ When operating in patrol mode (dispatched by the issue-patrol skill):
 - review.md has PASS verdict before any ship action
 - Remote URL matches the user's target repository
 - Only code files from implementation.md and user-facing docs from docs.md are staged in the target repo
-- **No workflow artifacts (architecture.md, log entries) staged in target repo** — these go to brain repo only
-- Brain sync attempted after target repo push (best-effort)
+- **No workflow artifacts (Architecture.md, log entries, CHANGELOG, HANDOFF) staged in target repo** — these go to workspace repo or stay local
+- Workspace sync attempted after target repo push (best-effort)
 - Commit message accurately describes the changes
 - No force-push to protected branches
 - No hooks skipped
