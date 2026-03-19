@@ -58,9 +58,9 @@ This section is the entry point for every non-trivial user request. You MUST fol
      - **In code workflows (1, 2, 4, 5)**: recorder is dispatched AFTER both builder and tester complete. Reads ALL available run artifacts. Produces `Architecture.md`, log entry with process record, and `docs.md`.
      - **In docs-only workflow (3)**: recorder IS the implementer — receives `spec.md` and implements documentation changes. Also produces `Architecture.md`, log entry, and `docs.md` in the same dispatch.
      - Update status to `DOCUMENTED` after recorder completes.
-     - **Log entry**: Every recorder run MUST produce a log entry in the run directory using the template at `templates/log-entry.md`. The log entry includes a **process record** (complete audit trail of proposals, tests, problems, and resolutions), a **handoff document** (what the next developer needs to know), and a **design note** (key decisions and rationale). The shipper agent later syncs this log entry to the workspace repo — logs do NOT go to the target repo. See `skills/workspace-sync/SKILL.md`.
+     - **Log entry**: Every recorder run MUST produce a log entry in the run directory using the template at `templates/log-entry.md`. The log entry includes a **process record** (complete audit trail of proposals, tests, problems, and resolutions), a **handoff document** (what the next developer needs to know), and a **design note** (key decisions and rationale). The shipper agent later syncs this log entry to the workspace repo's `runs/` directory, and extracts handoff notes into `HANDOFF.md`. Logs do NOT go to the target repo. See `skills/workspace-sync/SKILL.md`.
    - d. **reviewer** — ALWAYS dispatched after recorder completes. Reads ALL available artifacts. Produces `review.md` with verdict. Update status to `REVIEW_PASSED` or `STOPPED`.
-   - e. **shipper** — ONLY if the user asked to ship, or issue-patrol is active. Produces `shipper.md`. Shipper commits code changes to the target repo (clean — no logs or Architecture.md), then syncs workflow artifacts (Architecture.md, log entry) to the workspace repo. See `skills/workspace-sync/SKILL.md`.
+   - e. **shipper** — ONLY if the user asked to ship, or issue-patrol is active. Produces `shipper.md`. Shipper commits code changes to the target repo (clean — no workflow artifacts), then syncs to the workspace repo: copies run log to `runs/`, updates `CHANGELOG.md` and `HANDOFF.md`. See `skills/workspace-sync/SKILL.md`.
    - f. **workspace sync** — If the workflow does NOT include a ship step (workflows 1, 3, 6, 8, 10), leader MUST still dispatch shipper with a **workspace-sync-only** task after the last mandatory step (reviewer or tester). This ensures workflow logs are always pushed to the workspace repo even when no code is shipped.
    - **PIPELINE ISOLATION**: builder NEVER receives `test-spec.md`. Tester NEVER receives `spec.md` or `implementation.md`. In docs-only workflows, recorder receives `spec.md` (as implementer); no tester is dispatched. See `skills/isolation/SKILL.md`.
 7. **GATE**: Update `status.md` after EVERY teammate completes. Read the output artifact. Do NOT proceed past `STOP` or `BLOCK` signals. Respawn the responsible teammate on failure (max 3 retries per teammate before `HOLD`).
@@ -171,7 +171,7 @@ Write your artifact to: [STATSCLAW_PATH]/.statsclaw/runs/[REQUEST_ID]/[artifact]
 - Do NOT modify status.md — leader will update it
 - Append to mailbox.md if you encounter blockers or interface changes
 - For shipper teammate: read credentials.md first — do NOT attempt push without PASS
-- For shipper teammate: after target repo push, sync logs to workspace repo per skills/workspace-sync/SKILL.md
+- For shipper teammate: after target repo push, sync run log + CHANGELOG + HANDOFF to workspace repo per skills/workspace-sync/SKILL.md
 ```
 
 **Note**: When dispatching builder or recorder, include `isolation: "worktree"` in the `Agent` tool call.
@@ -422,7 +422,7 @@ For non-trivial requests, you MUST continue through the selected workflow withou
 - **Worktree isolation for writers.** `isolation: "worktree"` for builder and recorder.
 - **Ship actions are explicit.** Do not push unless the user asked, issue-patrol is active, or a single-issue fix was requested (workflow 5 — fixing an issue implies pushing the fix).
 - **Surgical scope.** Each run modifies only what the request requires.
-- **Clean target repos.** Workflow logs, process records, and architecture diagrams go to the workspace repo — never the target repo. Target repos contain only code + essential user-facing docs.
+- **Clean target repos.** Workflow logs, process records, and handoff documents go to the workspace repo — never the target repo. Architecture diagrams stay in the local run directory. Target repos contain only code + essential user-facing docs.
 - **Parallel when possible.** Builder and tester are ALWAYS dispatched in parallel.
 - **Tolerance integrity is absolute.** Tester MUST NEVER relax tolerances, thresholds, or acceptance criteria to make a failing test pass. The only valid response to a genuine failure is BLOCK. Reviewer cross-audits every tolerance against test-spec.md.
 
@@ -446,8 +446,8 @@ For non-trivial requests, you MUST continue through the selected workflow withou
 │       ├── test-spec.md      # test pipeline input (from planner)
 │       ├── implementation.md # code pipeline output (from builder)
 │       ├── audit.md          # test pipeline output (from tester)
-│       ├── Architecture.md   # from recorder; synced to workspace repo by shipper agent
-│       ├── log-entry.md      # from recorder; synced to workspace repo by shipper agent
+│       ├── Architecture.md   # from recorder; stays local for reviewer verification
+│       ├── log-entry.md      # from recorder; synced to workspace runs/ by shipper
 │       ├── docs.md
 │       ├── review.md
 │       ├── shipper.md

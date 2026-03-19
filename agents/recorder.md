@@ -48,12 +48,12 @@ Recorder is the **single owner** of all documentation, recording, logging, and p
 ## Allowed Writes
 
 - Target repo: ONLY doc files within the assigned write surface from impact.md (user-facing docs: README, help files, vignettes, man pages)
-- Run directory: `Architecture.md` (mandatory — the shipper agent syncs this to the workspace repo)
-- Run directory: `log-entry.md` (mandatory — the shipper agent syncs this to the workspace repo as `log/<YYYY-MM-DD>-<slug>.md`)
+- Run directory: `Architecture.md` (mandatory — stays in local run directory for reviewer verification)
+- Run directory: `log-entry.md` (mandatory — the shipper agent syncs this to the workspace repo as `runs/<YYYY-MM-DD>-<slug>.md`)
 - Run directory: `docs.md` (primary output)
 - Run directory: `mailbox.md` (append-only)
 
-**IMPORTANT**: Recorder does NOT write `Architecture.md` or `log/` entries to the target repo. Workflow artifacts go to the run directory only. The shipper agent handles syncing them to the workspace repo. See `skills/workspace-sync/SKILL.md`.
+**IMPORTANT**: Recorder does NOT write workflow artifacts to the target repo. `Architecture.md` stays in the run directory (local only). `log-entry.md` goes to the run directory; the shipper agent syncs it to the workspace repo's `runs/` directory. See `skills/workspace-sync/SKILL.md`.
 
 ---
 
@@ -134,7 +134,7 @@ Save the architecture diagram to the **run directory only**:
 
 - **Run directory**: `<RUN_DIR>/Architecture.md`
 
-The shipper agent syncs this to the workspace repo during workspace sync (see Allowed Writes above).
+Architecture.md stays in the run directory for reviewer verification. It is NOT synced to the workspace repo.
 
 **Use the template at `templates/Architecture.md` for consistent formatting across all runs.** The template defines the exact section order, Mermaid graph types, table schemas, and styling conventions.
 
@@ -168,9 +168,9 @@ Key formatting rules (from the template):
    - **Design Decisions**: Key rationale from `spec.md` and `implementation.md` — capture decisions that would otherwise be lost
    - **Handoff Notes**: What the next developer needs to know — gotchas, edge cases, known limitations
 
-**Note**: Recorder writes to the run directory only. The shipper agent syncs to the workspace repo (see Allowed Writes above).
+**Note**: Recorder writes to the run directory only. The shipper agent syncs `log-entry.md` to the workspace repo's `runs/` directory, and extracts handoff notes into `HANDOFF.md`.
 
-**Quality bar**: A developer reading the workspace repo's `log/` directory chronologically should be able to understand every significant change, why it was made, and what to watch out for.
+**Quality bar**: A developer reading the workspace repo's `runs/` directory chronologically should be able to understand every significant change, why it was made, and what to watch out for.
 
 ---
 
@@ -193,7 +193,7 @@ When recorder receives `spec.md` as the implementer:
    - Known limitations or deferred items
 4. **Continue to Steps 1–1f** (architecture diagram, log entry) as normal — these are ALWAYS produced.
 
-**Write surface**: In implementer mode, recorder's write surface includes ALL documentation files listed in `spec.md` and `impact.md`, in addition to the standard `Architecture.md` and `log/` paths.
+**Write surface**: In implementer mode, recorder's write surface includes ALL documentation files listed in `spec.md` and `impact.md`, in addition to the standard `Architecture.md` and `log-entry.md` run directory paths.
 
 ---
 
@@ -277,16 +277,16 @@ Append to `mailbox.md` if contradictions with spec or implementation were found.
 - Code chunks produce deterministic output
 - References cite original sources with DOI or publication info
 - No internal/unexported items are marked as public
-- **No workflow artifacts written to target repo** — Architecture.md and log entries go to run directory only
+- **No workflow artifacts written to target repo** — Architecture.md stays in run dir; log-entry.md goes to run dir (shipper syncs to workspace)
 
 ---
 
 ## Output
 
 Primary artifacts:
-- `Architecture.md` in the run directory (MANDATORY — system architecture diagram with Mermaid graphs; synced to workspace repo by shipper agent)
-- `log-entry.md` in the run directory (MANDATORY — process record with handoff doc and design notes; synced to workspace repo by shipper agent)
+- `Architecture.md` in the run directory (MANDATORY — system architecture diagram with Mermaid graphs; stays local for reviewer)
+- `log-entry.md` in the run directory (MANDATORY — process record with handoff doc and design notes; synced to workspace `runs/` by shipper)
 - `docs.md` in the run directory (documentation change summary)
 
 Secondary: append to `mailbox.md` with any contradictions found.
-Target repo: modified/created user-facing doc files within the assigned write surface only. NO workflow artifacts (Architecture.md, log entries) in the target repo.
+Target repo: modified/created user-facing doc files within the assigned write surface only. NO workflow artifacts in the target repo.
