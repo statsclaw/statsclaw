@@ -24,7 +24,7 @@ Downstream teammates MUST reuse upstream artifacts. They MUST NOT re-discover or
 
 Rules:
 - Every handoff artifact is a `.md` file: `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `review.md`, `docs.md`, `shipper.md`, `comprehension.md`, `Architecture.md`, `mailbox.md`, `credentials.md`, `status.md`, `request.md`, `impact.md`
-- Log entries in the run directory MUST be `.md` files: `log-entry.md` (with a `<!-- filename: YYYY-MM-DD-slug.md -->` header for workspace sync naming)
+- Log entries in the run directory MUST be `.md` files: `log-entry.md` (with a `<!-- filename: YYYY-MM-DD-slug.md -->` header for workspace `runs/` naming)
 - Lock files MUST be `.md` files
 - No agent may produce a handoff artifact in any other format (no `.txt`, `.json`, `.yaml`, `.html`)
 
@@ -41,8 +41,8 @@ Each teammate produces specific output artifacts per run stage:
 | planner | `test-spec.md` | `.statsclaw/runs/<request-id>/test-spec.md` | → Test Pipeline |
 | builder | `implementation.md` | `.statsclaw/runs/<request-id>/implementation.md` | Code Pipeline output |
 | tester | `audit.md` | `.statsclaw/runs/<request-id>/audit.md` | Test Pipeline output |
-| recorder | `Architecture.md` | `.statsclaw/runs/<request-id>/Architecture.md` | Architecture (mandatory; synced to workspace repo by shipper) |
-| recorder | `log-entry.md` | `.statsclaw/runs/<request-id>/log-entry.md` | Log entry with process record (mandatory; synced to workspace repo by shipper) |
+| recorder | `Architecture.md` | `.statsclaw/runs/<request-id>/Architecture.md` | Architecture (mandatory; stays local for reviewer) |
+| recorder | `log-entry.md` | `.statsclaw/runs/<request-id>/log-entry.md` | Log entry with process record (mandatory; synced to workspace `runs/` by shipper) |
 | recorder | `docs.md` | `.statsclaw/runs/<request-id>/docs.md` | Documentation changes |
 | reviewer | `review.md` | `.statsclaw/runs/<request-id>/review.md` | Convergence output |
 | shipper | `shipper.md` | `.statsclaw/runs/<request-id>/shipper.md` | Externalization output |

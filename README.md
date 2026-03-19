@@ -103,8 +103,8 @@ ship it
 │   ├── test-spec.md        # test pipeline input (from planner)
 │   ├── implementation.md   # code pipeline output (from builder)
 │   ├── audit.md            # test pipeline output (from tester)
-│   ├── Architecture.md     # system architecture diagram (from recorder; synced to workspace repo)
-│   ├── log-entry.md        # process record (from recorder; synced to workspace repo)
+│   ├── Architecture.md     # system architecture diagram (from recorder; stays local)
+│   ├── log-entry.md        # process record (from recorder; synced to workspace runs/)
 │   ├── docs.md             # documentation changes (from recorder)
 │   ├── review.md           # convergence verdict (from reviewer)
 │   ├── shipper.md           # ship actions (from shipper)
@@ -132,17 +132,23 @@ StatsClaw/
 
 ## Workspace Repository
 
-Workflow logs, process records, and architecture diagrams are NOT stored in target repos. Instead, they are synced to a user-specified **workspace repository** on GitHub (e.g., `[username]/workspace`):
+Workflow logs, process records, and handoff documents are NOT stored in target repos. Instead, they are synced to a user-specified **workspace repository** on GitHub (e.g., `[username]/workspace`):
 
 ```text
 workspace/
 ├── fect/
-│   ├── Architecture.md     # latest architecture diagram
-│   └── log/
-│       └── 2026-03-15-fix-tests.md
+│   ├── CHANGELOG.md                # timeline index
+│   ├── HANDOFF.md                  # active handoff
+│   ├── ref/                        # reference docs for future work
+│   │   └── cv-comparison-table.md
+│   └── runs/                       # individual workflow logs
+│       ├── 2026-03-16-cv-unification.md
+│       └── 2026-03-17-convergence-conditioning.md
 ├── panelview/
-│   ├── Architecture.md
-│   └── log/
+│   ├── CHANGELOG.md
+│   ├── HANDOFF.md
+│   ├── ref/
+│   └── runs/
 │       └── 2026-03-17-add-feature.md
 └── README.md
 ```

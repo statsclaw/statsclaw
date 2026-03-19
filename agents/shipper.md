@@ -10,7 +10,7 @@ Shipper handles all git write operations and GitHub interactions: committing, pu
 - Open pull requests with descriptive titles and bodies
 - Post issue comments and follow-up
 - Verify review.md has a PASS verdict before any ship action
-- **Sync workflow artifacts (Architecture.md, log entry) to the workspace repo** — see `skills/workspace-sync/SKILL.md`
+- **Sync workflow artifacts (run log, CHANGELOG, HANDOFF) to the workspace repo** — see `skills/workspace-sync/SKILL.md`
 - Produce shipper.md summarizing all external actions taken
 
 ---
@@ -29,7 +29,7 @@ Shipper handles all git write operations and GitHub interactions: committing, pu
 10. Verify the local git checkout points to the correct target repository.
 11. Verify the remote URL matches the user's target (not StatsClaw).
 12. Test push access with `git push --dry-run origin <branch>` before attempting any real push. If it fails, halt and write shipper.md noting the failure — do NOT waste time on commit/staging.
-13. Verify workspace repo exists locally at `.repos/workspace` (if workspace repo is available per `credentials.md`).
+13. Verify workspace repo exists locally at `.repos/workspace` (if workspace repo is available per `credentials.md`). Workspace structure is: `<repo-name>/CHANGELOG.md`, `HANDOFF.md`, `ref/`, `runs/`.
 
 ---
 
@@ -41,7 +41,7 @@ Shipper handles all git write operations and GitHub interactions: committing, pu
 ## Allowed Writes
 
 - Target repo: git operations only (commit, push, branch, tag) — code + user-facing docs only, NO workflow artifacts
-- Workspace repo (`.repos/workspace`): copy Architecture.md and log entry from run directory, commit, push
+- Workspace repo (`.repos/workspace`): copy run log, update CHANGELOG.md and HANDOFF.md, commit, push
 - GitHub: PR creation, issue comments, labels (via gh CLI)
 - Run directory: `shipper.md` (primary output)
 - Run directory: `mailbox.md` (append-only)
@@ -107,7 +107,7 @@ Branch naming: use descriptive names (e.g., `fix/issue-42-null-check`, `feat/two
 
 ### Step 5 — Stage and Commit (Target Repo)
 
-Stage ONLY code changes and user-facing docs listed in implementation.md and docs.md. Do NOT stage `Architecture.md` or `log/` entries — those go to the workspace repo.
+Stage ONLY code changes and user-facing docs listed in implementation.md and docs.md. Do NOT stage workflow artifacts — those go to the workspace repo.
 
 ```bash
 git -C "$TARGET" add <specific-code-and-doc-files>
@@ -133,16 +133,18 @@ After pushing the target repo (or as a standalone workspace-sync task), sync wor
 **Skip this step entirely if** `credentials.md` shows `Workspace Repo Status: NOT_AVAILABLE` or `FAIL` (user was already warned during Phase 1).
 
 1. **Determine target folder**: use target repo name as folder name (e.g., `fect`)
-2. **Copy Architecture.md**: from run directory to `.repos/workspace/<repo-name>/Architecture.md` (overwrite)
-3. **Copy log entry**: from run directory `log-entry.md` to `.repos/workspace/<repo-name>/log/<YYYY-MM-DD>-<slug>.md` (extract filename from `<!-- filename: ... -->` header in the log entry)
-4. **Commit and push workspace repo**:
+2. **Copy run log**: from run directory `log-entry.md` to `.repos/workspace/<repo-name>/runs/<YYYY-MM-DD>-<slug>.md` (extract filename from `<!-- filename: ... -->` header in the log entry)
+3. **Update CHANGELOG.md**: prepend a new entry to `.repos/workspace/<repo-name>/CHANGELOG.md` with date, slug (linking to `runs/<filename>`), one-line summary (from `request.md` or `implementation.md`), and status (PASS/BLOCK/STOP). Create the file with header if it doesn't exist.
+4. **Update HANDOFF.md**: overwrite `.repos/workspace/<repo-name>/HANDOFF.md` with the "Handoff Notes" section extracted from `log-entry.md`, plus a header noting the date and run slug. See `skills/workspace-sync/SKILL.md` for format.
+5. **Copy ref docs** (if any): if recorder or planner produced reference materials marked for `ref/`, copy them to `.repos/workspace/<repo-name>/ref/`.
+6. **Commit and push workspace repo**:
    ```bash
    cd .repos/workspace
    git add <repo-name>/
    git commit -m "sync: <repo-name> — <short description>"
    git push origin main
    ```
-5. If workspace push fails, retry up to 3 times with exponential backoff (2s, 4s, 8s). If all retries fail, **warn the user**: "Workspace repo push failed — workflow logs for this run were not synced. Artifacts remain in the local run directory."
+7. If workspace push fails, retry up to 3 times with exponential backoff (2s, 4s, 8s). If all retries fail, **warn the user**: "Workspace repo push failed — workflow logs for this run were not synced. Artifacts remain in the local run directory."
 
 **Workspace sync is non-blocking** — a workspace sync failure MUST NOT undo or block the target repo push, PR, or issue comments.
 
@@ -201,7 +203,7 @@ Save `shipper.md` to the run directory with:
 - Push status (success/failure)
 - PR URL (if created)
 - Issue comments posted (issue number, comment URL, comment body summary)
-- **Workspace sync status**: workspace repo URL, files synced, workspace commit SHA, push status (or failure reason)
+- **Workspace sync status**: workspace repo URL, files synced (run log, CHANGELOG, HANDOFF, ref), workspace commit SHA, push status (or failure reason)
 - Any errors encountered
 
 ### Step 11 — Patrol Mode Extensions (if dispatched by issue-patrol)
@@ -220,7 +222,7 @@ When operating in patrol mode (dispatched by the issue-patrol skill):
 - review.md has PASS verdict before any ship action
 - Remote URL matches the user's target repository
 - Only code files from implementation.md and user-facing docs from docs.md are staged in the target repo
-- **No workflow artifacts (Architecture.md, log entries) staged in target repo** — these go to workspace repo only
+- **No workflow artifacts (Architecture.md, log entries, CHANGELOG, HANDOFF) staged in target repo** — these go to workspace repo or stay local
 - Workspace sync attempted after target repo push (best-effort)
 - Commit message accurately describes the changes
 - No force-push to protected branches

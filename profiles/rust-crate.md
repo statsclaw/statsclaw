@@ -36,7 +36,7 @@ Detect this profile when the target repository contains:
 
 ## Build Exclusions
 
-**Note**: Architecture diagrams and workflow logs are NOT stored in the target repo — they are synced to the workspace repo. No `Cargo.toml` exclusions are needed for these artifacts. See `skills/workspace-sync/SKILL.md`.
+**Note**: Workflow logs are synced to the workspace repo; architecture diagrams stay in the local run directory. Neither is stored in the target repo. No `Cargo.toml` exclusions are needed for these artifacts. See `skills/workspace-sync/SKILL.md`.
 
 ## Builder Notes
 
