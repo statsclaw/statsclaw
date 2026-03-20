@@ -29,7 +29,9 @@ Check the target repository root for the following files. Match the first profil
 | 3 | `package.json` + `tsconfig.json` | `src/`, `*.ts` files | `profiles/typescript-package.md` |
 | 4 | `go.mod` | `*.go` files, `cmd/`, `internal/` | `profiles/go-module.md` |
 | 5 | `Cargo.toml` | `src/lib.rs` or `src/main.rs`, `tests/` | `profiles/rust-crate.md` |
-| 6 | `*.ado` or `*.do` files | `*.sthlp` files | `profiles/stata-project.md` |
+| 6 | `CMakeLists.txt` or `Makefile` or `meson.build` + `*.cpp`/`*.cc`/`*.cxx` | `*.hpp`/`*.hxx`, `tests/` | `profiles/cpp-library.md` |
+| 7 | `CMakeLists.txt` or `Makefile` or `meson.build` + `*.c` (no C++ sources) | `*.h`, `tests/` | `profiles/c-library.md` |
+| 8 | `*.ado` or `*.do` files | `*.sthlp` files | `profiles/stata-project.md` |
 
 ### Step 3 — Disambiguation
 
