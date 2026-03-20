@@ -494,7 +494,9 @@ StatsClaw/
 │   ├── typescript-package.md
 │   ├── stata-project.md
 │   ├── go-module.md
-│   └── rust-crate.md
+│   ├── rust-crate.md
+│   ├── c-library.md
+│   └── cpp-library.md
 ├── templates/
 │   ├── context.md
 │   ├── package.md
