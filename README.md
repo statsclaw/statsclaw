@@ -11,7 +11,7 @@ All runtime state is local under `.statsclaw/` and ignored by git.
 - `CLAUDE.md` — orchestration policy (the authoritative reference)
 - `agents/` — agent definitions (leader, planner, builder, tester, scriber, reviewer, shipper)
 - `skills/` — shared protocol skills (credential-setup, isolation, handoff, mailbox, issue-patrol, profile-detection)
-- `profiles/` — language-specific execution rules (R, Python, TypeScript, Stata, Go, Rust)
+- `profiles/` — language-specific execution rules (R, Python, TypeScript, Stata, Go, Rust, C, C++)
 - `templates/` — runtime artifact templates (context, package, status, credentials, mailbox, lock, log-entry, architecture)
 
 Agent Teams is enabled at the project level through `.claude/settings.json`.
@@ -124,7 +124,7 @@ StatsClaw/
 ├── README.md
 ├── agents/            # agent definitions
 ├── skills/             # shared protocol skills (9 skills)
-├── profiles/           # language execution rules (6 languages)
+├── profiles/           # language execution rules (8 languages)
 ├── templates/          # runtime artifact templates
 ├── .repos/             # target repo checkouts + workspace repo (git-ignored; symlinks supported)
 └── .statsclaw/         # local runtime state (git-ignored)
