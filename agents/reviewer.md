@@ -160,7 +160,7 @@ Also check for these evasion patterns:
 
 ### Step 8 — Challenge Documentation and Process Record
 
-Recorder is mandatory in all non-lightweight workflows. Verify recorder's output:
+Scriber is mandatory in all non-lightweight workflows. Verify scriber's output:
 
 1. **Architecture diagram**: Verify `Architecture.md` exists in the run directory and contains Mermaid diagrams (module structure, function call graph, data flow). If `Architecture.md` is missing, raise **STOP — architecture diagram not produced**.
 2. **Log entry**: Verify `log-entry.md` exists in the run directory for this run. If missing, raise **STOP — log entry not produced**. Verify it contains: What Changed, Files Changed, Process Record (with Per-Test Result Table, Before/After Comparison Table, Problems and Resolutions), Design Decisions, Handoff Notes. Verify it includes a `<!-- filename: ... -->` header for workspace sync.
@@ -169,7 +169,7 @@ Recorder is mandatory in all non-lightweight workflows. Verify recorder's output
 5. Do function signatures in docs match the implementation?
 6. Were tutorials re-rendered after code changes?
 7. Does documentation cover the changed or new functionality?
-8. Verify `docs.md` exists. If missing, raise **STOP — documentation not updated**.
+8. If `impact.md` lists documentation files in the write surface, verify `docs.md` exists. If docs are in scope but `docs.md` is missing, raise **STOP — documentation not updated**. (If no documentation files are in scope, `docs.md` is not required.)
 
 ### Step 9 — Issue Verdict
 
@@ -195,7 +195,7 @@ Use PASS WITH NOTE sparingly. It is not a way to avoid hard questions.
 | Code is wrong or incomplete | builder |
 | Math is wrong or ambiguous | planner |
 | Test scenarios are insufficient | planner (to update test-spec.md) |
-| Docs do not match code | recorder |
+| Docs do not match code | scriber |
 | Validation was skipped or incomplete | tester |
 | Tolerance inflated or evasion pattern detected | tester (re-dispatch with strict integrity rules) |
 | Comprehension incomplete or specs not grounded | planner |

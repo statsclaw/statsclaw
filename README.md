@@ -9,7 +9,7 @@ All runtime state is local under `.statsclaw/` and ignored by git.
 ## What You Install
 
 - `CLAUDE.md` — orchestration policy (the authoritative reference)
-- `agents/` — agent definitions (leader, planner, builder, tester, recorder, reviewer, shipper)
+- `agents/` — agent definitions (leader, planner, builder, tester, scriber, reviewer, shipper)
 - `skills/` — shared protocol skills (credential-setup, isolation, handoff, mailbox, issue-patrol, profile-detection)
 - `profiles/` — language-specific execution rules (R, Python, TypeScript, Stata, Go, Rust)
 - `templates/` — runtime artifact templates (context, package, status, credentials, mailbox, lock, log-entry, architecture)
@@ -31,7 +31,7 @@ StatsClaw uses two fully isolated execution pipelines that converge at the revie
       (code pipeline)            (test pipeline)
                \                        /
                 \                      /
-                   recorder (recording)
+                   scriber (recording)
                        |
                    reviewer (convergence)
                        |
@@ -44,15 +44,15 @@ StatsClaw uses two fully isolated execution pipelines that converge at the revie
 | Analysis | `planner` | Bridge | Produces `spec.md` AND `test-spec.md` from requirements |
 | Code | `builder` | Code | Implements from `spec.md` only (never sees test-spec.md) |
 | Test | `tester` | Test | Validates from `test-spec.md` only (never sees spec.md) |
-| Recording | `recorder` | Both | Architecture, process-record log, documentation (mandatory) |
+| Recording | `scriber` | Both | Architecture, process-record log, documentation (mandatory) |
 | Convergence | `reviewer` | Both | Cross-compares both pipelines; issues ship verdict |
 | Ship | `shipper` | — | Commits, pushes, PRs, issue comments (conditional) |
 
 **Key properties:**
 - **Planner is always mandatory** — it bridges both pipelines
-- **Builder handles code, recorder handles docs** — for docs-only requests, recorder replaces builder as implementer
+- **Builder handles code, scriber handles docs** — for docs-only requests, scriber replaces builder as implementer
 - **Builder and tester run in parallel** (code workflows) — each with its own isolated spec
-- **Pipeline isolation is enforced** — builder/recorder never sees test-spec.md, tester never sees spec.md
+- **Pipeline isolation is enforced** — builder/scriber never sees test-spec.md, tester never sees spec.md
 - **Adversarial verification** — if both pipelines converge independently, confidence is high
 
 ---
@@ -60,8 +60,8 @@ StatsClaw uses two fully isolated execution pipelines that converge at the revie
 ## Workflow
 
 ```text
-Code:      leader → planner → [builder ∥ tester] → recorder → reviewer → shipper?
-Docs-only: leader → planner → recorder → reviewer → shipper?
+Code:      leader → planner → [builder ∥ tester] → scriber → reviewer → shipper?
+Docs-only: leader → planner → scriber → reviewer → shipper?
 ```
 
 States: `CREDENTIALS_VERIFIED → NEW → PLANNED → SPEC_READY → PIPELINES_COMPLETE → DOCUMENTED → REVIEW_PASSED → READY_TO_SHIP → DONE`
@@ -103,9 +103,9 @@ ship it
 │   ├── test-spec.md        # test pipeline input (from planner)
 │   ├── implementation.md   # code pipeline output (from builder)
 │   ├── audit.md            # test pipeline output (from tester)
-│   ├── Architecture.md     # system architecture diagram (from recorder; stays local)
-│   ├── log-entry.md        # process record (from recorder; synced to workspace runs/)
-│   ├── docs.md             # documentation changes (from recorder)
+│   ├── Architecture.md     # system architecture diagram (from scriber; stays local)
+│   ├── log-entry.md        # process record (from scriber; synced to workspace runs/)
+│   ├── docs.md             # documentation changes (from scriber)
 │   ├── review.md           # convergence verdict (from reviewer)
 │   ├── shipper.md           # ship actions (from shipper)
 │   ├── mailbox.md          # inter-teammate communication
@@ -165,6 +165,6 @@ This keeps target repos clean (code + essential docs only) while preserving full
 - **Planner first, always.** Every non-trivial request starts with dual-spec production.
 - **Adversarial verification by design.** Independent convergence proves correctness.
 - **Hard gates, not soft advice.** State transitions have preconditions; artifacts are verified.
-- **Worktree isolation for writers.** Builder and recorder run in isolated git worktrees.
+- **Worktree isolation for writers.** Builder and scriber run in isolated git worktrees.
 - **Surgical scope.** Each run modifies only what the request requires.
 - **Explicit ship actions.** Nothing is pushed without user instruction or active patrol skill.

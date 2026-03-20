@@ -80,7 +80,7 @@ Leader outputs the progress bar directly as text (markdown) to the user. No tool
 | `PLANNED` | 2 | Plan | `[✔]` when impact.md written |
 | `SPEC_READY` | 3 | Specs | `[✔]` when planner completes |
 | `PIPELINES_COMPLETE` | 4 | Build/Test | `[✔]` when builder + tester complete |
-| `DOCUMENTED` | 5 | Docs | `[✔]` when recorder completes |
+| `DOCUMENTED` | 5 | Docs | `[✔]` when scriber completes |
 | `REVIEW_PASSED` | 6 | Review | `[✔]` when reviewer passes |
 | `DONE` | 7 | Ship | `[✔]` when shipper completes (or skipped) |
 

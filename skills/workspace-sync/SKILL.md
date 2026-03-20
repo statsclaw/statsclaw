@@ -225,7 +225,7 @@ cp "${RUN_DIR}/log-entry.md" "${WORKSPACE_DIR}/runs/${LOGFILE}"
 # Extract "Handoff Notes" section from log-entry.md and write to HANDOFF.md
 
 # 5d. Copy reference docs to ref/ (if any were produced)
-# Only if recorder or planner produced reference materials for future work
+# Only if scriber or planner produced reference materials for future work
 
 # 6. Commit and push
 cd .repos/workspace
@@ -263,7 +263,7 @@ Shipper overwrites `HANDOFF.md` each run with the latest handoff notes extracted
 
 #### ref/ Directory
 
-Reference documents accumulate in `ref/`. These are produced when a workflow generates comparison tables, algorithm specifications, design explorations, or other materials useful for future work. Shipper copies them from the run directory if the recorder or planner explicitly marks files for `ref/` in their output artifacts.
+Reference documents accumulate in `ref/`. These are produced when a workflow generates comparison tables, algorithm specifications, design explorations, or other materials useful for future work. Shipper copies them from the run directory if the scriber or planner explicitly marks files for `ref/` in their output artifacts.
 
 ### Workspace-Sync-Only Dispatch
 
@@ -281,8 +281,8 @@ If the workflow does NOT include a ship step (workflows 1, 3, 6, 8), leader MUST
 | --- | --- | --- | --- |
 | Source code changes | Yes | No | Builder's work |
 | Unit tests | Yes | No | Builder's work |
-| User-facing docs (README, help, vignettes) | Yes | No | Recorder's work |
-| `runs/<date>-<slug>.md` | **No** | Yes | Recorder writes `log-entry.md` to run dir; shipper syncs to `runs/` |
+| User-facing docs (README, help, vignettes) | Yes | No | Scriber's work |
+| `runs/<date>-<slug>.md` | **No** | Yes | Scriber writes `log-entry.md` to run dir; shipper syncs to `runs/` |
 | `CHANGELOG.md` | **No** | Yes | Shipper maintains — timeline index of all runs |
 | `HANDOFF.md` | **No** | Yes | Shipper maintains — latest handoff notes |
 | `ref/<topic>.md` | **No** | Yes (if produced) | Reference docs for future work |

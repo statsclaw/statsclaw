@@ -1,7 +1,7 @@
 # StatsClaw runtime state (never committed)
 .statsclaw/
 
-# Target repositories, brain repo, and symlinks (user's working copies, never committed)
+# Target repositories, workspace repo, and symlinks (user's working copies, never committed)
 .repos/
 .repo/
 

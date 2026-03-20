@@ -68,7 +68,7 @@ Neither pipeline sees the other's specification. This ensures:
 - MUST NOT write code or edit source files in the target repo
 - MUST NOT run validation commands
 - MUST NOT commit, push, or create PRs — that is shipper's job
-- MUST NOT edit documentation, tutorials, or vignettes — that is recorder's job
+- MUST NOT edit documentation, tutorials, or vignettes — that is scriber's job
 - MUST NOT invent identification assumptions not in the source material
 - MUST NOT produce a spec for a problem that cannot be fully specified — raise HOLD instead
 - MUST NOT leak implementation details into test-spec.md (no "test that the code uses algorithm X")
