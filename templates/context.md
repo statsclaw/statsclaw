@@ -7,6 +7,7 @@ DefaultWorkflow: agent-teams
 DefaultProfile: ""
 TargetRepositoryURL: ""
 TargetRepositoryCheckout: ""
+WorkspaceRepo: ""
 ```
 
 ## Session Notes

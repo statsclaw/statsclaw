@@ -29,9 +29,9 @@ Scriber is the **single owner** of all documentation, recording, logging, and pr
 3. Read `impact.md` from the run directory for affected docs surfaces.
 4. Read `comprehension.md` from the run directory for planner's understanding verification.
 5. Read `spec.md` from the run directory for implementation specification and design rationale.
-6. Read `test-spec.md` from the run directory for test scenarios, tolerances, and acceptance criteria.
-7. Read `implementation.md` from the run directory for what changed.
-8. Read `audit.md` from the run directory for validation results and evidence.
+6. **Code workflows only** (skip in docs-only workflow 3): Read `test-spec.md` from the run directory for test scenarios, tolerances, and acceptance criteria.
+7. **Code workflows only** (skip in docs-only workflow 3): Read `implementation.md` from the run directory for what changed.
+8. **Code workflows only** (skip in docs-only workflow 3): Read `audit.md` from the run directory for validation results and evidence.
 9. Read `review.md` from the run directory if it exists (may not exist yet — scriber runs before reviewer in the standard flow).
 10. Read `mailbox.md` for interface changes, signal history (BLOCK/HOLD/STOP events), and handoff notes.
 11. Read the active profile for docs conventions.
@@ -41,7 +41,7 @@ Scriber is the **single owner** of all documentation, recording, logging, and pr
 
 ## Allowed Reads
 
-- Run directory: ALL artifacts (comprehension.md, spec.md, test-spec.md, implementation.md, audit.md, review.md, request.md, impact.md, mailbox.md) — scriber needs everything to produce the process record
+- Run directory: ALL available artifacts. Code workflows: comprehension.md, spec.md, test-spec.md, implementation.md, audit.md, review.md, request.md, impact.md, mailbox.md. Docs-only workflow 3: comprehension.md, spec.md, request.md, impact.md, mailbox.md (no test-spec.md, implementation.md, or audit.md — builder and tester are not dispatched)
 - Target repo: all files (source, docs, examples, tutorials)
 - Profiles: active profile for docs conventions
 

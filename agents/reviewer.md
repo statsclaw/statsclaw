@@ -169,7 +169,7 @@ Scriber is mandatory in all non-lightweight workflows. Verify scriber's output:
 5. Do function signatures in docs match the implementation?
 6. Were tutorials re-rendered after code changes?
 7. Does documentation cover the changed or new functionality?
-8. Verify `docs.md` exists. If missing, raise **STOP — documentation not updated**.
+8. If `impact.md` lists documentation files in the write surface, verify `docs.md` exists. If docs are in scope but `docs.md` is missing, raise **STOP — documentation not updated**. (If no documentation files are in scope, `docs.md` is not required.)
 
 ### Step 9 — Issue Verdict
 
