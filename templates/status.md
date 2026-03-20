@@ -41,9 +41,9 @@ Interrupt states:
 | test-spec.md | planner | → Test | pending | |
 | implementation.md | builder | Code | pending | |
 | audit.md | tester | Test | pending | |
-| Architecture.md | recorder | Architecture | pending | |
-| log-entry.md | recorder | Process Record | pending | |
-| docs.md | recorder | Code | pending | |
+| Architecture.md | scriber | Architecture | pending | |
+| log-entry.md | scriber | Process Record | pending | |
+| docs.md | scriber | Code | pending | |
 | review.md | reviewer | Convergence | pending | |
 | shipper.md | shipper | — | pending | |
 
@@ -60,7 +60,7 @@ Interrupt states:
 | Teammate | Isolation | Worktree Path |
 | --- | --- | --- |
 | builder | worktree | |
-| recorder | worktree | |
+| scriber | worktree | |
 
 ## Open Risks
 

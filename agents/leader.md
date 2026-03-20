@@ -28,8 +28,8 @@ Leader MUST accept short, informal prompts and route them to the correct workflo
 
 | User says (any language) | Detected intent | Skill / Workflow |
 | --- | --- | --- |
-| "fix [issue/bug/test]" / "repair" / code change | Code change | Workflow 1 or 2 (planner → builder ∥ tester → recorder → reviewer) |
-| "update docs" / "edit quarto book" / "fix README" / "write vignette" / docs-only | Docs only | Workflow 3 (planner → recorder → reviewer) — NO builder, NO tester |
+| "fix [issue/bug/test]" / "repair" / code change | Code change | Workflow 1 or 2 (planner → builder ∥ tester → scriber → reviewer) |
+| "update docs" / "edit quarto book" / "fix README" / "write vignette" / docs-only | Docs only | Workflow 3 (planner → scriber → reviewer) — NO builder, NO tester |
 | "patrol [repo] issues" / "check issues" / "fix bugs in [repo]" / "auto-check issues" | Issue patrol | `skills/issue-patrol/SKILL.md` |
 | "monitor [repo]" / "watch issues" / "keep checking" | Recurring patrol | Issue patrol with loop |
 | "loop" / "every Xm" / "scheduled" / "recurring" / "continuously" / "repeatedly" | Scheduled loop | Invoke `/loop` skill via `Skill` tool |
@@ -152,7 +152,7 @@ Before dispatching planner, leader MUST evaluate whether the request is small en
 **If uncertain**: Ask the user.
 **If any false**: Use the standard full workflow without asking.
 
-Simplified workflow skips planner, recorder, and reviewer. Builder uses `request.md` as spec. Tester is the quality gate.
+Simplified workflow skips planner, scriber, and reviewer. Builder uses `request.md` as spec. Tester is the quality gate.
 
 ---
 

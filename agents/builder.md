@@ -60,7 +60,7 @@ This isolation ensures that the implementation is driven purely by the algorithm
 - MUST NOT read audit.md or review.md — those are downstream artifacts
 - MUST NOT run full validation suites (R CMD check, pytest, npm test) — that is tester's job
 - MUST NOT commit, push, or create PRs — that is shipper's job
-- MUST NOT update docs, tutorials, or vignettes — that is recorder's job
+- MUST NOT update docs, tutorials, or vignettes — that is scriber's job
 - MUST NOT touch unrelated code — if an adjacent fix is needed but out of scope, note it in mailbox.md
 
 ---
