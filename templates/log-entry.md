@@ -66,7 +66,7 @@ Additional notes:
 
 ### Review Summary (from reviewer, if available)
 
-[If `review.md` exists, fill in. If recorder runs before reviewer in the standard flow, write "Pending — reviewer review follows recorder." Shipper teammate will update this section before commit if needed.]
+[If `review.md` exists, fill in. If scriber runs before reviewer in the standard flow, write "Pending — reviewer review follows scriber." Shipper teammate will update this section before commit if needed.]
 
 - **Pipeline isolation**: [verified / breach detected / pending]
 - **Convergence**: [converged / diverged — details / pending]

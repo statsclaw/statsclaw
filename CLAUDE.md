@@ -37,7 +37,7 @@ StatsClaw does **not** version user runtime state. All request state, project co
 
 This section is the entry point for every non-trivial user request. You MUST follow these steps in order. You MUST NOT skip steps. You MUST NOT do the user's work directly without completing this protocol. If you find yourself doing substantive analysis, implementation, or review work without having created `request.md` and `impact.md` first, STOP immediately and restart from step 3.
 
-**CRITICAL: You are the Team Leader (`leader`). You MUST use the `Agent` tool to dispatch every teammate. You MUST NOT perform teammate work yourself. If you catch yourself doing builder, tester, recorder, reviewer, planner, or shipper work directly, STOP and dispatch it to an agent instead.**
+**CRITICAL: You are the Team Leader (`leader`). You MUST use the `Agent` tool to dispatch every teammate. You MUST NOT perform teammate work yourself. If you catch yourself doing builder, tester, scriber, reviewer, planner, or shipper work directly, STOP and dispatch it to an agent instead.**
 
 1. **SETUP**: Read `.statsclaw/CONTEXT.md`. If it does not exist, create the full local runtime first (see Session Startup below). Read the active package context.
 2. **ACQUIRE REPOS**: Acquire BOTH the target repo AND the workspace repo upfront. Both must be local before any work begins.
@@ -53,16 +53,16 @@ This section is the entry point for every non-trivial user request. You MUST fol
 6. **DISPATCH TEAMMATES (Two-Pipeline Architecture)**: See "Agent Teams Model" below for the architecture. Dispatch per the selected workflow:
    - a. **planner** — ALWAYS dispatched for non-trivial requests. **MANDATORY when the user uploads files** (PDF, Word, txt, tex, images with formulas) — these contain primary source material that planner must deeply comprehend before any specs are produced. Pass ALL uploaded file paths in the dispatch prompt. Planner produces `comprehension.md` (verification of understanding), `spec.md` (code pipeline), and `test-spec.md` (test pipeline). **If planner raises HOLD with comprehension questions, leader MUST forward them to the user via `AskUserQuestion` and re-dispatch planner with the answers. Iterate until planner confirms FULLY UNDERSTOOD.** Update status to `SPEC_READY`.
    - b. **Code changes** (source files, algorithms, features, bug fixes): dispatch **builder + tester IN PARALLEL** in the same message. Builder gets `spec.md` only. Tester gets `test-spec.md` only.
-     - **Docs-only changes** (quarto books, vignettes, tutorials, README, examples, man pages — NO source code): dispatch **recorder** only (from `spec.md`). Recorder implements the docs AND produces recording artifacts. No builder, no tester — docs don't need testing. After recorder, go directly to reviewer.
-   - c. **recorder** — **ALWAYS dispatched** in every non-lightweight workflow. Dispatch with `isolation: "worktree"`. Recorder is the **single owner** of all documentation, logging, and process recording.
-     - **In code workflows (1, 2, 4, 5)**: recorder is dispatched AFTER both builder and tester complete. Reads ALL available run artifacts. Produces `Architecture.md`, log entry with process record, and `docs.md`.
-     - **In docs-only workflow (3)**: recorder IS the implementer — receives `spec.md` and implements documentation changes. Also produces `Architecture.md`, log entry, and `docs.md` in the same dispatch.
-     - Update status to `DOCUMENTED` after recorder completes.
-     - **Log entry**: Every recorder run MUST produce a log entry in the run directory using the template at `templates/log-entry.md`. The log entry includes a **process record** (complete audit trail of proposals, tests, problems, and resolutions), a **handoff document** (what the next developer needs to know), and a **design note** (key decisions and rationale). The shipper agent later syncs this log entry to the workspace repo's `runs/` directory, and extracts handoff notes into `HANDOFF.md`. Logs do NOT go to the target repo. See `skills/workspace-sync/SKILL.md`.
-   - d. **reviewer** — ALWAYS dispatched after recorder completes. Reads ALL available artifacts. Produces `review.md` with verdict. Update status to `REVIEW_PASSED` or `STOPPED`.
+     - **Docs-only changes** (quarto books, vignettes, tutorials, README, examples, man pages — NO source code): dispatch **scriber** only (from `spec.md`). Scriber implements the docs AND produces recording artifacts. No builder, no tester — docs don't need testing. After scriber, go directly to reviewer.
+   - c. **scriber** — **ALWAYS dispatched** in every non-lightweight workflow. Dispatch with `isolation: "worktree"`. Scriber is the **single owner** of all documentation, logging, and process recording.
+     - **In code workflows (1, 2, 4, 5)**: scriber is dispatched AFTER both builder and tester complete. Reads ALL available run artifacts. Produces `Architecture.md`, log entry with process record, and `docs.md`.
+     - **In docs-only workflow (3)**: scriber IS the implementer — receives `spec.md` and implements documentation changes. Also produces `Architecture.md`, log entry, and `docs.md` in the same dispatch.
+     - Update status to `DOCUMENTED` after scriber completes.
+     - **Log entry**: Every scriber run MUST produce a log entry in the run directory using the template at `templates/log-entry.md`. The log entry includes a **process record** (complete audit trail of proposals, tests, problems, and resolutions), a **handoff document** (what the next developer needs to know), and a **design note** (key decisions and rationale). The shipper agent later syncs this log entry to the workspace repo's `runs/` directory, and extracts handoff notes into `HANDOFF.md`. Logs do NOT go to the target repo. See `skills/workspace-sync/SKILL.md`.
+   - d. **reviewer** — ALWAYS dispatched after scriber completes. Reads ALL available artifacts. Produces `review.md` with verdict. Update status to `REVIEW_PASSED` or `STOPPED`.
    - e. **shipper** — ONLY if the user asked to ship, or issue-patrol is active. Produces `shipper.md`. Shipper commits code changes to the target repo (clean — no workflow artifacts), then syncs to the workspace repo: copies run log to `runs/`, updates `CHANGELOG.md` and `HANDOFF.md`. See `skills/workspace-sync/SKILL.md`.
    - f. **workspace sync** — If the workflow does NOT include a ship step (workflows 1, 3, 6, 8, 10), leader MUST still dispatch shipper with a **workspace-sync-only** task after the last mandatory step (reviewer or tester). This ensures workflow logs are always pushed to the workspace repo even when no code is shipped.
-   - **PIPELINE ISOLATION**: builder NEVER receives `test-spec.md`. Tester NEVER receives `spec.md` or `implementation.md`. In docs-only workflows, recorder receives `spec.md` (as implementer); no tester is dispatched. See `skills/isolation/SKILL.md`.
+   - **PIPELINE ISOLATION**: builder NEVER receives `test-spec.md`. Tester NEVER receives `spec.md` or `implementation.md`. In docs-only workflows, scriber receives `spec.md` (as implementer); no tester is dispatched. See `skills/isolation/SKILL.md`.
 7. **GATE**: Update `status.md` after EVERY teammate completes. Read the output artifact. Do NOT proceed past `STOP` or `BLOCK` signals. Respawn the responsible teammate on failure (max 3 retries per teammate before `HOLD`).
 8. **AUTONOMOUS CONTINUATION**: Do NOT pause between stages to ask the user "should I continue?". Continue automatically through the full workflow until `DONE`, `HOLD`, or `STOP`.
 9. **PROGRESS BAR**: After EVERY `status.md` update, output a visual progress bar to the user. See `skills/progress-bar/SKILL.md` for format. This is mandatory — users must always know what stage the workflow is in.
@@ -90,7 +90,7 @@ Short prompts MUST work. A user message like "Work on https://github.com/foo/bar
 | `PIPELINES_COMPLETE` | Pipeline isolation verified (code workflows only) | Builder prompt has no test-spec.md; tester prompt has no spec.md |
 | `PIPELINES_COMPLETE` | Leader did NOT run any validation command directly | Self-check: no Bash calls to R CMD check, pytest, npm test, etc. |
 | `DOCUMENTED` | `Architecture.md` exists in run directory; `docs.md` exists in run directory; log entry with process record exists in run directory | Read all file paths; verify log entry contains Process Record section |
-| `DOCUMENTED` | Recorder was dispatched via `Agent` tool | Agent tool call must exist |
+| `DOCUMENTED` | Scriber was dispatched via `Agent` tool | Agent tool call must exist |
 | `REVIEW_PASSED` | `review.md` exists with verdict `PASS` or `PASS WITH NOTE` | Read the file, check verdict |
 | `REVIEW_PASSED` | Reviewer was dispatched via `Agent` tool | Agent tool call must exist |
 | `READY_TO_SHIP` | Status is `REVIEW_PASSED` | Read current status |
@@ -111,7 +111,7 @@ Before EVERY tool call, `leader` MUST check whether the action belongs to a team
 | `Edit`/`Write` on target repo source files | `builder` |
 | Run `R CMD check`, `pytest`, `npm test`, or any validation command | `tester` |
 | Run `git commit`, `git push`, `gh pr create` on target repo | `shipper` |
-| `Edit`/`Write` on docs, tutorials, vignettes in target repo | `recorder` |
+| `Edit`/`Write` on docs, tutorials, vignettes in target repo | `scriber` |
 | Write mathematical specifications or derive formulas | `planner` |
 | Debug test failures by reading target repo code extensively | `tester` |
 | Review diffs or evidence chains to decide ship safety | `reviewer` |
@@ -131,7 +131,7 @@ Before EVERY tool call, `leader` MUST check whether the action belongs to a team
 When spawning a teammate via the `Agent` tool:
 
 1. **Set `subagent_type`** to `"general-purpose"` and **`mode`** to `"auto"`.
-2. **Use `isolation: "worktree"`** for writing teammates (builder, recorder). NOT for read-only teammates.
+2. **Use `isolation: "worktree"`** for writing teammates (builder, scriber). NOT for read-only teammates.
 3. **Include full context** — teammates cannot see your conversation. Pass: StatsClaw path, target repo path, run directory path, agent definition path, artifact paths, task description, write surface, profile.
 4. **Name the agent** descriptively (`"builder"`, `"tester"`, `"reviewer"`).
 
@@ -174,15 +174,15 @@ Write your artifact to: [STATSCLAW_PATH]/.statsclaw/runs/[REQUEST_ID]/[artifact]
 - For shipper teammate: after target repo push, sync run log + CHANGELOG + HANDOFF to workspace repo per skills/workspace-sync/SKILL.md
 ```
 
-**Note**: When dispatching builder or recorder, include `isolation: "worktree"` in the `Agent` tool call.
+**Note**: When dispatching builder or scriber, include `isolation: "worktree"` in the `Agent` tool call.
 
 ### Dispatch Rules
 
-**Code workflows (1, 2, 4, 5)**: planner → (builder ∥ tester) → recorder → reviewer → shipper?. Builder + tester MUST be dispatched in the SAME message.
+**Code workflows (1, 2, 4, 5)**: planner → (builder ∥ tester) → scriber → reviewer → shipper?. Builder + tester MUST be dispatched in the SAME message.
 
-**Docs-only workflow (3)**: planner → recorder → reviewer → shipper?. No builder, no tester.
+**Docs-only workflow (3)**: planner → scriber → reviewer → shipper?. No builder, no tester.
 
-**Pipeline isolation at dispatch**: builder gets `spec.md` path (NEVER `test-spec.md`). Tester gets `test-spec.md` path (NEVER `spec.md`). In docs-only workflows, recorder gets `spec.md` (as implementer). Reviewer gets ALL artifacts.
+**Pipeline isolation at dispatch**: builder gets `spec.md` path (NEVER `test-spec.md`). Tester gets `test-spec.md` path (NEVER `spec.md`). In docs-only workflows, scriber gets `spec.md` (as implementer). Reviewer gets ALL artifacts.
 
 ---
 
@@ -216,7 +216,7 @@ StatsClaw uses Agent Teams exclusively. You are the Team Leader (`leader`). You 
   (code pipeline)          (test pipeline)
            \                      /
             \                    /
-              recorder (recording)
+              scriber (recording)
                     |
               reviewer (convergence)
                     |
@@ -229,15 +229,15 @@ StatsClaw uses Agent Teams exclusively. You are the Team Leader (`leader`). You 
 | Analysis | `planner` | Bridge | Produces `spec.md` AND `test-spec.md` | `agents/planner.md` |
 | Code | `builder` | Code | Implements from `spec.md` only (worktree) | `agents/builder.md` |
 | Test | `tester` | Test | Validates from `test-spec.md` only | `agents/tester.md` |
-| Recording | `recorder` | Both | Architecture, process-record log, documentation (mandatory, worktree) | `agents/recorder.md` |
+| Recording | `scriber` | Both | Architecture, process-record log, documentation (mandatory, worktree) | `agents/scriber.md` |
 | Convergence | `reviewer` | Both | Cross-compares both pipelines; ship verdict | `agents/reviewer.md` |
 | Ship | `shipper` | — | Commits, pushes, PRs, issue comments (conditional) | `agents/shipper.md` |
 
-**Mandatory teammates** (never skip for non-trivial requests): planner, recorder, reviewer.
+**Mandatory teammates** (never skip for non-trivial requests): planner, scriber, reviewer.
 
 **Conditional teammates**: builder (code changes only), tester (code changes only — NOT needed for docs-only), shipper (ship requested).
 
-**Recorder dual role**: Recorder is ALWAYS mandatory. In code workflows, recorder is the recorder (runs after builder + tester). In docs-only workflows, recorder is ALSO the implementer (replaces builder, receives `spec.md`). No tester is dispatched for docs-only — reviewer provides the quality gate directly.
+**Scriber dual role**: Scriber is ALWAYS mandatory. In code workflows, scriber is the scriber (runs after builder + tester). In docs-only workflows, scriber is ALSO the implementer (replaces builder, receives `spec.md`). No tester is dispatched for docs-only — reviewer provides the quality gate directly.
 
 Each agent's full workflow, allowed reads/writes, and must-not rules are defined in its `agents/*.md` file. Pipeline isolation rules are in `skills/isolation/SKILL.md`. Artifact handoff rules are in `skills/handoff/SKILL.md`.
 
@@ -249,11 +249,11 @@ Each agent's full workflow, allowed reads/writes, and must-not rules are defined
 
 | # | Name | Trigger | Agent Sequence |
 | --- | --- | --- | --- |
-| 1 | Code Change | Code modification (any size) | `leader → planner → [builder ∥ tester] → recorder → reviewer` |
-| 2 | Code + Ship | Code modification + push | `leader → planner → [builder ∥ tester] → recorder → reviewer → shipper` |
-| 3 | Docs Only | Documentation-only changes (no source code) | `leader → planner → recorder → reviewer` |
-| 4 | Issue Patrol | Scan + fix multiple issues | `leader scans → per issue: planner → [builder ∥ tester] → recorder → reviewer → shipper` |
-| 5 | Single Issue | Fix one named issue | `leader → planner → [builder ∥ tester] → recorder → reviewer → shipper` |
+| 1 | Code Change | Code modification (any size) | `leader → planner → [builder ∥ tester] → scriber → reviewer` |
+| 2 | Code + Ship | Code modification + push | `leader → planner → [builder ∥ tester] → scriber → reviewer → shipper` |
+| 3 | Docs Only | Documentation-only changes (no source code) | `leader → planner → scriber → reviewer` |
+| 4 | Issue Patrol | Scan + fix multiple issues | `leader scans → per issue: planner → [builder ∥ tester] → scriber → reviewer → shipper` |
+| 5 | Single Issue | Fix one named issue | `leader → planner → [builder ∥ tester] → scriber → reviewer → shipper` |
 | 6 | Validation | Run tests only | `leader → tester` |
 | 7 | Ship Only | Push reviewed changes | `leader → reviewer → shipper` |
 | 8 | Review Only | Assess without shipping | `leader → reviewer` |
@@ -261,19 +261,19 @@ Each agent's full workflow, allowed reads/writes, and must-not rules are defined
 | 10 | Simplified | Small routine change (user confirms) | `leader → builder → tester → shipper?` |
 
 **Key distinction — code vs docs workflows:**
-- **Workflows 1–2** (code): Builder implements source code, tester validates in parallel, then recorder records.
-- **Workflow 3** (docs-only): Recorder IS the implementer — receives `spec.md` and writes documentation. No builder, no tester. Reviewer provides the quality gate directly.
-- **Workflows 4–5** (issues): Standard code pipeline per issue. Recorder records each fix.
+- **Workflows 1–2** (code): Builder implements source code, tester validates in parallel, then scriber records.
+- **Workflow 3** (docs-only): Scriber IS the implementer — receives `spec.md` and writes documentation. No builder, no tester. Reviewer provides the quality gate directly.
+- **Workflows 4–5** (issues): Standard code pipeline per issue. Scriber records each fix.
 
 **Workflow details**: Each workflow's agent cooperation, artifacts, and state transitions are documented in the respective agent definitions (`agents/*.md`) and skills (`skills/*.md`). Key references:
 
 - **Workflows 1–5**: Two-pipeline flow. See `skills/handoff/SKILL.md` for artifact flow between agents.
-- **Workflow 3**: Docs-only — recorder replaces builder as the implementer. Recorder receives `spec.md` (what docs to write), produces documentation changes + recording artifacts (Architecture.md, log entry, docs.md). No builder or tester is dispatched. Reviewer reviews directly after recorder. State goes `SPEC_READY` → `DOCUMENTED` (skips `PIPELINES_COMPLETE`).
+- **Workflow 3**: Docs-only — scriber replaces builder as the implementer. Scriber receives `spec.md` (what docs to write), produces documentation changes + recording artifacts (Architecture.md, log entry, docs.md). No builder or tester is dispatched. Reviewer reviews directly after scriber. State goes `SPEC_READY` → `DOCUMENTED` (skips `PIPELINES_COMPLETE`).
 - **Workflow 4**: See `skills/issue-patrol/SKILL.md` for patrol phases (scan, triage, fix loop, report).
 - **Workflow 6**: Lightweight — no planner, builder, or reviewer. Tester runs profile validation commands directly. State jumps directly from `PLANNED` to `PIPELINES_COMPLETE` (tester-only).
 - **Workflows 7–8**: Lightweight — skip the full pipeline. These are for already-completed work that needs shipping or review. State model requirements for `SPEC_READY` and `PIPELINES_COMPLETE` are waived; reviewer reads whatever artifacts are available.
 - **Workflow 9**: Leader invokes `/loop` via `Skill` tool. See "Scheduled Loop" below.
-- **Workflow 10**: Simplified — for small, routine changes (≤3 files, no algorithms, no uploaded files). Leader asks user to confirm simplified vs full. Skips planner, recorder, reviewer. Builder uses `request.md` as spec. Tester is the quality gate. State: `PLANNED` → `PIPELINES_COMPLETE` → `REVIEW_PASSED` → `DONE`. See `skills/simplified-workflow/SKILL.md`. If complexity exceeds expectations, leader MUST escalate to full workflow.
+- **Workflow 10**: Simplified — for small, routine changes (≤3 files, no algorithms, no uploaded files). Leader asks user to confirm simplified vs full. Skips planner, scriber, reviewer. Builder uses `request.md` as spec. Tester is the quality gate. State: `PLANNED` → `PIPELINES_COMPLETE` → `REVIEW_PASSED` → `DONE`. See `skills/simplified-workflow/SKILL.md`. If complexity exceeds expectations, leader MUST escalate to full workflow.
 
 **Lightweight workflow rule**: Workflows 6, 7, 8, and 10 are exceptions to the "mandatory teammates" rule. They serve specific, limited purposes (validation-only, ship-only, review-only, simplified) and intentionally skip the full two-pipeline flow.
 
@@ -287,7 +287,7 @@ Route semantically from intent. Do **not** require the user to learn trigger phr
 | --- | --- |
 | code change (bug fix, feature, refactor) | 1 (code change) or 2 (+ ship) |
 | code change + "ship" / "push" | 2 (code + ship) |
-| documentation only (quarto book, vignettes, tutorials, README, man pages, examples) | 3 (docs only — recorder implements) |
+| documentation only (quarto book, vignettes, tutorials, README, man pages, examples) | 3 (docs only — scriber implements) |
 | "patrol issues" / "check issues and fix" / "auto-fix" | 4 (issue patrol) |
 | "fix issue #N" | 5 (single issue fix) |
 | "check" / "validate" / "run tests" | 6 (tester only) |
@@ -299,7 +299,7 @@ Route semantically from intent. Do **not** require the user to learn trigger phr
 
 **Routing rule — simplified vs full**: Before committing to workflow 1–5, leader evaluates smallness criteria (see `skills/simplified-workflow/SKILL.md`). If ALL criteria are met, leader asks the user via `AskUserQuestion` to choose simplified or full. If the user declines or leader is uncertain, use the standard workflow. Leader MUST NOT silently downgrade to simplified.
 
-**Routing rule — code vs docs**: If the request touches ONLY documentation files (`.Rd`, `.md`, `.qmd`, `.Rmd`, vignettes, tutorials, `pkgdown`, `_quarto.yml`, man pages, README) and NO source code (`.R`, `.py`, `.ts`, `.go`, `.rs`, `.ado`), use workflow 3 (docs-only — no builder, no tester). If the request touches any source code, use workflow 1 or 2 even if docs are also needed — recorder handles docs in the recording phase.
+**Routing rule — code vs docs**: If the request touches ONLY documentation files (`.Rd`, `.md`, `.qmd`, `.Rmd`, vignettes, tutorials, `pkgdown`, `_quarto.yml`, man pages, README) and NO source code (`.R`, `.py`, `.ts`, `.go`, `.rs`, `.ado`), use workflow 3 (docs-only — no builder, no tester). If the request touches any source code, use workflow 1 or 2 even if docs are also needed — scriber handles docs in the recording phase.
 
 Routing is semantic. Leader interprets intent from natural language in any language.
 
@@ -329,7 +329,7 @@ StatsClaw uses exactly **three** workflow signals. Each signal has one exclusive
 
 | Signal | Exclusive Owner | When Raised | Status Set To | Leader Response |
 | --- | --- | --- | --- | --- |
-| **HOLD** | planner, builder, recorder, shipper | Cannot proceed without user input: undefined symbol, ambiguous spec, conflicting API, unclear requirement, permission/access issue | `HOLD` | Pause run. Forward the specific question to user via `AskUserQuestion`. Re-dispatch the same teammate with the answer. |
+| **HOLD** | planner, builder, scriber, shipper | Cannot proceed without user input: undefined symbol, ambiguous spec, conflicting API, unclear requirement, permission/access issue | `HOLD` | Pause run. Forward the specific question to user via `AskUserQuestion`. Re-dispatch the same teammate with the answer. |
 | **BLOCK** | tester (only) | Validation failed: tests fail, checks produce errors/warnings, numerical results outside tolerance | `BLOCKED` | Read `audit.md` failure details. **Respawn the responsible upstream teammate** (usually builder) via `Agent` tool — leader MUST NOT fix directly. After teammate fix, re-dispatch tester. |
 | **STOP** | reviewer (only) | Quality gate failed: pipelines diverge, isolation breached, coverage gaps, unsafe to ship | `STOPPED` | Read `review.md` routing. Respawn the teammate reviewer identifies. Re-run affected pipeline(s), then re-dispatch reviewer. |
 
@@ -419,7 +419,7 @@ For non-trivial requests, you MUST continue through the selected workflow withou
 - **Planner first, always.** Every non-trivial request starts with dual-spec production.
 - **Adversarial verification by design.** Independent convergence proves correctness.
 - **Hard gates, not soft advice.** State transitions have preconditions; artifacts are verified, not assumed.
-- **Worktree isolation for writers.** `isolation: "worktree"` for builder and recorder.
+- **Worktree isolation for writers.** `isolation: "worktree"` for builder and scriber.
 - **Ship actions are explicit.** Do not push unless the user asked, issue-patrol is active, or a single-issue fix was requested (workflow 5 — fixing an issue implies pushing the fix).
 - **Surgical scope.** Each run modifies only what the request requires.
 - **Clean target repos.** Workflow logs, process records, and handoff documents go to the workspace repo — never the target repo. Architecture diagrams stay in the local run directory. Target repos contain only code + essential user-facing docs.
@@ -446,8 +446,8 @@ For non-trivial requests, you MUST continue through the selected workflow withou
 │       ├── test-spec.md      # test pipeline input (from planner)
 │       ├── implementation.md # code pipeline output (from builder)
 │       ├── audit.md          # test pipeline output (from tester)
-│       ├── Architecture.md   # from recorder; stays local for reviewer verification
-│       ├── log-entry.md      # from recorder; synced to workspace runs/ by shipper
+│       ├── Architecture.md   # from scriber; stays local for reviewer verification
+│       ├── log-entry.md      # from scriber; synced to workspace runs/ by shipper
 │       ├── docs.md
 │       ├── review.md
 │       ├── shipper.md
@@ -475,7 +475,7 @@ StatsClaw/
 │   ├── planner.md
 │   ├── builder.md
 │   ├── tester.md
-│   ├── recorder.md
+│   ├── scriber.md
 │   ├── reviewer.md
 │   └── shipper.md
 ├── skills/

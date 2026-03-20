@@ -41,9 +41,9 @@ Each teammate produces specific output artifacts per run stage:
 | planner | `test-spec.md` | `.statsclaw/runs/<request-id>/test-spec.md` | → Test Pipeline |
 | builder | `implementation.md` | `.statsclaw/runs/<request-id>/implementation.md` | Code Pipeline output |
 | tester | `audit.md` | `.statsclaw/runs/<request-id>/audit.md` | Test Pipeline output |
-| recorder | `Architecture.md` | `.statsclaw/runs/<request-id>/Architecture.md` | Architecture (mandatory; stays local for reviewer) |
-| recorder | `log-entry.md` | `.statsclaw/runs/<request-id>/log-entry.md` | Log entry with process record (mandatory; synced to workspace `runs/` by shipper) |
-| recorder | `docs.md` | `.statsclaw/runs/<request-id>/docs.md` | Documentation changes |
+| scriber | `Architecture.md` | `.statsclaw/runs/<request-id>/Architecture.md` | Architecture (mandatory; stays local for reviewer) |
+| scriber | `log-entry.md` | `.statsclaw/runs/<request-id>/log-entry.md` | Log entry with process record (mandatory; synced to workspace `runs/` by shipper) |
+| scriber | `docs.md` | `.statsclaw/runs/<request-id>/docs.md` | Documentation changes |
 | reviewer | `review.md` | `.statsclaw/runs/<request-id>/review.md` | Convergence output |
 | shipper | `shipper.md` | `.statsclaw/runs/<request-id>/shipper.md` | Externalization output |
 
@@ -65,9 +65,9 @@ A clear status indicator:
 | --- | --- |
 | planner | `SPEC_READY` — comprehension verified, both specs produced | `HOLD` — needs user input to resolve ambiguity |
 | builder | `IMPLEMENTED` — code and unit tests written | `HOLD` — spec unclear or API conflict |
-| tester | `PASS` — all validation checks green | `BLOCK` — validation failed (routes to builder/recorder/planner) |
-| recorder (recording mode) | `DOCUMENTED` — recording artifacts produced | `HOLD` — implementation unclear or contradicts spec |
-| recorder (implementer mode) | `IMPLEMENTED` + `DOCUMENTED` — docs written and recorded | `HOLD` — spec unclear or contradicts existing docs |
+| tester | `PASS` — all validation checks green | `BLOCK` — validation failed (routes to builder/scriber/planner) |
+| scriber (recording mode) | `DOCUMENTED` — recording artifacts produced | `HOLD` — implementation unclear or contradicts spec |
+| scriber (implementer mode) | `IMPLEMENTED` + `DOCUMENTED` — docs written and recorded | `HOLD` — spec unclear or contradicts existing docs |
 | reviewer | `PASS` / `PASS WITH NOTE` — safe to ship | `STOP` — quality gate failed (routes per table) |
 | shipper | `SHIPPED` — pushed, PR created | `HOLD` — permission or access issue |
 
@@ -88,7 +88,7 @@ planner
                             └── audit.md           │
                                    │               │
                                    ▼               ▼
-                                recorder (recording)
+                                scriber (recording)
                          reads ALL artifacts from both pipelines
                          produces: Architecture.md, log-entry.md, docs.md (all in run dir)
                                    │
@@ -103,7 +103,7 @@ planner
 
 ```
 planner
-└── spec.md ──────────→ recorder (implementer + recorder)
+└── spec.md ──────────→ scriber (implementer + scriber)
                             │
                             ├── documentation changes
                             ├── implementation.md
@@ -118,9 +118,9 @@ planner
 
 **Key properties:**
 1. Planner produces specs (only `spec.md` is used in docs-only; `test-spec.md` is unused)
-2. **Code workflows**: builder ∥ tester in parallel, then recorder records
-3. **Docs-only**: recorder replaces builder as implementer. No tester — docs don't need testing. Reviewer reviews directly.
-4. Recorder is MANDATORY — the single owner of all documentation and recording
+2. **Code workflows**: builder ∥ tester in parallel, then scriber records
+3. **Docs-only**: scriber replaces builder as implementer. No tester — docs don't need testing. Reviewer reviews directly.
+4. Scriber is MANDATORY — the single owner of all documentation and recording
 5. Reviewer is the convergence agent that cross-compares all outputs
 
 ---
@@ -137,22 +137,22 @@ planner
 - Leader passes: `test-spec.md`, `request.md`, `impact.md`, `mailbox.md`
 - Leader MUST NOT pass: `spec.md`
 
-**Builder + Tester → Recorder (Recording)**
+**Builder + Tester → Scriber (Recording)**
 - Leader passes: ALL available artifacts — `comprehension.md`, `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `request.md`, `impact.md`, `mailbox.md`
-- Recorder reads everything to produce the process-record log entry, architecture diagram, and docs
+- Scriber reads everything to produce the process-record log entry, architecture diagram, and docs
 
 ### Docs-Only Workflow (3)
 
-**Planner → Recorder (Implementer + Recorder)**
+**Planner → Scriber (Implementer + Scriber)**
 - Leader passes: `spec.md`, `request.md`, `impact.md`, `mailbox.md`, `comprehension.md`
-- Recorder receives `spec.md` as the implementer (replaces builder). Implements documentation AND produces recording artifacts.
-- No tester is dispatched — docs don't need testing. Reviewer reviews directly after recorder.
+- Scriber receives `spec.md` as the implementer (replaces builder). Implements documentation AND produces recording artifacts.
+- No tester is dispatched — docs don't need testing. Reviewer reviews directly after scriber.
 
 ### All Workflows
 
 **→ Reviewer (Convergence)**
 - Leader passes: ALL artifacts — `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `Architecture.md`, `docs.md`, `request.md`, `impact.md`, `mailbox.md`, `comprehension.md`
-- Reviewer is the convergence agent that cross-compares both pipelines AND recorder's output
+- Reviewer is the convergence agent that cross-compares both pipelines AND scriber's output
 
 **Reviewer → Shipper**
 - Leader passes: `review.md`, `credentials.md`, `implementation.md`, `audit.md`
@@ -173,12 +173,12 @@ After each teammate returns, leader MUST:
 ### After Planner Completes:
 - Verify `spec.md` exists (and `test-spec.md` for code workflows)
 - **Code workflows**: Dispatch builder AND tester IN PARALLEL in the same message. Give builder only `spec.md`; give tester only `test-spec.md`.
-- **Docs-only workflow**: Dispatch recorder with `spec.md` (as implementer). After recorder completes, dispatch reviewer directly.
+- **Docs-only workflow**: Dispatch scriber with `spec.md` (as implementer). After scriber completes, dispatch reviewer directly.
 
 ### After Builder and Tester Both Complete (Code Workflows):
 - Read `implementation.md` and `audit.md`
 - Check for BLOCK from tester (if so, respawn builder with failure details)
-- If both succeeded, dispatch recorder for recording with ALL artifacts. After recorder completes, dispatch reviewer.
+- If both succeeded, dispatch scriber for recording with ALL artifacts. After scriber completes, dispatch reviewer.
 
 ---
 
@@ -188,7 +188,7 @@ Three signals, three owners, three responses. They never overlap.
 
 ### HOLD — Need User Input
 
-**Owner**: planner, builder, recorder. **Status**: `HOLD`.
+**Owner**: planner, builder, scriber. **Status**: `HOLD`.
 
 1. Leader reads the teammate's output artifact and `mailbox.md` (`HOLD_REQUEST` messages).
 2. Leader asks the user the specific question via `AskUserQuestion`.
@@ -199,7 +199,7 @@ Three signals, three owners, three responses. They never overlap.
 
 **Owner**: tester (exclusively). **Status**: `BLOCKED`.
 
-1. Leader reads `audit.md` to identify the failure and routing (builder, planner, or recorder).
+1. Leader reads `audit.md` to identify the failure and routing (builder, planner, or scriber).
 2. **Leader respawns the responsible upstream teammate via `Agent` tool** with the failure description from `audit.md`.
    - **Pipeline isolation**: leader may share the failure description (e.g., "function returns wrong value for input X") but MUST NOT share `test-spec.md` itself.
    - **NO DIRECT FIXES**: Leader MUST NOT use Edit, Write, sed, or any tool to modify target repo files — even for seemingly trivial fixes. Always respawn the teammate. Reason: leader cannot run validation and may introduce new bugs.
