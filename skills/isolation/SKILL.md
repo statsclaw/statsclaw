@@ -45,7 +45,7 @@ Leader is responsible for enforcing pipeline isolation at dispatch time:
 Use `isolation: "worktree"` when dispatching any teammate that **writes** to the target repository:
 
 - **builder** — implements code and test changes
-- **recorder** — updates documentation, examples, tutorials, and vignettes
+- **scriber** — updates documentation, examples, tutorials, and vignettes
 
 Worktree isolation gives each writing teammate its own working copy of the repository. This prevents concurrent writers from interfering with each other and ensures that partial work from one teammate never corrupts another's checkout.
 
@@ -79,14 +79,14 @@ Every writing teammate receives an explicit **write surface** in its dispatch pr
 ### Rules
 
 1. A teammate may **only** create, edit, or delete files within its assigned write surface.
-2. **No two writing teammates may have overlapping write surfaces.** If builder owns `src/` and recorder owns `docs/`, neither may touch the other's directory.
+2. **No two writing teammates may have overlapping write surfaces.** If builder owns `src/` and scriber owns `docs/`, neither may touch the other's directory.
 3. If a teammate discovers that it needs to modify a file outside its surface, it MUST NOT do so. Instead, it appends a message to `mailbox.md` describing the needed change and continues with its own surface.
 4. Only **leader** may mutate `status.md` and files under `locks/`. Teammates must never write to these paths.
 5. Teammates may write their own output artifact (e.g., `implementation.md`, `docs.md`) to the run directory. This is always within their allowed surface.
 
 ### Overlap Detection
 
-Leader is responsible for ensuring non-overlapping surfaces before dispatch. If a request requires two writers to touch the same file (e.g., builder and recorder both need to edit a README that contains code examples), leader must serialize them: dispatch the first writer, wait for completion, then dispatch the second with the updated state.
+Leader is responsible for ensuring non-overlapping surfaces before dispatch. If a request requires two writers to touch the same file (e.g., builder and scriber both need to edit a README that contains code examples), leader must serialize them: dispatch the first writer, wait for completion, then dispatch the second with the updated state.
 
 ---
 
@@ -111,8 +111,8 @@ After a writing teammate completes in its worktree:
 | planner | Bridge | No | No | request.md, impact.md |
 | builder | Code | Yes | Yes | spec.md (NEVER test-spec.md) |
 | tester | Test | No (runs commands) | No | test-spec.md (NEVER spec.md) |
-| recorder (recorder) | Both | Yes | Yes | ALL artifacts (reads everything to produce process record) |
-| recorder (implementer) | Docs | Yes | Yes | spec.md (NEVER test-spec.md) — replaces builder in docs-only workflow |
+| scriber (scriber) | Both | Yes | Yes | ALL artifacts (reads everything to produce process record) |
+| scriber (implementer) | Docs | Yes | Yes | spec.md (NEVER test-spec.md) — replaces builder in docs-only workflow |
 | reviewer | Convergence | No (reviews only) | No | ALL artifacts |
 | shipper | — | No (git/gh commands) | No | review.md, credentials.md |
 | leader | Control | No (runtime only) | N/A | ALL artifacts |

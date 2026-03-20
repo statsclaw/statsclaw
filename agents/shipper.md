@@ -51,7 +51,7 @@ Shipper handles all git write operations and GitHub interactions: committing, pu
 ## Must-Not Rules
 
 - MUST NOT modify status.md — leader updates it
-- MUST NOT edit source code, tests, or docs in the target repo (that is builder/recorder's job)
+- MUST NOT edit source code, tests, or docs in the target repo (that is builder/scriber's job)
 - MUST NOT run validation commands (that is tester's job)
 - MUST NOT ship without a PASS or PASS WITH NOTE verdict in review.md
 - MUST NOT push to the StatsClaw repository — all pushes go to the target repo
@@ -136,7 +136,7 @@ After pushing the target repo (or as a standalone workspace-sync task), sync wor
 2. **Copy run log**: from run directory `log-entry.md` to `.repos/workspace/<repo-name>/runs/<YYYY-MM-DD>-<slug>.md` (extract filename from `<!-- filename: ... -->` header in the log entry)
 3. **Update CHANGELOG.md**: prepend a new entry to `.repos/workspace/<repo-name>/CHANGELOG.md` with date, slug (linking to `runs/<filename>`), one-line summary (from `request.md` or `implementation.md`), and status (PASS/BLOCK/STOP). Create the file with header if it doesn't exist.
 4. **Update HANDOFF.md**: overwrite `.repos/workspace/<repo-name>/HANDOFF.md` with the "Handoff Notes" section extracted from `log-entry.md`, plus a header noting the date and run slug. See `skills/workspace-sync/SKILL.md` for format.
-5. **Copy ref docs** (if any): if recorder or planner produced reference materials marked for `ref/`, copy them to `.repos/workspace/<repo-name>/ref/`.
+5. **Copy ref docs** (if any): if scriber or planner produced reference materials marked for `ref/`, copy them to `.repos/workspace/<repo-name>/ref/`.
 6. **Commit and push workspace repo**:
    ```bash
    cd .repos/workspace

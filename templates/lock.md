@@ -2,7 +2,7 @@
 
 Lock ID: [lock-id]  
 Request ID: [request-id]  
-Owner: [leader / planner / builder / recorder / tester / reviewer / shipper]  
+Owner: [leader / planner / builder / scriber / tester / reviewer / shipper]  
 Status: [held / released]
 
 ## Surface

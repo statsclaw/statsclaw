@@ -105,7 +105,7 @@ After each teammate completes, leader MUST:
 **Type:** INTERFACE_CHANGE
 **Subject:** Renamed `calc_stats()` to `compute_statistics()`
 
-The function `calc_stats()` in `src/stats.R` was renamed to `compute_statistics()` to match the naming convention used elsewhere in the package. All internal callers have been updated. Recorder should update any documentation or examples that reference the old name.
+The function `calc_stats()` in `src/stats.R` was renamed to `compute_statistics()` to match the naming convention used elsewhere in the package. All internal callers have been updated. Scriber should update any documentation or examples that reference the old name.
 
 ---
 **Timestamp:** 2026-03-13 14:45 UTC

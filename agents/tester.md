@@ -215,8 +215,8 @@ For each failure, identify the responsible teammate:
 | --- | --- |
 | Wrong result, numerical error, crash in source code | builder |
 | Behavioral contract violated in source code | builder |
-| Documentation error, example fails, vignette broken | recorder |
-| Docs build fails (quarto, pkgdown, sphinx) | recorder |
+| Documentation error, example fails, vignette broken | scriber |
+| Docs build fails (quarto, pkgdown, sphinx) | scriber |
 | Correct behavior but wrong math in test-spec.md | planner |
 | Config/manifest inconsistency | builder |
 

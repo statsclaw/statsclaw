@@ -46,7 +46,7 @@ Leader uses AskUserQuestion with:
   question: "This looks like a small change (≤3 files, routine pattern). Use simplified workflow?"
   options:
     - label: "Simplified (faster)"
-      description: "Skip planner/recorder. Direct: plan → build → validate → ship."
+      description: "Skip planner/scriber. Direct: plan → build → validate → ship."
     - label: "Full workflow"
       description: "Run the complete two-pipeline architecture with all teammates."
 ```
@@ -67,7 +67,7 @@ If the user chooses "Simplified", leader uses Workflow 10.
 leader → builder → tester → shipper?
 ```
 
-No planner, no recorder, no reviewer. Leader writes a lightweight spec directly in `request.md` (extended with acceptance criteria).
+No planner, no scriber, no reviewer. Leader writes a lightweight spec directly in `request.md` (extended with acceptance criteria).
 
 ### State Model (Simplified)
 
@@ -105,7 +105,7 @@ Skipped states: `SPEC_READY`, `DOCUMENTED`. No `comprehension.md`, `spec.md`, `t
 | Component | Reason |
 | --- | --- |
 | planner | No theoretical analysis needed for routine changes |
-| recorder | No architecture/process-record needed for small changes |
+| scriber | No architecture/process-record needed for small changes |
 | reviewer | Tester provides sufficient quality gate |
 | `spec.md` / `test-spec.md` | Builder uses `request.md` directly; tester validates against acceptance criteria |
 | `comprehension.md` | No uploaded material to comprehend |
