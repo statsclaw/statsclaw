@@ -15,7 +15,7 @@ Leader is the main Claude Code agent. It plans the work and dispatches specialis
 - Coordinate the two-pipeline architecture (see CLAUDE.md → Agent Teams Model)
 - Handle HOLD, BLOCK, and STOP signals (see CLAUDE.md → Signal Handling)
 - **Auto-detect credentials** using `skills/credential-setup/SKILL.md` before any workflow — verify BOTH target repo and workspace repo
-- **Acquire both repos upfront**: clone/pull target repo AND workspace repo at the start of every workflow (step 2). If workspace repo doesn't exist, auto-create it. If creation fails, warn the user explicitly — never silently skip. See `skills/workspace-sync/SKILL.md`.
+- **Acquire both repos upfront**: clone/pull target repo AND workspace repo at the start of every workflow (step 2). If `<user>/workspace` doesn't exist on GitHub, ask the user whether to create it. If it already exists, use it directly. If creation fails, warn the user explicitly — never silently skip. See `skills/workspace-sync/SKILL.md`.
 - **Ensure workspace sync**: dispatch shipper for workspace-sync after every non-lightweight workflow, even if no ship was requested. See `skills/workspace-sync/SKILL.md`.
 
 ---
@@ -42,14 +42,14 @@ Leader MUST accept short, informal prompts and route them to the correct workflo
 
 When the user gives a simple prompt, leader extracts parameters by inference:
 
-1. **Repository**: Look for repo names, URLs, or package names. Match against `.statsclaw/packages/*.md` for known packages.
+1. **Repository**: Look for repo names, URLs, or package names. Match against `.repos/workspace/<repo-name>/context.md` for known packages.
 2. **Branch**: Look for branch names. Default to `main` if not specified.
 3. **Scope**: Look for issue numbers, file names, or descriptions of what to fix.
 4. **Mode**: If the user says "monitor", "watch", "recurring", "scheduled", enable loop mode.
 5. **Scheduled loop**: If the user says "loop", "every Xm/Xmin", "scheduled", "recurring", "continuously", "repeatedly", or any equivalent in any language — extract the interval (default `10m`) and inner command, then invoke `/loop` via the `Skill` tool.
 
 Example: `"patrol fect issues on cfe"` →
-- repo: `xuyiqing/fect` (resolved from `.statsclaw/packages/fect.md`)
+- repo: `xuyiqing/fect` (resolved from `.repos/workspace/fect/context.md`)
 - base_branch: `cfe`
 - skill: `issue-patrol`
 - auto_push: true
@@ -57,13 +57,13 @@ Example: `"patrol fect issues on cfe"` →
 
 ### Package Name Resolution
 
-Leader maintains a mapping from short names to full repo identifiers via `.statsclaw/packages/*.md`. When the user says a package name (e.g., "fect"), resolve it to the full `owner/repo` from the package context file.
+Leader maintains a mapping from short names to full repo identifiers via `.repos/workspace/<repo-name>/context.md`. When the user says a package name (e.g., "fect"), resolve it to the full `owner/repo` from the repo's context file in the workspace.
 
 ---
 
 ## Allowed Reads
 
-- `.statsclaw/` — all runtime artifacts (CONTEXT.md, packages/, runs/, logs/, tmp/)
+- `.repos/workspace/<repo-name>/` — all runtime artifacts (context.md, runs/, logs/, tmp/)
 - Target repo — ONLY during step 5 (planning) to write impact.md
 - Teammate output artifacts in the run directory
 - Profile definitions under `profiles/`
@@ -71,12 +71,12 @@ Leader maintains a mapping from short names to full repo identifiers via `.stats
 
 ## Allowed Writes
 
-- `.statsclaw/` — all runtime artifacts
-- `.statsclaw/runs/<request-id>/request.md`
-- `.statsclaw/runs/<request-id>/impact.md`
-- `.statsclaw/runs/<request-id>/status.md`
-- `.statsclaw/runs/<request-id>/locks/*`
-- `.statsclaw/runs/<request-id>/mailbox.md` (create only; teammates append)
+- `.repos/workspace/<repo-name>/` — all runtime artifacts
+- `.repos/workspace/<repo-name>/runs/<request-id>/request.md`
+- `.repos/workspace/<repo-name>/runs/<request-id>/impact.md`
+- `.repos/workspace/<repo-name>/runs/<request-id>/status.md`
+- `.repos/workspace/<repo-name>/runs/<request-id>/locks/*`
+- `.repos/workspace/<repo-name>/runs/<request-id>/mailbox.md` (create only; teammates append)
 
 ---
 
@@ -113,8 +113,8 @@ When planner raises **HOLD with comprehension questions**, leader MUST:
 2. Forward ALL questions to the user via `AskUserQuestion`. Present them clearly — include any formulas or symbols planner is asking about. When planner provides multiple-choice options, present those options to the user.
 3. After the user answers, **re-dispatch planner** with the original context PLUS the user's answers appended to the dispatch prompt.
 4. If planner raises HOLD again, repeat steps 1–3.
-5. **Max 3 rounds.** After 3 HOLD rounds, planner must either proceed with explicit assumptions (`UNDERSTOOD WITH ASSUMPTIONS`) or declare the task unspecifiable. Leader does NOT allow a 4th round.
-6. Advance to `SPEC_READY` when planner's `comprehension.md` shows `FULLY UNDERSTOOD` or `UNDERSTOOD WITH ASSUMPTIONS`.
+5. **Max 3 rounds.** After 3 HOLD rounds, planner must either proceed with explicit assumptions (`UNDERSTOOD WITH ASSUMPTIONS`) or declare the task unspecifiable (`UNSPECIFIABLE`). Leader does NOT allow a 4th round.
+6. Advance to `SPEC_READY` when planner's `comprehension.md` shows `FULLY UNDERSTOOD` or `UNDERSTOOD WITH ASSUMPTIONS`. If verdict is `UNSPECIFIABLE`, set status to `HOLD` and inform the user.
 
 **This loop is the exception to "autonomous continuation"** — leader MUST pause and ask the user when planner has comprehension questions.
 

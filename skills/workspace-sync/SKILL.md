@@ -1,16 +1,17 @@
 # Shared Skill: Workspace Sync — Centralized Workflow Log Repository
 
-All workflow-generated logs, process records, handoff documents, and reference materials are stored in a dedicated **workspace repository** on GitHub. The user chooses the repo name (e.g., `[username]/workspace`) and tells StatsClaw which repo to use. This keeps target repositories clean — only code and essential documentation live in the target repo.
+All workflow-generated logs, process records, handoff documents, reference materials, **and runtime state** are stored in a dedicated **workspace repository** on GitHub. The user chooses the repo name (e.g., `[username]/workspace`) and tells StatsClaw which repo to use. Each target repository gets its own folder inside the workspace repo, which serves as both the runtime state directory during workflows and the permanent log archive after shipping. This keeps target repositories clean — only code and essential documentation live in the target repo.
 
 ---
 
 ## Concept
 
-The **workspace repo** is a per-user GitHub repository that accumulates all StatsClaw workflow artifacts across all projects. Each target repository gets its own folder inside the workspace repo. This separation ensures:
+The **workspace repo** is a per-user GitHub repository that serves dual roles: (1) it is the **runtime state directory** where all workflow artifacts are written during execution, and (2) it is the **permanent archive** where completed run logs, changelogs, and handoff documents are pushed. Each target repository gets its own folder inside the workspace repo. This ensures:
 
-1. **Target repos stay clean** — only source code + necessary user-facing documentation (README, help files, vignettes, man pages)
+1. **Target repos stay clean** — only source code, `Architecture.md`, and necessary user-facing documentation (README, help files, vignettes, man pages)
 2. **Full traceability** — every workflow run's process record, before/after comparisons, and design decisions are preserved
 3. **Cross-project visibility** — all workflow history in one place
+4. **No redundant state directories** — runtime state and final logs live in the same place
 
 ---
 
@@ -20,13 +21,20 @@ The **workspace repo** is a per-user GitHub repository that accumulates all Stat
 workspace/
 ├── README.md
 ├── <repo-name>/
-│   ├── CHANGELOG.md              # timeline index of all runs
-│   ├── HANDOFF.md                # active handoff for next session
-│   ├── ref/                      # reference docs for future work
+│   ├── context.md                # active project context (runtime)
+│   ├── CHANGELOG.md              # timeline index of all runs (pushed)
+│   ├── HANDOFF.md                # active handoff for next session (pushed)
+│   ├── docs.md                   # latest documentation change summary (pushed)
+│   ├── ref/                      # reference docs for future work (pushed)
 │   │   └── <topic>.md
-│   └── runs/                     # individual workflow logs
-│       ├── <YYYY-MM-DD>-<slug>.md
-│       └── <YYYY-MM-DD>-<slug>.md
+│   ├── runs/
+│   │   ├── <request-id>/         # active run artifacts (runtime, local)
+│   │   │   ├── request.md, status.md, impact.md, ...
+│   │   │   └── (all workflow artifacts)
+│   │   ├── <YYYY-MM-DD>-<slug>.md  # completed run logs (pushed)
+│   │   └── <YYYY-MM-DD>-<slug>.md
+│   ├── logs/                     # diagnostic logs (local)
+│   └── tmp/                      # transient data (local)
 └── ...
 ```
 
@@ -34,6 +42,9 @@ workspace/
 - **`CHANGELOG.md`**: timeline index linking every workflow run. Append-only — each run adds an entry with date, slug, one-line summary, and status. Newest entries at the top.
 - **`HANDOFF.md`**: active handoff document — what the next developer or session needs to know. Overwritten each run with the latest handoff notes extracted from `log-entry.md`.
 - **`ref/`**: reference documents produced during workflows that are useful for future work (comparison tables, algorithm specs, design explorations). Files accumulate — never deleted.
+- **`runs/<request-id>/`**: active run directories containing all workflow artifacts (request.md, status.md, spec.md, audit.md, etc.). These are runtime state — created during workflow execution, cleaned up after 7 days. Not individually committed to the workspace repo.
+- **`runs/<YYYY-MM-DD>-<slug>.md`**: completed run log files promoted from `log-entry.md` by shipper. These are the permanent record — committed and pushed to the workspace repo.
+- **`logs/`** and **`tmp/`**: local-only directories for diagnostic output and transient data. Not committed to the workspace repo. Add them to the workspace repo's `.gitignore` if needed.
 - **`runs/<date>-<slug>.md`**: one file per workflow run. Full process record. Accumulates chronologically. Never overwritten or deleted.
 
 ---
@@ -47,7 +58,7 @@ Common patterns:
 - `xuyiqing/statsclaw-logs` — descriptive
 - Any repo the user has push access to
 
-The workspace repo URL is stored in `.statsclaw/CONTEXT.md` under `workspace_repo` so it persists across sessions. If not set, leader asks the user at the start of the first workflow.
+The workspace repo URL is determined by the repo itself (its git remote). Leader asks the user which workspace repo to use at the start of the first workflow if no workspace checkout exists.
 
 ---
 
@@ -90,37 +101,57 @@ Workspace sync has two distinct phases that bookend the entire workflow:
 
 Leader is responsible for acquiring BOTH repos at the START of every workflow. This happens in step 2 of the Mandatory Execution Protocol (ACQUIRE REPOS).
 
-### Step 1 — Determine Workspace Repo URL
+### Step 1 — Check for Existing Local Checkout
 
 ```bash
-# Read workspace repo from CONTEXT.md (user-configured)
-WORKSPACE_REPO=$(grep 'workspace_repo:' .statsclaw/CONTEXT.md | awk '{print $2}')
-# e.g., WORKSPACE_REPO="xuyiqing/workspace"
-```
-
-If `workspace_repo` is not set in CONTEXT.md, leader MUST ask the user:
-> "Which GitHub repository should I use as the workspace for workflow logs? (e.g., `your-username/workspace`)"
-
-Store the answer in `.statsclaw/CONTEXT.md` for future sessions.
-
-### Step 2 — Check If Workspace Repo Exists
-
-```bash
-gh repo view "$WORKSPACE_REPO" --json name 2>&1
-```
-
-### Step 3a — If It Exists, Clone or Pull
-
-```bash
-# Clone if not already present locally
-if [ ! -d ".repos/workspace" ]; then
-    git clone "https://github.com/${WORKSPACE_REPO}.git" .repos/workspace
-else
+# If workspace repo is already cloned locally, use it
+if [ -d ".repos/workspace" ]; then
+    WORKSPACE_REPO=$(git -C .repos/workspace remote get-url origin | sed 's|.*github.com[:/]||;s|\.git$||')
     git -C .repos/workspace pull origin main
+    # Done — skip to Step 4
 fi
 ```
 
-### Step 3b — If It Does Not Exist, Auto-Create It
+If `.repos/workspace` already exists locally, pull latest and skip to Step 4.
+
+### Step 2 — Detect User and Probe Default Name
+
+If no local checkout exists, determine the user's GitHub identity and probe for the default workspace repo name:
+
+```bash
+GH_USER=$(gh api user --jq '.login')
+DEFAULT_WORKSPACE="${GH_USER}/workspace"
+gh repo view "$DEFAULT_WORKSPACE" --json name,description 2>&1
+```
+
+This produces one of two outcomes:
+
+### Step 3a — Repo `<user>/workspace` Does Not Exist
+
+Ask the user via `AskUserQuestion`:
+
+> "You don't have a `workspace` repository on GitHub yet. I use a workspace repo to store workflow logs, process records, and runtime state for all your projects. Should I create `<user>/workspace` for you?"
+>
+> Options:
+> 1. **Yes, create it** — creates `<user>/workspace` as a public repo
+> 2. **Use a different name** — you specify the repo name
+> 3. **Skip workspace** — workflow proceeds without log recording (not recommended)
+
+- If **yes**: create and clone (see Step 3c below)
+- If **different name**: ask for the name, then probe that name (loop back to check existence)
+- If **skip**: set `workspace_available: false` in `request.md`, warn user, continue
+
+### Step 3b — Repo `<user>/workspace` Already Exists
+
+Clone it and use it directly:
+
+```bash
+git clone "https://github.com/${DEFAULT_WORKSPACE}.git" .repos/workspace
+```
+
+Proceed to Step 4. The workspace repo is the user's repo — no markers or validation needed. StatsClaw simply creates per-repo subdirectories (e.g., `fect/`, `panelview/`) inside it alongside whatever content already exists.
+
+### Step 3c — Create a New Workspace Repo
 
 ```bash
 gh repo create "$WORKSPACE_REPO" --public --description "StatsClaw workflow logs and process records"
@@ -135,6 +166,7 @@ Then initialize with a README:
 Centralized repository for workflow logs, process records, and reference documents generated by [StatsClaw](https://github.com/xuyiqing/StatsClaw).
 
 Each subdirectory corresponds to a target repository. Inside each:
+- `context.md` — active project context and runtime state
 - `CHANGELOG.md` — timeline index of all workflow runs
 - `HANDOFF.md` — active handoff for the next developer/session
 - `ref/` — reference documents for future work
@@ -145,7 +177,7 @@ These artifacts are automatically generated and pushed by the StatsClaw workflow
 
 Commit and push the README.
 
-### Step 3c — If Auto-Creation Fails
+### Step 3d — If Repo Creation Fails
 
 If `gh repo create` fails (insufficient permissions, API error, etc.):
 
@@ -199,7 +231,7 @@ The shipper agent handles pushing to BOTH repos at the end of the workflow.
 
 ### Target Repo Push (Steps 1–3)
 
-Standard shipper agent workflow — stage code + user-facing docs, commit, push. NO workflow artifacts.
+Standard shipper agent workflow — stage code + user-facing docs + `Architecture.md`, commit, push. No other workflow artifacts.
 
 ### Workspace Repo Push (Steps 4–6)
 
@@ -217,19 +249,22 @@ mkdir -p "${WORKSPACE_DIR}/ref"
 LOGFILE=$(grep -oP '(?<=<!-- filename: ).*(?= -->)' "${RUN_DIR}/log-entry.md")
 cp "${RUN_DIR}/log-entry.md" "${WORKSPACE_DIR}/runs/${LOGFILE}"
 
-# 5b. Update CHANGELOG.md (prepend new entry to timeline index)
+# 5b. Copy docs.md (overwrite with latest documentation change summary)
+cp "${RUN_DIR}/docs.md" "${WORKSPACE_DIR}/docs.md"
+
+# 5c. Update CHANGELOG.md (prepend new entry to timeline index)
 # Format: | date | slug | one-line summary | status |
 # Shipper reads implementation.md/request.md for the summary line
 
-# 5c. Update HANDOFF.md (overwrite with latest handoff notes)
+# 5d. Update HANDOFF.md (overwrite with latest handoff notes)
 # Extract "Handoff Notes" section from log-entry.md and write to HANDOFF.md
 
-# 5d. Copy reference docs to ref/ (if any were produced)
+# 5e. Copy reference docs to ref/ (if any were produced)
 # Only if scriber or planner produced reference materials for future work
 
-# 6. Commit and push
+# 6. Commit and push (only pushed artifacts, not local-only dirs)
 cd .repos/workspace
-git add "${REPO_NAME}/"
+git add "${REPO_NAME}/CHANGELOG.md" "${REPO_NAME}/HANDOFF.md" "${REPO_NAME}/docs.md" "${REPO_NAME}/runs/${LOGFILE}" "${REPO_NAME}/ref/"
 git commit -m "sync: ${REPO_NAME} — <short description of the change>"
 git push origin main
 ```
@@ -282,12 +317,13 @@ If the workflow does NOT include a ship step (workflows 1, 3, 6, 8), leader MUST
 | Source code changes | Yes | No | Builder's work |
 | Unit tests | Yes | No | Builder's work |
 | User-facing docs (README, help, vignettes) | Yes | No | Scriber's work |
-| `runs/<date>-<slug>.md` | **No** | Yes | Scriber writes `log-entry.md` to run dir; shipper syncs to `runs/` |
-| `CHANGELOG.md` | **No** | Yes | Shipper maintains — timeline index of all runs |
-| `HANDOFF.md` | **No** | Yes | Shipper maintains — latest handoff notes |
-| `ref/<topic>.md` | **No** | Yes (if produced) | Reference docs for future work |
-| `Architecture.md` | **No** | **No** | Stays in local run directory only |
-| Run directory artifacts (spec.md, audit.md, etc.) | No | No | Stay in `.statsclaw/runs/` locally |
+| `Architecture.md` | **Yes** (root) | No | Scriber writes to target repo root + run directory; committed by shipper |
+| `docs.md` | No | **Yes** | Scriber writes to run dir; shipper syncs to workspace `<repo-name>/docs.md` |
+| `runs/<date>-<slug>.md` | No | **Yes** | Scriber writes `log-entry.md` to run dir; shipper syncs to `runs/` |
+| `CHANGELOG.md` | No | **Yes** | Shipper maintains — timeline index of all runs |
+| `HANDOFF.md` | No | **Yes** | Shipper maintains — latest handoff notes |
+| `ref/<topic>.md` | No | **Yes** (if produced) | Reference docs for future work |
+| Run directory artifacts (spec.md, audit.md, etc.) | No | Local only | Live in `.repos/workspace/<repo-name>/runs/<request-id>/` during workflow; not pushed |
 
 ---
 
@@ -326,11 +362,13 @@ The workspace repo itself can also be symlinked if the user prefers a different 
 
 | Situation | Leader Action (Phase 1) | Shipper Action (Phase 2) |
 | --- | --- | --- |
-| Workspace repo doesn't exist | Auto-create with `gh repo create` | N/A (already handled in Phase 1) |
+| Workspace repo doesn't exist on GitHub | Ask user whether to create it (Step 3a) | N/A (already handled in Phase 1) |
+| `<user>/workspace` already exists | Clone and use it directly (Step 3b) | N/A |
 | Workspace repo creation fails | **Warn user explicitly**, set `workspace_available: false`, continue workflow | Skip workspace sync, note in `shipper.md` |
 | Workspace repo clone/pull fails (network) | Retry up to 3 times. If all fail, warn user, set `workspace_available: false` | Skip workspace sync, note in `shipper.md` |
 | Workspace repo push fails | N/A | Retry up to 3 times with exponential backoff. If all fail, **warn user**, note in `shipper.md` |
 | Target repo has no remote (local-only) | Use directory name as folder name in workspace | Use directory name as folder name |
+| User chooses "skip workspace" | Set `workspace_available: false`, warn user | Skip workspace sync entirely |
 | `workspace_available: false` in request.md | N/A | Skip workspace sync entirely |
 
 **Key rule**: Workspace sync failures MUST NOT block the main workflow. Target repo code changes are always the priority. But the user MUST be explicitly informed when logs cannot be recorded — never silently skip.

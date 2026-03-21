@@ -72,9 +72,10 @@ _Not blocked._
 
 ## Repo Boundary
 
-- Framework repo: StatsClaw (runtime state only, no target code changes)
+- Framework repo: StatsClaw (orchestration rules only, no runtime state, no target code changes)
 - Target repo: [target repository] (code + user-facing docs only)
-- Workspace repo: [user-specified workspace repo] (workflow logs, architecture diagrams, process records)
+- Workspace repo: [user-specified workspace repo] (runtime state + workflow logs + process records)
+- Runtime directory: .repos/workspace/[repo-name]/ (runs, logs, tmp)
 - Ship target: [target repository]
 
 ## Persistence Rule

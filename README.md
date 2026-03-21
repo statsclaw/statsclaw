@@ -2,7 +2,7 @@
 
 StatsClaw is a framework-only product for Claude Code that turns a plain repository into an Agent Teams workflow across multiple languages. It ships orchestration rules, agent definitions, project profiles, and runtime templates.
 
-All runtime state is local under `.statsclaw/` and ignored by git.
+All runtime state lives inside the workspace repo under `.repos/workspace/<repo-name>/` and is git-ignored from StatsClaw.
 
 ---
 
@@ -12,7 +12,7 @@ All runtime state is local under `.statsclaw/` and ignored by git.
 - `agents/` — agent definitions (leader, planner, builder, tester, scriber, reviewer, shipper)
 - `skills/` — shared protocol skills (credential-setup, isolation, handoff, mailbox, issue-patrol, profile-detection)
 - `profiles/` — language-specific execution rules (R, Python, TypeScript, Stata, Go, Rust, C, C++)
-- `templates/` — runtime artifact templates (context, package, status, credentials, mailbox, lock, log-entry, architecture)
+- `templates/` — runtime artifact templates (context, status, credentials, mailbox, lock, log-entry, architecture)
 
 Agent Teams is enabled at the project level through `.claude/settings.json`.
 
@@ -76,7 +76,7 @@ Signals: `HOLD` (ambiguous, ask user), `BLOCK` (validation failed), `STOP` (unsa
 2. Open it in Claude Code.
 3. Tell Claude what you want and include the target project path.
 
-StatsClaw auto-creates `.statsclaw/`, detects the project profile, verifies credentials, and runs the full workflow autonomously. Short prompts work:
+StatsClaw acquires the workspace repo, creates the per-repo runtime directory, detects the project profile, verifies credentials, and runs the full workflow autonomously. Short prompts work:
 
 ```text
 patrol fect issues on cfe
@@ -89,29 +89,37 @@ ship it
 
 ## Runtime Layout
 
+All runtime state lives inside the workspace repo, organized per target repository:
+
 ```text
-.statsclaw/
-├── CONTEXT.md              # active project context
-├── packages/<name>.md      # per-package metadata
-├── runs/<request-id>/
-│   ├── credentials.md      # push access verification
-│   ├── request.md          # scope and acceptance criteria
-│   ├── status.md           # state machine
-│   ├── impact.md           # affected files and risk areas
-│   ├── comprehension.md    # comprehension verification (from planner, mandatory)
-│   ├── spec.md             # code pipeline input (from planner)
-│   ├── test-spec.md        # test pipeline input (from planner)
-│   ├── implementation.md   # code pipeline output (from builder)
-│   ├── audit.md            # test pipeline output (from tester)
-│   ├── Architecture.md     # system architecture diagram (from scriber; stays local)
-│   ├── log-entry.md        # process record (from scriber; synced to workspace runs/)
-│   ├── docs.md             # documentation changes (from scriber)
-│   ├── review.md           # convergence verdict (from reviewer)
-│   ├── shipper.md           # ship actions (from shipper)
-│   ├── mailbox.md          # inter-teammate communication
-│   └── locks/              # write surface locks
-├── logs/
-└── tmp/
+.repos/
+├── <target-repo>/                    # target repo checkout
+└── workspace/                        # workspace repo (GitHub)
+    └── <repo-name>/                  # per-target-repo runtime + logs
+        ├── context.md                # active project context
+        ├── CHANGELOG.md              # timeline index of all runs (pushed)
+        ├── HANDOFF.md                # active handoff (pushed)
+        ├── ref/                      # reference docs for future work (pushed)
+        ├── runs/
+        │   └── <request-id>/         # per-run artifacts
+        │       ├── credentials.md    # push access verification
+        │       ├── request.md        # scope and acceptance criteria
+        │       ├── status.md         # state machine
+        │       ├── impact.md         # affected files and risk areas
+        │       ├── comprehension.md  # comprehension verification (from planner)
+        │       ├── spec.md           # code pipeline input (from planner)
+        │       ├── test-spec.md      # test pipeline input (from planner)
+        │       ├── implementation.md # code pipeline output (from builder)
+        │       ├── audit.md          # test pipeline output (from tester)
+        │       ├── Architecture.md   # from scriber (primary copy in target repo root)
+        │       ├── log-entry.md      # process record (from scriber; promoted to runs/<date>-<slug>.md)
+        │       ├── docs.md           # documentation changes (from scriber)
+        │       ├── review.md         # convergence verdict (from reviewer)
+        │       ├── shipper.md        # ship actions (from shipper)
+        │       ├── mailbox.md        # inter-teammate communication
+        │       └── locks/            # write surface locks
+        ├── logs/                     # diagnostic logs
+        └── tmp/                      # transient data
 ```
 
 ---
@@ -126,8 +134,7 @@ StatsClaw/
 ├── skills/             # shared protocol skills (9 skills)
 ├── profiles/           # language execution rules (8 languages)
 ├── templates/          # runtime artifact templates
-├── .repos/             # target repo checkouts + workspace repo (git-ignored; symlinks supported)
-└── .statsclaw/         # local runtime state (git-ignored)
+└── .repos/             # target repo checkouts + workspace repo (runtime state, git-ignored; symlinks supported)
 ```
 
 ## Workspace Repository

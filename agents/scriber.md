@@ -48,12 +48,12 @@ Scriber is the **single owner** of all documentation, recording, logging, and pr
 ## Allowed Writes
 
 - Target repo: ONLY doc files within the assigned write surface from impact.md (user-facing docs: README, help files, vignettes, man pages)
-- Run directory: `Architecture.md` (mandatory — stays in local run directory for reviewer verification)
+- Target repo root: `Architecture.md` (mandatory — also copied to run directory for reviewer verification)
 - Run directory: `log-entry.md` (mandatory — the shipper agent syncs this to the workspace repo as `runs/<YYYY-MM-DD>-<slug>.md`)
-- Run directory: `docs.md` (primary output)
+- Run directory: `docs.md` (primary output — the shipper agent syncs this to the workspace repo as `<repo-name>/docs.md`)
 - Run directory: `mailbox.md` (append-only)
 
-**IMPORTANT**: Scriber does NOT write workflow artifacts to the target repo. `Architecture.md` stays in the run directory (local only). `log-entry.md` goes to the run directory; the shipper agent syncs it to the workspace repo's `runs/` directory. See `skills/workspace-sync/SKILL.md`.
+**IMPORTANT**: `Architecture.md` is written to BOTH the target repo root AND the run directory (run directory copy is for reviewer verification). `log-entry.md` and `docs.md` go to the run directory; the shipper agent syncs them to the workspace repo. See `skills/workspace-sync/SKILL.md`.
 
 ---
 
@@ -130,11 +130,12 @@ Mark functions/modules that were modified in the current run with a clear indica
 
 #### 1d. Write `Architecture.md`
 
-Save the architecture diagram to the **run directory only**:
+Save the architecture diagram to **both locations**:
 
-- **Run directory**: `<RUN_DIR>/Architecture.md`
+- **Target repo root**: `<TARGET_REPO>/Architecture.md` — the primary, user-facing copy
+- **Run directory**: `<RUN_DIR>/Architecture.md` — copy for reviewer verification
 
-Architecture.md stays in the run directory for reviewer verification. It is NOT synced to the workspace repo.
+Architecture.md lives in the target repo root so users and contributors can see the system architecture directly. The run directory copy ensures the reviewer can verify it without reading the target repo.
 
 **Use the template at `templates/Architecture.md` for consistent formatting across all runs.** The template defines the exact section order, Mermaid graph types, table schemas, and styling conventions.
 
@@ -263,7 +264,7 @@ Append to `mailbox.md` if contradictions with spec or implementation were found.
 
 ## Quality Checks
 
-- **`Architecture.md` exists in run directory and is non-empty** — this is a hard requirement, not optional
+- **`Architecture.md` exists in BOTH target repo root and run directory and is non-empty** — this is a hard requirement, not optional
 - **`log-entry.md` exists in run directory and is non-empty** — this is a hard requirement, not optional
 - **`log-entry.md` contains a `<!-- filename: ... -->` header** for the shipper agent to use during workspace sync
 - Architecture diagram contains at least: module structure (Mermaid), function call graph (Mermaid), reference table
@@ -277,16 +278,16 @@ Append to `mailbox.md` if contradictions with spec or implementation were found.
 - Code chunks produce deterministic output
 - References cite original sources with DOI or publication info
 - No internal/unexported items are marked as public
-- **No workflow artifacts written to target repo** — Architecture.md stays in run dir; log-entry.md goes to run dir (shipper syncs to workspace)
+- **Architecture.md is the only workflow artifact written to target repo root** — log-entry.md and docs.md go to run dir (shipper syncs to workspace)
 
 ---
 
 ## Output
 
 Primary artifacts:
-- `Architecture.md` in the run directory (MANDATORY — system architecture diagram with Mermaid graphs; stays local for reviewer)
+- `Architecture.md` in the target repo root AND the run directory (MANDATORY — system architecture diagram with Mermaid graphs; target repo copy is user-facing, run directory copy is for reviewer)
 - `log-entry.md` in the run directory (MANDATORY — process record with handoff doc and design notes; synced to workspace `runs/` by shipper)
 - `docs.md` in the run directory (documentation change summary)
 
 Secondary: append to `mailbox.md` with any contradictions found.
-Target repo: modified/created user-facing doc files within the assigned write surface only. NO workflow artifacts in the target repo.
+Target repo: modified/created user-facing doc files within the assigned write surface, plus `Architecture.md` in the target repo root.

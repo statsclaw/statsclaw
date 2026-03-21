@@ -9,7 +9,7 @@ This protocol governs how teammates communicate with each other and with leader 
 The mailbox for each run lives at:
 
 ```
-.statsclaw/runs/<request-id>/mailbox.md
+.repos/workspace/<repo-name>/runs/<request-id>/mailbox.md
 ```
 
 Leader creates this file when the run starts. If it does not exist when a teammate needs to write, the teammate creates it.
