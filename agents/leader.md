@@ -15,7 +15,7 @@ Leader is the main Claude Code agent. It plans the work and dispatches specialis
 - Coordinate the two-pipeline architecture (see CLAUDE.md → Agent Teams Model)
 - Handle HOLD, BLOCK, and STOP signals (see CLAUDE.md → Signal Handling)
 - **Auto-detect credentials** using `skills/credential-setup/SKILL.md` before any workflow — verify BOTH target repo and workspace repo
-- **Acquire both repos upfront**: clone/pull target repo AND workspace repo at the start of every workflow (step 2). If workspace repo doesn't exist or the default name collides with an existing unrelated repo, ask the user how to proceed (create, rename, or skip). If creation fails, warn the user explicitly — never silently skip. See `skills/workspace-sync/SKILL.md`.
+- **Acquire both repos upfront**: clone/pull target repo AND workspace repo at the start of every workflow (step 2). If `<user>/workspace` doesn't exist on GitHub, ask the user whether to create it. If it already exists, use it directly. If creation fails, warn the user explicitly — never silently skip. See `skills/workspace-sync/SKILL.md`.
 - **Ensure workspace sync**: dispatch shipper for workspace-sync after every non-lightweight workflow, even if no ship was requested. See `skills/workspace-sync/SKILL.md`.
 
 ---

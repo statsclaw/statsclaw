@@ -121,13 +121,13 @@ DEFAULT_WORKSPACE="${GH_USER}/workspace"
 gh repo view "$DEFAULT_WORKSPACE" --json name,description 2>&1
 ```
 
-This produces one of three outcomes:
+This produces one of two outcomes:
 
 ### Step 3a — Repo `<user>/workspace` Does Not Exist
 
 Ask the user via `AskUserQuestion`:
 
-> "You don't have a `workspace` repository on GitHub yet. StatsClaw uses a workspace repo to store workflow logs, process records, and runtime state for all your projects. Should I create `<user>/workspace` for you?"
+> "You don't have a `workspace` repository on GitHub yet. I use a workspace repo to store workflow logs, process records, and runtime state for all your projects. Should I create `<user>/workspace` for you?"
 >
 > Options:
 > 1. **Yes, create it** — creates `<user>/workspace` as a public repo
@@ -138,30 +138,15 @@ Ask the user via `AskUserQuestion`:
 - If **different name**: ask for the name, then probe that name (loop back to check existence)
 - If **skip**: set `workspace_available: false` in `request.md`, warn user, continue
 
-### Step 3b — Repo `<user>/workspace` Exists But Is NOT a StatsClaw Workspace
+### Step 3b — Repo `<user>/workspace` Already Exists
 
-If the repo exists, check whether it is a StatsClaw workspace by looking for StatsClaw markers (a `README.md` mentioning "StatsClaw" or any `<repo-name>/CHANGELOG.md` file):
+Clone it and use it directly:
 
 ```bash
-# Clone to a temp location and check
-git clone --depth 1 "https://github.com/${DEFAULT_WORKSPACE}.git" .repos/workspace-probe
-grep -qi "statsclaw" .repos/workspace-probe/README.md 2>/dev/null
+git clone "https://github.com/${DEFAULT_WORKSPACE}.git" .repos/workspace
 ```
 
-If the repo is NOT a StatsClaw workspace (name collision with an existing unrelated repo), ask the user via `AskUserQuestion`:
-
-> "You already have a `workspace` repository on GitHub, but it doesn't appear to be a StatsClaw workspace. I don't want to mix workflow logs into an unrelated repo. What would you like to do?"
->
-> Options:
-> 1. **Use it anyway** — I'll add StatsClaw folders alongside existing content
-> 2. **Use a different name** — you specify another repo name (e.g., `statsclaw-workspace`)
-> 3. **Skip workspace** — workflow proceeds without log recording (not recommended)
-
-- If **use anyway**: rename probe to `.repos/workspace`, proceed to Step 4
-- If **different name**: ask for the name, probe that name (loop back)
-- If **skip**: clean up probe, set `workspace_available: false`, warn user, continue
-
-If the repo IS a StatsClaw workspace (markers found), rename probe to `.repos/workspace` and proceed to Step 4.
+Proceed to Step 4. The workspace repo is the user's repo — no markers or validation needed. StatsClaw simply creates per-repo subdirectories (e.g., `fect/`, `panelview/`) inside it alongside whatever content already exists.
 
 ### Step 3c — Create a New Workspace Repo
 
@@ -375,7 +360,7 @@ The workspace repo itself can also be symlinked if the user prefers a different 
 | Situation | Leader Action (Phase 1) | Shipper Action (Phase 2) |
 | --- | --- | --- |
 | Workspace repo doesn't exist on GitHub | Ask user whether to create it (Step 3a) | N/A (already handled in Phase 1) |
-| `<user>/workspace` exists but is not a StatsClaw workspace | Ask user: use anyway, different name, or skip (Step 3b) | N/A |
+| `<user>/workspace` already exists | Clone and use it directly (Step 3b) | N/A |
 | Workspace repo creation fails | **Warn user explicitly**, set `workspace_available: false`, continue workflow | Skip workspace sync, note in `shipper.md` |
 | Workspace repo clone/pull fails (network) | Retry up to 3 times. If all fail, warn user, set `workspace_available: false` | Skip workspace sync, note in `shipper.md` |
 | Workspace repo push fails | N/A | Retry up to 3 times with exponential backoff. If all fail, **warn user**, note in `shipper.md` |

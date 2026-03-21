@@ -45,8 +45,7 @@ This section is the entry point for every non-trivial user request. You MUST fol
    - **Workspace repo**: If `.repos/workspace` already exists locally, `git pull origin main`. If not, follow the workspace acquisition flow in `skills/workspace-sync/SKILL.md` Phase 1:
      - Detect the user's GitHub username. Probe `<user>/workspace` on GitHub.
      - If it **does not exist**: ask the user whether to create it, use a different name, or skip.
-     - If it **exists but is not a StatsClaw workspace** (name collision): ask the user whether to use it anyway, pick a different name, or skip.
-     - If it **exists and is a StatsClaw workspace**: clone it directly.
+     - If it **already exists**: clone and use it directly.
      - If creation fails, **warn the user explicitly** and record the workspace repo status in `request.md`.
    - After acquiring the workspace repo, create the per-repo runtime directory: `.repos/workspace/<repo-name>/` with subdirectories `runs/`, `logs/`, `tmp/`, `ref/`. Write `context.md` from `templates/context.md` if it does not exist.
    - The `.repos/` directory is git-ignored — repos are never committed to StatsClaw.
@@ -198,7 +197,7 @@ At the start of every session:
 
 1. If the user message includes a target repo path or GitHub URL, **acquire both repos** into `.repos/`:
    - **Target repo**: clone or pull. Symlinks supported.
-   - **Workspace repo**: clone or pull the user's workspace repo. If no local checkout exists, follow the workspace acquisition flow (`skills/workspace-sync/SKILL.md` Phase 1) — probe `<user>/workspace`, ask user to create/rename/skip as appropriate.
+   - **Workspace repo**: clone or pull the user's workspace repo. If no local checkout exists, follow the workspace acquisition flow (`skills/workspace-sync/SKILL.md` Phase 1) — probe `<user>/workspace`, use it if it exists, ask user to create it if not.
 2. Create the per-repo runtime directory if it does not exist: `.repos/workspace/<repo-name>/` with subdirectories `runs/`, `logs/`, `tmp/`, `ref/`. Write `context.md` from `templates/context.md` if missing.
 3. Read `.repos/workspace/<repo-name>/context.md`.
 4. **Verify push credentials** for **both repos** — follow `skills/credential-setup/SKILL.md`. Workspace repo credential failure is a warning, not a hard gate.
