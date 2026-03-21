@@ -2,9 +2,9 @@
 
 StatsClaw is a reusable workflow framework for building, validating, documenting, reviewing, and externalizing code changes with Claude Code across multiple languages. The repository contains the framework only: orchestration rules, agent definitions, templates, profiles, and docs.
 
-StatsClaw does **not** version user runtime state. All request state, project contexts, generated specs, shared task lists, mailboxes, locks, and run artifacts live under a local `.statsclaw/` directory that is ignored by git by default.
+StatsClaw does **not** version user runtime state. All request state, project contexts, generated specs, shared task lists, mailboxes, locks, and run artifacts live inside the **workspace repository** under `.repos/workspace/<repo-name>/`. The workspace repo is a user-specified GitHub repository (e.g., `[username]/workspace`) that serves as both the runtime state directory and the permanent log archive. There is no separate `.statsclaw/` directory.
 
-**Workflow logs go to the workspace repo, not the target repo.** All workflow-generated logs, process records, and documentation summaries are pushed to a user-specified **workspace repository** on GitHub (e.g., `[username]/workspace`) — NOT to the target repo. The user tells StatsClaw which repo to use. This keeps target repos clean (code + `Architecture.md` + essential user-facing docs only). **Exception**: `Architecture.md` is written to the target repo root so users and contributors can see the system architecture directly. See `skills/workspace-sync/SKILL.md` for details.
+This keeps target repos clean (code + `Architecture.md` + essential user-facing docs only). **Exception**: `Architecture.md` is written to the target repo root so users and contributors can see the system architecture directly. See `skills/workspace-sync/SKILL.md` for details.
 
 ---
 
@@ -26,7 +26,7 @@ StatsClaw does **not** version user runtime state. All request state, project co
 ### How It Works
 
 1. Leader reads the prompt and detects intent (see `agents/leader.md` → Simple Prompt Routing)
-2. Leader resolves package names to repos (e.g., `fect` → `xuyiqing/fect` via `packages/fect.md`)
+2. Leader resolves package names to repos (e.g., `fect` → `xuyiqing/fect` via `.repos/workspace/fect/context.md`)
 3. Leader auto-detects credentials (see `skills/credential-setup/SKILL.md`) — no manual PAT setup needed if the environment is configured
 4. Leader activates the appropriate skill or workflow
 5. Everything runs autonomously — user gets results, not questions
@@ -39,13 +39,14 @@ This section is the entry point for every non-trivial user request. You MUST fol
 
 **CRITICAL: You are the Team Leader (`leader`). You MUST use the `Agent` tool to dispatch every teammate. You MUST NOT perform teammate work yourself. If you catch yourself doing builder, tester, scriber, reviewer, planner, or shipper work directly, STOP and dispatch it to an agent instead.**
 
-1. **SETUP**: Read `.statsclaw/CONTEXT.md`. If it does not exist, create the full local runtime first (see Session Startup below). Read the active package context.
+1. **SETUP**: Acquire the workspace repo (see step 2). Read `.repos/workspace/<repo-name>/context.md`. If it does not exist, create the runtime structure first (see Session Startup below). Read the active package context.
 2. **ACQUIRE REPOS**: Acquire BOTH the target repo AND the workspace repo upfront. Both must be local before any work begins.
    - **Target repo**: Clone or locate under `.repos/` (e.g., `.repos/fect/`). If a checkout already exists, `git pull` to get latest. If not, `git clone`. Symlinks into `.repos/` are supported — some users keep repos elsewhere and symlink them in; StatsClaw follows symlinks transparently.
-   - **Workspace repo**: Read workspace repo name from `.statsclaw/CONTEXT.md` (`workspace_repo` field). If not configured, ask the user which GitHub repo to use as workspace. Clone or locate `.repos/workspace`. If `.repos/workspace` already exists, `git pull origin main`. If not, try `git clone`. If the workspace repo does not exist on GitHub, **auto-create it** using `gh repo create <workspace-repo> --public`. If creation fails (e.g., insufficient permissions), **warn the user explicitly**: "Cannot create the workspace repo — workflow logs will not be recorded. Please create this repository manually or grant repo creation permissions." Record the workspace repo status in `request.md`. See `skills/workspace-sync/SKILL.md`.
+   - **Workspace repo**: If not configured, ask the user which GitHub repo to use as workspace. Clone or locate `.repos/workspace`. If `.repos/workspace` already exists, `git pull origin main`. If not, try `git clone`. If the workspace repo does not exist on GitHub, **auto-create it** using `gh repo create <workspace-repo> --public`. If creation fails (e.g., insufficient permissions), **warn the user explicitly**: "Cannot create the workspace repo — workflow logs will not be recorded. Please create this repository manually or grant repo creation permissions." Record the workspace repo status in `request.md`. See `skills/workspace-sync/SKILL.md`.
+   - After acquiring the workspace repo, create the per-repo runtime directory: `.repos/workspace/<repo-name>/` with subdirectories `runs/`, `logs/`, `tmp/`, `ref/`. Write `context.md` from `templates/context.md` if it does not exist.
    - The `.repos/` directory is git-ignored — repos are never committed to StatsClaw.
    - If target repo acquisition fails, set state to `HOLD` in `status.md` and ask the user. Do NOT proceed without a local checkout.
-3. **CREATE RUN**: Generate a request ID. Create `.statsclaw/runs/<request-id>/`. Write `request.md` (scope, acceptance criteria, target repo identity, workspace repo status). Write `status.md` with state `NEW`.
+3. **CREATE RUN**: Generate a request ID. Create `.repos/workspace/<repo-name>/runs/<request-id>/`. Write `request.md` (scope, acceptance criteria, target repo identity, workspace repo status). Write `status.md` with state `NEW`.
 4. **VERIFY CREDENTIALS**: Follow `skills/credential-setup/SKILL.md` for the full auto-detection sequence (GITHUB_TOKEN → gh auth → SSH → credential helper → ask user). Verify push access to **both** the target repo and the workspace repo. Write `credentials.md` to the run directory. Update `status.md` to `CREDENTIALS_VERIFIED`.
    - **ENFORCEMENT**: Steps 5–9 are INVALID without a `credentials.md` showing PASS **against the target repo**. The write-access probe MUST target the actual target repository — not a proxy, not StatsClaw, not any other repo. If you find yourself planning or dispatching teammates without confirmed push access, STOP and return to step 4.
    - **Workspace repo credentials**: If workspace repo push verification fails, note it in `credentials.md` and warn the user: "Workspace repo push access not confirmed — workflow logs will not be synced." The workflow still proceeds (workspace sync is not a hard gate), but the user must know.
@@ -122,7 +123,7 @@ Before EVERY tool call, `leader` MUST check whether the action belongs to a team
 
 **Concrete rule**: `leader` may use `Read`, `Grep`, `Glob` on the target repo ONLY during step 5 (LEADER PLANNING) to write `impact.md`. After `impact.md` is written, all further target-repo interaction MUST go through dispatched teammates.
 
-**What leader IS allowed to do directly**: read/write `.statsclaw/` runtime artifacts, explore target repo during planning (step 5 only), read teammate output artifacts, update `status.md` and `locks/*`, ask user questions, dispatch teammates.
+**What leader IS allowed to do directly**: read/write workspace runtime artifacts (`.repos/workspace/<repo-name>/`), explore target repo during planning (step 5 only), read teammate output artifacts, update `status.md` and `locks/*`, ask user questions, dispatch teammates.
 
 ---
 
@@ -145,7 +146,7 @@ Read your agent definition at [STATSCLAW_PATH]/agents/[role].md and follow its r
 ## Context
 - StatsClaw repo: [STATSCLAW_PATH]
 - Target repo: [TARGET_PATH]
-- Run directory: [STATSCLAW_PATH]/.statsclaw/runs/[REQUEST_ID]/
+- Run directory: [STATSCLAW_PATH]/.repos/workspace/[REPO_NAME]/runs/[REQUEST_ID]/
 - Profile: [PROFILE]
 
 ## Your Task
@@ -158,13 +159,13 @@ Read your agent definition at [STATSCLAW_PATH]/agents/[role].md and follow its r
 [EXACT FILES/PATHS THIS TEAMMATE MAY MODIFY]
 
 ## Required Inputs (read these files first)
-- [STATSCLAW_PATH]/.statsclaw/runs/[REQUEST_ID]/request.md
-- [STATSCLAW_PATH]/.statsclaw/runs/[REQUEST_ID]/impact.md
-- [STATSCLAW_PATH]/.statsclaw/runs/[REQUEST_ID]/comprehension.md  # for reviewer
+- [STATSCLAW_PATH]/.repos/workspace/[REPO_NAME]/runs/[REQUEST_ID]/request.md
+- [STATSCLAW_PATH]/.repos/workspace/[REPO_NAME]/runs/[REQUEST_ID]/impact.md
+- [STATSCLAW_PATH]/.repos/workspace/[REPO_NAME]/runs/[REQUEST_ID]/comprehension.md  # for reviewer
 - [OTHER ARTIFACTS AS NEEDED — spec.md for builder, test-spec.md for tester, etc.]
 
 ## Required Output
-Write your artifact to: [STATSCLAW_PATH]/.statsclaw/runs/[REQUEST_ID]/[artifact].md
+Write your artifact to: [STATSCLAW_PATH]/.repos/workspace/[REPO_NAME]/runs/[REQUEST_ID]/[artifact].md
 
 ## Key Rules
 - Only modify files within your assigned write surface
@@ -190,11 +191,11 @@ Write your artifact to: [STATSCLAW_PATH]/.statsclaw/runs/[REQUEST_ID]/[artifact]
 
 At the start of every session:
 
-1. Read `.statsclaw/CONTEXT.md` if it exists.
-2. If it does not exist, create a minimal local runtime: `.statsclaw/`, `.statsclaw/packages/`, `.statsclaw/runs/`, `.statsclaw/logs/`, `.statsclaw/tmp/`, `CONTEXT.md` from `templates/context.md`, package contexts from `templates/package.md`.
-3. If the user message includes a target repo path or GitHub URL, **acquire both repos** into `.repos/`:
+1. If the user message includes a target repo path or GitHub URL, **acquire both repos** into `.repos/`:
    - **Target repo**: clone or pull. Symlinks supported.
    - **Workspace repo**: clone or pull the user's workspace repo. Auto-create if it doesn't exist. Warn user if creation fails.
+2. Create the per-repo runtime directory if it does not exist: `.repos/workspace/<repo-name>/` with subdirectories `runs/`, `logs/`, `tmp/`, `ref/`. Write `context.md` from `templates/context.md` if missing.
+3. Read `.repos/workspace/<repo-name>/context.md`.
 4. **Verify push credentials** for **both repos** — follow `skills/credential-setup/SKILL.md`. Workspace repo credential failure is a warning, not a hard gate.
 5. If no target is clear, infer from context or ask one concise question.
 6. Determine the project profile using `skills/profile-detection/SKILL.md` or repo markers in `profiles/*.md`.
@@ -391,8 +392,8 @@ Interrupt states (can occur at any point):
 - Target repositories live under `.repos/` (git-ignored) — they are never committed to StatsClaw. Symlinks into `.repos/` are also supported for users who keep repos elsewhere.
 - When the user target is a repository other than `StatsClaw`, versioned `StatsClaw` files are not part of the write surface
 - All target code changes, validation runs, commits, pushes, and PRs must happen in the target repository under `.repos/`
-- `StatsClaw` only receives local runtime updates under `.statsclaw/`
-- **Workflow logs and process records do NOT go into target repos.** They are synced to the workspace repo. Target repos contain only code + essential user-facing documentation.
+- All runtime state lives in `.repos/workspace/<repo-name>/` — StatsClaw itself receives no runtime updates
+- **Workflow logs and process records do NOT go into target repos.** They live in the workspace repo under each repo's folder. Target repos contain only code + essential user-facing documentation.
 
 ---
 
@@ -404,10 +405,10 @@ For non-trivial requests, you MUST continue through the selected workflow withou
 
 ## Runtime Maintenance
 
-- **Cleanup**: Runs older than 7 days under `.statsclaw/runs/` may be deleted to free disk space. Do not delete the active run.
-- **Logs**: Write diagnostic output to `.statsclaw/logs/` when debugging workflow issues (e.g., signal routing decisions, retry attempts, credential probe output).
+- **Cleanup**: Runs older than 7 days under `.repos/workspace/<repo-name>/runs/` may be deleted to free disk space. Do not delete the active run. Completed run logs that have been pushed to the workspace repo are safe to clean up locally.
+- **Logs**: Write diagnostic output to `.repos/workspace/<repo-name>/logs/` when debugging workflow issues (e.g., signal routing decisions, retry attempts, credential probe output).
 - **Locks**: The `locks/` directory under each run prevents concurrent writes when multiple teammates target overlapping files. Use `templates/lock.md` format. Only `leader` creates, transfers, or releases locks. Typical use: lock a file set before dispatching builder in worktree, release after merge-back.
-- **Tmp**: The `.statsclaw/tmp/` directory holds transient data (e.g., worktree extraction paths, intermediate query results). Contents may be deleted between runs.
+- **Tmp**: The `.repos/workspace/<repo-name>/tmp/` directory holds transient data (e.g., worktree extraction paths, intermediate query results). Contents may be deleted between runs.
 
 ---
 
@@ -422,7 +423,8 @@ For non-trivial requests, you MUST continue through the selected workflow withou
 - **Worktree isolation for writers.** `isolation: "worktree"` for builder and scriber.
 - **Ship actions are explicit.** Do not push unless the user asked, issue-patrol is active, or a single-issue fix was requested (workflow 5 — fixing an issue implies pushing the fix).
 - **Surgical scope.** Each run modifies only what the request requires.
-- **Clean target repos.** Workflow logs, process records, and handoff documents go to the workspace repo — never the target repo. `Architecture.md` is the one exception: it lives in the target repo root so users can see the system architecture. Target repos contain only code + `Architecture.md` + essential user-facing docs.
+- **Clean target repos.** Workflow logs, process records, and handoff documents live in the workspace repo — never the target repo. `Architecture.md` is the one exception: it lives in the target repo root so users can see the system architecture. Target repos contain only code + `Architecture.md` + essential user-facing docs.
+- **One runtime, one location.** All runtime state lives in `.repos/workspace/<repo-name>/`. No separate `.statsclaw/` directory — the workspace repo IS the runtime store.
 - **Parallel when possible.** Builder and tester are ALWAYS dispatched in parallel.
 - **Tolerance integrity is absolute.** Tester MUST NEVER relax tolerances, thresholds, or acceptance criteria to make a failing test pass. The only valid response to a genuine failure is BLOCK. Reviewer cross-audits every tolerance against test-spec.md.
 
@@ -430,36 +432,42 @@ For non-trivial requests, you MUST continue through the selected workflow withou
 
 ## Runtime Layout
 
+All runtime state lives inside the workspace repo, organized per target repository:
+
 ```text
-.statsclaw/
-├── CONTEXT.md
-├── packages/
-│   └── <package>.md
-├── runs/
-│   └── <request-id>/
-│       ├── credentials.md
-│       ├── request.md
-│       ├── status.md
-│       ├── impact.md
-│       ├── comprehension.md  # comprehension verification (from planner, mandatory)
-│       ├── spec.md           # code pipeline input (from planner)
-│       ├── test-spec.md      # test pipeline input (from planner)
-│       ├── implementation.md # code pipeline output (from builder)
-│       ├── audit.md          # test pipeline output (from tester)
-│       ├── Architecture.md   # from scriber; copy for reviewer (primary copy in target repo root)
-│       ├── log-entry.md      # from scriber; synced to workspace runs/ by shipper
-│       ├── docs.md           # from scriber; synced to workspace by shipper
-│       ├── review.md
-│       ├── shipper.md
-│       ├── mailbox.md
-│       └── locks/
-│   └── PATROL-<timestamp>/   # patrol runs only (workflow 4)
-│       ├── request.md
-│       ├── patrol-triage.md   # issue classification (from leader)
-│       ├── patrol-report.md   # patrol summary (from leader)
-│       └── issue-<number>/    # sub-run per issue, same structure as <request-id>/
-├── logs/
-└── tmp/
+.repos/
+├── <target-repo>/                    # target repo checkout (git-ignored)
+└── workspace/                        # workspace repo (GitHub, git-ignored)
+    └── <repo-name>/                  # per-target-repo runtime + logs
+        ├── context.md                # active project context
+        ├── CHANGELOG.md              # timeline index of all runs (pushed)
+        ├── HANDOFF.md                # active handoff (pushed)
+        ├── ref/                      # reference docs for future work (pushed)
+        ├── runs/
+        │   └── <request-id>/         # per-run artifacts (local until shipped)
+        │       ├── credentials.md
+        │       ├── request.md
+        │       ├── status.md
+        │       ├── impact.md
+        │       ├── comprehension.md  # comprehension verification (from planner, mandatory)
+        │       ├── spec.md           # code pipeline input (from planner)
+        │       ├── test-spec.md      # test pipeline input (from planner)
+        │       ├── implementation.md # code pipeline output (from builder)
+        │       ├── audit.md          # test pipeline output (from tester)
+        │       ├── Architecture.md   # from scriber; copy for reviewer (primary copy in target repo root)
+        │       ├── log-entry.md      # from scriber; promoted to runs/<date>-<slug>.md by shipper
+        │       ├── docs.md           # from scriber
+        │       ├── review.md
+        │       ├── shipper.md
+        │       ├── mailbox.md
+        │       └── locks/
+        │   └── PATROL-<timestamp>/   # patrol runs only (workflow 4)
+        │       ├── request.md
+        │       ├── patrol-triage.md  # issue classification (from leader)
+        │       ├── patrol-report.md  # patrol summary (from leader)
+        │       └── issue-<number>/   # sub-run per issue, same structure as <request-id>/
+        ├── logs/                     # diagnostic logs (local)
+        └── tmp/                      # transient data (local)
 ```
 
 ---
@@ -499,13 +507,11 @@ StatsClaw/
 │   └── cpp-library.md
 ├── templates/
 │   ├── context.md
-│   ├── package.md
 │   ├── status.md
 │   ├── credentials.md
 │   ├── mailbox.md
 │   ├── lock.md
 │   ├── log-entry.md
 │   └── Architecture.md
-├── .repos/                # target repo checkouts + workspace repo, git-ignored; symlinks supported
-└── .statsclaw/           # local runtime state, auto-created, git-ignored
+└── .repos/                # target repo checkouts + workspace repo (runtime state), git-ignored; symlinks supported
 ```

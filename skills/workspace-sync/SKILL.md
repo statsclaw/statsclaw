@@ -1,16 +1,17 @@
 # Shared Skill: Workspace Sync — Centralized Workflow Log Repository
 
-All workflow-generated logs, process records, handoff documents, and reference materials are stored in a dedicated **workspace repository** on GitHub. The user chooses the repo name (e.g., `[username]/workspace`) and tells StatsClaw which repo to use. This keeps target repositories clean — only code and essential documentation live in the target repo.
+All workflow-generated logs, process records, handoff documents, reference materials, **and runtime state** are stored in a dedicated **workspace repository** on GitHub. The user chooses the repo name (e.g., `[username]/workspace`) and tells StatsClaw which repo to use. Each target repository gets its own folder inside the workspace repo, which serves as both the runtime state directory during workflows and the permanent log archive after shipping. This keeps target repositories clean — only code and essential documentation live in the target repo.
 
 ---
 
 ## Concept
 
-The **workspace repo** is a per-user GitHub repository that accumulates all StatsClaw workflow artifacts across all projects. Each target repository gets its own folder inside the workspace repo. This separation ensures:
+The **workspace repo** is a per-user GitHub repository that serves dual roles: (1) it is the **runtime state directory** where all workflow artifacts are written during execution, and (2) it is the **permanent archive** where completed run logs, changelogs, and handoff documents are pushed. Each target repository gets its own folder inside the workspace repo. This ensures:
 
 1. **Target repos stay clean** — only source code, `Architecture.md`, and necessary user-facing documentation (README, help files, vignettes, man pages)
 2. **Full traceability** — every workflow run's process record, before/after comparisons, and design decisions are preserved
 3. **Cross-project visibility** — all workflow history in one place
+4. **No redundant state directories** — runtime state and final logs live in the same place
 
 ---
 
@@ -20,14 +21,20 @@ The **workspace repo** is a per-user GitHub repository that accumulates all Stat
 workspace/
 ├── README.md
 ├── <repo-name>/
-│   ├── CHANGELOG.md              # timeline index of all runs
-│   ├── HANDOFF.md                # active handoff for next session
-│   ├── docs.md                   # latest documentation change summary
-│   ├── ref/                      # reference docs for future work
+│   ├── context.md                # active project context (runtime)
+│   ├── CHANGELOG.md              # timeline index of all runs (pushed)
+│   ├── HANDOFF.md                # active handoff for next session (pushed)
+│   ├── docs.md                   # latest documentation change summary (pushed)
+│   ├── ref/                      # reference docs for future work (pushed)
 │   │   └── <topic>.md
-│   └── runs/                     # individual workflow logs
-│       ├── <YYYY-MM-DD>-<slug>.md
-│       └── <YYYY-MM-DD>-<slug>.md
+│   ├── runs/
+│   │   ├── <request-id>/         # active run artifacts (runtime, local)
+│   │   │   ├── request.md, status.md, impact.md, ...
+│   │   │   └── (all workflow artifacts)
+│   │   ├── <YYYY-MM-DD>-<slug>.md  # completed run logs (pushed)
+│   │   └── <YYYY-MM-DD>-<slug>.md
+│   ├── logs/                     # diagnostic logs (local)
+│   └── tmp/                      # transient data (local)
 └── ...
 ```
 
@@ -48,7 +55,7 @@ Common patterns:
 - `xuyiqing/statsclaw-logs` — descriptive
 - Any repo the user has push access to
 
-The workspace repo URL is stored in `.statsclaw/CONTEXT.md` under `workspace_repo` so it persists across sessions. If not set, leader asks the user at the start of the first workflow.
+The workspace repo URL is determined by the repo itself (its git remote). Leader asks the user which workspace repo to use at the start of the first workflow if no workspace checkout exists.
 
 ---
 
@@ -94,15 +101,14 @@ Leader is responsible for acquiring BOTH repos at the START of every workflow. T
 ### Step 1 — Determine Workspace Repo URL
 
 ```bash
-# Read workspace repo from CONTEXT.md (user-configured)
-WORKSPACE_REPO=$(grep 'workspace_repo:' .statsclaw/CONTEXT.md | awk '{print $2}')
-# e.g., WORKSPACE_REPO="xuyiqing/workspace"
+# Check if workspace repo is already cloned
+if [ -d ".repos/workspace" ]; then
+    WORKSPACE_REPO=$(git -C .repos/workspace remote get-url origin | sed 's|.*github.com[:/]||;s|\.git$||')
+fi
 ```
 
-If `workspace_repo` is not set in CONTEXT.md, leader MUST ask the user:
+If `.repos/workspace` does not exist, leader MUST ask the user:
 > "Which GitHub repository should I use as the workspace for workflow logs? (e.g., `your-username/workspace`)"
-
-Store the answer in `.statsclaw/CONTEXT.md` for future sessions.
 
 ### Step 2 — Check If Workspace Repo Exists
 
@@ -292,7 +298,7 @@ If the workflow does NOT include a ship step (workflows 1, 3, 6, 8), leader MUST
 | `CHANGELOG.md` | No | **Yes** | Shipper maintains — timeline index of all runs |
 | `HANDOFF.md` | No | **Yes** | Shipper maintains — latest handoff notes |
 | `ref/<topic>.md` | No | **Yes** (if produced) | Reference docs for future work |
-| Run directory artifacts (spec.md, audit.md, etc.) | No | No | Stay in `.statsclaw/runs/` locally |
+| Run directory artifacts (spec.md, audit.md, etc.) | No | Local only | Live in `.repos/workspace/<repo-name>/runs/<request-id>/` during workflow; not pushed |
 
 ---
 
