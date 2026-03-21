@@ -42,7 +42,12 @@ This section is the entry point for every non-trivial user request. You MUST fol
 1. **SETUP**: Acquire the workspace repo (see step 2). Read `.repos/workspace/<repo-name>/context.md`. If it does not exist, create the runtime structure first (see Session Startup below). Read the active package context.
 2. **ACQUIRE REPOS**: Acquire BOTH the target repo AND the workspace repo upfront. Both must be local before any work begins.
    - **Target repo**: Clone or locate under `.repos/` (e.g., `.repos/fect/`). If a checkout already exists, `git pull` to get latest. If not, `git clone`. Symlinks into `.repos/` are supported — some users keep repos elsewhere and symlink them in; StatsClaw follows symlinks transparently.
-   - **Workspace repo**: If not configured, ask the user which GitHub repo to use as workspace. Clone or locate `.repos/workspace`. If `.repos/workspace` already exists, `git pull origin main`. If not, try `git clone`. If the workspace repo does not exist on GitHub, **auto-create it** using `gh repo create <workspace-repo> --public`. If creation fails (e.g., insufficient permissions), **warn the user explicitly**: "Cannot create the workspace repo — workflow logs will not be recorded. Please create this repository manually or grant repo creation permissions." Record the workspace repo status in `request.md`. See `skills/workspace-sync/SKILL.md`.
+   - **Workspace repo**: If `.repos/workspace` already exists locally, `git pull origin main`. If not, follow the workspace acquisition flow in `skills/workspace-sync/SKILL.md` Phase 1:
+     - Detect the user's GitHub username. Probe `<user>/workspace` on GitHub.
+     - If it **does not exist**: ask the user whether to create it, use a different name, or skip.
+     - If it **exists but is not a StatsClaw workspace** (name collision): ask the user whether to use it anyway, pick a different name, or skip.
+     - If it **exists and is a StatsClaw workspace**: clone it directly.
+     - If creation fails, **warn the user explicitly** and record the workspace repo status in `request.md`.
    - After acquiring the workspace repo, create the per-repo runtime directory: `.repos/workspace/<repo-name>/` with subdirectories `runs/`, `logs/`, `tmp/`, `ref/`. Write `context.md` from `templates/context.md` if it does not exist.
    - The `.repos/` directory is git-ignored — repos are never committed to StatsClaw.
    - If target repo acquisition fails, set state to `HOLD` in `status.md` and ask the user. Do NOT proceed without a local checkout.
@@ -193,7 +198,7 @@ At the start of every session:
 
 1. If the user message includes a target repo path or GitHub URL, **acquire both repos** into `.repos/`:
    - **Target repo**: clone or pull. Symlinks supported.
-   - **Workspace repo**: clone or pull the user's workspace repo. Auto-create if it doesn't exist. Warn user if creation fails.
+   - **Workspace repo**: clone or pull the user's workspace repo. If no local checkout exists, follow the workspace acquisition flow (`skills/workspace-sync/SKILL.md` Phase 1) — probe `<user>/workspace`, ask user to create/rename/skip as appropriate.
 2. Create the per-repo runtime directory if it does not exist: `.repos/workspace/<repo-name>/` with subdirectories `runs/`, `logs/`, `tmp/`, `ref/`. Write `context.md` from `templates/context.md` if missing.
 3. Read `.repos/workspace/<repo-name>/context.md`.
 4. **Verify push credentials** for **both repos** — follow `skills/credential-setup/SKILL.md`. Workspace repo credential failure is a warning, not a hard gate.
