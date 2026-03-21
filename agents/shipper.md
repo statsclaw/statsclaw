@@ -29,7 +29,7 @@ Shipper handles all git write operations and GitHub interactions: committing, pu
 10. Verify the local git checkout points to the correct target repository.
 11. Verify the remote URL matches the user's target (not StatsClaw).
 12. Test push access with `git push --dry-run origin <branch>` before attempting any real push. If it fails, halt and write shipper.md noting the failure — do NOT waste time on commit/staging.
-13. Verify workspace repo exists locally at `.repos/workspace` (if workspace repo is available per `credentials.md`). Workspace structure is: `<repo-name>/CHANGELOG.md`, `HANDOFF.md`, `ref/`, `runs/`.
+13. Verify workspace repo exists locally at `.repos/workspace` (if workspace repo is available per `credentials.md`). Workspace structure is: `<repo-name>/CHANGELOG.md`, `HANDOFF.md`, `docs.md`, `ref/`, `runs/`.
 
 ---
 
@@ -84,11 +84,14 @@ If the remote points to StatsClaw or any repo other than the user's target, **ha
 
 ### Step 3 — Pull Latest from Both Repos
 
-Before any commits, pull latest from BOTH repos to avoid conflicts:
+Before any commits, pull latest from BOTH repos to avoid conflicts. Read the branch name from `request.md` (field `base_branch` or `branch`). If not specified, use the current branch of the target repo checkout.
 
 ```bash
+# Determine branch name from request.md or current branch
+BRANCH=$(git -C "$TARGET" rev-parse --abbrev-ref HEAD)
+
 # Pull target repo (get any remote changes)
-git -C "$TARGET" pull --rebase origin <branch-name> 2>&1 || true
+git -C "$TARGET" pull --rebase origin "$BRANCH" 2>&1 || true
 
 # Pull workspace repo (get any concurrent workspace syncs)
 git -C .repos/workspace pull origin main 2>&1 || true
@@ -107,7 +110,7 @@ Branch naming: use descriptive names (e.g., `fix/issue-42-null-check`, `feat/two
 
 ### Step 5 — Stage and Commit (Target Repo)
 
-Stage ONLY code changes and user-facing docs listed in implementation.md and docs.md. Do NOT stage workflow artifacts — those go to the workspace repo.
+Stage code changes, user-facing docs listed in implementation.md and docs.md, and `Architecture.md` in the target repo root. Do NOT stage other workflow artifacts (log entries, CHANGELOG, HANDOFF) — those go to the workspace repo.
 
 ```bash
 git -C "$TARGET" add <specific-code-and-doc-files>
@@ -134,9 +137,10 @@ After pushing the target repo (or as a standalone workspace-sync task), sync wor
 
 1. **Determine target folder**: use target repo name as folder name (e.g., `fect`)
 2. **Copy run log**: from run directory `log-entry.md` to `.repos/workspace/<repo-name>/runs/<YYYY-MM-DD>-<slug>.md` (extract filename from `<!-- filename: ... -->` header in the log entry)
-3. **Update CHANGELOG.md**: prepend a new entry to `.repos/workspace/<repo-name>/CHANGELOG.md` with date, slug (linking to `runs/<filename>`), one-line summary (from `request.md` or `implementation.md`), and status (PASS/BLOCK/STOP). Create the file with header if it doesn't exist.
-4. **Update HANDOFF.md**: overwrite `.repos/workspace/<repo-name>/HANDOFF.md` with the "Handoff Notes" section extracted from `log-entry.md`, plus a header noting the date and run slug. See `skills/workspace-sync/SKILL.md` for format.
-5. **Copy ref docs** (if any): if scriber or planner produced reference materials marked for `ref/`, copy them to `.repos/workspace/<repo-name>/ref/`.
+3. **Copy docs.md**: from run directory `docs.md` to `.repos/workspace/<repo-name>/docs.md` (overwrite with latest documentation change summary)
+4. **Update CHANGELOG.md**: prepend a new entry to `.repos/workspace/<repo-name>/CHANGELOG.md` with date, slug (linking to `runs/<filename>`), one-line summary (from `request.md` or `implementation.md`), and status (PASS/BLOCK/STOP). Create the file with header if it doesn't exist.
+5. **Update HANDOFF.md**: overwrite `.repos/workspace/<repo-name>/HANDOFF.md` with the "Handoff Notes" section extracted from `log-entry.md`, plus a header noting the date and run slug. See `skills/workspace-sync/SKILL.md` for format.
+6. **Copy ref docs** (if any): if scriber or planner produced reference materials marked for `ref/`, copy them to `.repos/workspace/<repo-name>/ref/`.
 6. **Commit and push workspace repo**:
    ```bash
    cd .repos/workspace
@@ -203,7 +207,7 @@ Save `shipper.md` to the run directory with:
 - Push status (success/failure)
 - PR URL (if created)
 - Issue comments posted (issue number, comment URL, comment body summary)
-- **Workspace sync status**: workspace repo URL, files synced (run log, CHANGELOG, HANDOFF, ref), workspace commit SHA, push status (or failure reason)
+- **Workspace sync status**: workspace repo URL, files synced (run log, docs.md, CHANGELOG, HANDOFF, ref), workspace commit SHA, push status (or failure reason)
 - Any errors encountered
 
 ### Step 11 — Patrol Mode Extensions (if dispatched by issue-patrol)
@@ -221,8 +225,8 @@ When operating in patrol mode (dispatched by the issue-patrol skill):
 
 - review.md has PASS verdict before any ship action
 - Remote URL matches the user's target repository
-- Only code files from implementation.md and user-facing docs from docs.md are staged in the target repo
-- **No workflow artifacts (Architecture.md, log entries, CHANGELOG, HANDOFF) staged in target repo** — these go to workspace repo or stay local
+- Code files from implementation.md, user-facing docs from docs.md, and `Architecture.md` are staged in the target repo
+- **No workflow artifacts (log entries, CHANGELOG, HANDOFF) staged in target repo** — these go to workspace repo. `Architecture.md` is the exception — it belongs in the target repo root.
 - Workspace sync attempted after target repo push (best-effort)
 - Commit message accurately describes the changes
 - No force-push to protected branches

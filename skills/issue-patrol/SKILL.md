@@ -61,7 +61,7 @@ When this skill is activated, leader follows this sequence:
 1. Parse the user prompt to extract parameters (repo, base branch, etc.)
 2. Verify credentials (standard credential gate from CLAUDE.md)
 3. Clone or locate the target repository
-4. Create a patrol run: `.statsclaw/runs/PATROL-<timestamp>/`
+4. Create a patrol run: `.repos/workspace/<repo-name>/runs/PATROL-<timestamp>/`
 5. Write `request.md` with patrol parameters
 
 ### Phase 2 — Scan and Triage
@@ -79,7 +79,7 @@ When this skill is activated, leader follows this sequence:
 
 For each actionable issue (in priority order):
 
-1. Create a sub-run: `.statsclaw/runs/PATROL-<timestamp>/issue-<number>/`
+1. Create a sub-run: `.repos/workspace/<repo-name>/runs/PATROL-<timestamp>/issue-<number>/`
 2. Write `request.md` scoped to this specific issue
 3. Write `impact.md` based on the issue description and codebase exploration
 4. Run the full workflow: planner → [builder ∥ tester] → reviewer

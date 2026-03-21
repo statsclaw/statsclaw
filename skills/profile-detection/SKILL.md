@@ -16,7 +16,7 @@ Leader checks for repo markers in order. The **first matching profile** is selec
 
 ### Step 1 — Check for Profile Override
 
-If the package context file (`.statsclaw/packages/<name>.md`) already has a `Profile` field set, use it directly. Skip detection.
+If the repo context file (`.repos/workspace/<repo-name>/context.md`) already has a `Profile` field set, use it directly. Skip detection.
 
 ### Step 2 — Scan Repo Root for Markers
 
@@ -44,11 +44,11 @@ If multiple markers match (e.g., a repo has both `pyproject.toml` and `package.j
 ### Step 4 — Write Profile
 
 Once detected, write the profile to:
-1. The package context file: set the `Profile` field
+1. The repo context file (`.repos/workspace/<repo-name>/context.md`): set the `Profile` field
 2. The run's `status.md`: set the `Active Profile` field
 
 ---
 
 ## Fallback
 
-If no markers match any profile, log a note in `.statsclaw/logs/` and proceed without a profile. Teammates will use general-purpose conventions. Leader should mention the missing profile to the user.
+If no markers match any profile, log a note in `.repos/workspace/<repo-name>/logs/` and proceed without a profile. Teammates will use general-purpose conventions. Leader should mention the missing profile to the user.

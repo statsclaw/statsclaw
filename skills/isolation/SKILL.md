@@ -81,7 +81,7 @@ Every writing teammate receives an explicit **write surface** in its dispatch pr
 1. A teammate may **only** create, edit, or delete files within its assigned write surface.
 2. **No two writing teammates may have overlapping write surfaces.** If builder owns `src/` and scriber owns `docs/`, neither may touch the other's directory.
 3. If a teammate discovers that it needs to modify a file outside its surface, it MUST NOT do so. Instead, it appends a message to `mailbox.md` describing the needed change and continues with its own surface.
-4. Only **leader** may mutate `status.md` and files under `locks/`. Teammates must never write to these paths.
+4. Only **leader** may mutate `status.md` and files under `locks/` (at `.repos/workspace/<repo-name>/runs/<request-id>/locks/`). Teammates must never write to these paths.
 5. Teammates may write their own output artifact (e.g., `implementation.md`, `docs.md`) to the run directory. This is always within their allowed surface.
 
 ### Overlap Detection
