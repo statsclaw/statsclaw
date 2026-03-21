@@ -4,7 +4,7 @@ StatsClaw is a reusable workflow framework for building, validating, documenting
 
 StatsClaw does **not** version user runtime state. All request state, project contexts, generated specs, shared task lists, mailboxes, locks, and run artifacts live under a local `.statsclaw/` directory that is ignored by git by default.
 
-**Workflow logs go to the workspace repo, not the target repo.** All workflow-generated logs, process records, and architecture diagrams are pushed to a user-specified **workspace repository** on GitHub (e.g., `[username]/workspace`) — NOT to the target repo. The user tells StatsClaw which repo to use. This keeps target repos clean (code + essential user-facing docs only). See `skills/workspace-sync/SKILL.md` for details.
+**Workflow logs go to the workspace repo, not the target repo.** All workflow-generated logs, process records, and documentation summaries are pushed to a user-specified **workspace repository** on GitHub (e.g., `[username]/workspace`) — NOT to the target repo. The user tells StatsClaw which repo to use. This keeps target repos clean (code + `Architecture.md` + essential user-facing docs only). **Exception**: `Architecture.md` is written to the target repo root so users and contributors can see the system architecture directly. See `skills/workspace-sync/SKILL.md` for details.
 
 ---
 
@@ -60,7 +60,7 @@ This section is the entry point for every non-trivial user request. You MUST fol
      - Update status to `DOCUMENTED` after scriber completes.
      - **Log entry**: Every scriber run MUST produce a log entry in the run directory using the template at `templates/log-entry.md`. The log entry includes a **process record** (complete audit trail of proposals, tests, problems, and resolutions), a **handoff document** (what the next developer needs to know), and a **design note** (key decisions and rationale). The shipper agent later syncs this log entry to the workspace repo's `runs/` directory, and extracts handoff notes into `HANDOFF.md`. Logs do NOT go to the target repo. See `skills/workspace-sync/SKILL.md`.
    - d. **reviewer** — ALWAYS dispatched after scriber completes. Reads ALL available artifacts. Produces `review.md` with verdict. Update status to `REVIEW_PASSED` or `STOPPED`.
-   - e. **shipper** — ONLY if the user asked to ship, or issue-patrol is active. Produces `shipper.md`. Shipper commits code changes to the target repo (clean — no workflow artifacts), then syncs to the workspace repo: copies run log to `runs/`, updates `CHANGELOG.md` and `HANDOFF.md`. See `skills/workspace-sync/SKILL.md`.
+   - e. **shipper** — ONLY if the user asked to ship, or issue-patrol is active. Produces `shipper.md`. Shipper commits code changes + `Architecture.md` to the target repo, then syncs to the workspace repo: copies run log to `runs/`, copies `docs.md`, updates `CHANGELOG.md` and `HANDOFF.md`. See `skills/workspace-sync/SKILL.md`.
    - f. **workspace sync** — If the workflow does NOT include a ship step (workflows 1, 3, 6, 8, 10), leader MUST still dispatch shipper with a **workspace-sync-only** task after the last mandatory step (reviewer or tester). This ensures workflow logs are always pushed to the workspace repo even when no code is shipped.
    - **PIPELINE ISOLATION**: builder NEVER receives `test-spec.md`. Tester NEVER receives `spec.md` or `implementation.md`. In docs-only workflows, scriber receives `spec.md` (as implementer); no tester is dispatched. See `skills/isolation/SKILL.md`.
 7. **GATE**: Update `status.md` after EVERY teammate completes. Read the output artifact. Do NOT proceed past `STOP` or `BLOCK` signals. Respawn the responsible teammate on failure (max 3 retries per teammate before `HOLD`).
@@ -89,7 +89,7 @@ Short prompts MUST work. A user message like "Work on https://github.com/foo/bar
 | `PIPELINES_COMPLETE` | Builder dispatched with `isolation: "worktree"`, tester dispatched (code workflows only) | Agent tool calls must exist |
 | `PIPELINES_COMPLETE` | Pipeline isolation verified (code workflows only) | Builder prompt has no test-spec.md; tester prompt has no spec.md |
 | `PIPELINES_COMPLETE` | Leader did NOT run any validation command directly | Self-check: no Bash calls to R CMD check, pytest, npm test, etc. |
-| `DOCUMENTED` | `Architecture.md` exists in run directory; `docs.md` exists in run directory; log entry with process record exists in run directory | Read all file paths; verify log entry contains Process Record section |
+| `DOCUMENTED` | `Architecture.md` exists in target repo root AND run directory; `docs.md` exists in run directory; log entry with process record exists in run directory | Read all file paths; verify log entry contains Process Record section |
 | `DOCUMENTED` | Scriber was dispatched via `Agent` tool | Agent tool call must exist |
 | `REVIEW_PASSED` | `review.md` exists with verdict `PASS` or `PASS WITH NOTE` (standard workflows); OR `audit.md` exists with verdict PASS (workflow 10 — tester acts as quality gate) | Read the file, check verdict |
 | `REVIEW_PASSED` | Reviewer was dispatched via `Agent` tool (standard workflows); OR tester dispatched (workflow 10) | Agent tool call must exist |
@@ -422,7 +422,7 @@ For non-trivial requests, you MUST continue through the selected workflow withou
 - **Worktree isolation for writers.** `isolation: "worktree"` for builder and scriber.
 - **Ship actions are explicit.** Do not push unless the user asked, issue-patrol is active, or a single-issue fix was requested (workflow 5 — fixing an issue implies pushing the fix).
 - **Surgical scope.** Each run modifies only what the request requires.
-- **Clean target repos.** Workflow logs, process records, and handoff documents go to the workspace repo — never the target repo. Architecture diagrams stay in the local run directory. Target repos contain only code + essential user-facing docs.
+- **Clean target repos.** Workflow logs, process records, and handoff documents go to the workspace repo — never the target repo. `Architecture.md` is the one exception: it lives in the target repo root so users can see the system architecture. Target repos contain only code + `Architecture.md` + essential user-facing docs.
 - **Parallel when possible.** Builder and tester are ALWAYS dispatched in parallel.
 - **Tolerance integrity is absolute.** Tester MUST NEVER relax tolerances, thresholds, or acceptance criteria to make a failing test pass. The only valid response to a genuine failure is BLOCK. Reviewer cross-audits every tolerance against test-spec.md.
 
@@ -446,9 +446,9 @@ For non-trivial requests, you MUST continue through the selected workflow withou
 │       ├── test-spec.md      # test pipeline input (from planner)
 │       ├── implementation.md # code pipeline output (from builder)
 │       ├── audit.md          # test pipeline output (from tester)
-│       ├── Architecture.md   # from scriber; stays local for reviewer verification
+│       ├── Architecture.md   # from scriber; copy for reviewer (primary copy in target repo root)
 │       ├── log-entry.md      # from scriber; synced to workspace runs/ by shipper
-│       ├── docs.md
+│       ├── docs.md           # from scriber; synced to workspace by shipper
 │       ├── review.md
 │       ├── shipper.md
 │       ├── mailbox.md
