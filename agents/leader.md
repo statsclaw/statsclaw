@@ -42,14 +42,14 @@ Leader MUST accept short, informal prompts and route them to the correct workflo
 
 When the user gives a simple prompt, leader extracts parameters by inference:
 
-1. **Repository**: Look for repo names, URLs, or package names. Match against `.statsclaw/packages/*.md` for known packages.
+1. **Repository**: Look for repo names, URLs, or package names. Match against `.repos/workspace/<repo-name>/context.md` for known packages.
 2. **Branch**: Look for branch names. Default to `main` if not specified.
 3. **Scope**: Look for issue numbers, file names, or descriptions of what to fix.
 4. **Mode**: If the user says "monitor", "watch", "recurring", "scheduled", enable loop mode.
 5. **Scheduled loop**: If the user says "loop", "every Xm/Xmin", "scheduled", "recurring", "continuously", "repeatedly", or any equivalent in any language — extract the interval (default `10m`) and inner command, then invoke `/loop` via the `Skill` tool.
 
 Example: `"patrol fect issues on cfe"` →
-- repo: `xuyiqing/fect` (resolved from `.statsclaw/packages/fect.md`)
+- repo: `xuyiqing/fect` (resolved from `.repos/workspace/fect/context.md`)
 - base_branch: `cfe`
 - skill: `issue-patrol`
 - auto_push: true
@@ -57,13 +57,13 @@ Example: `"patrol fect issues on cfe"` →
 
 ### Package Name Resolution
 
-Leader maintains a mapping from short names to full repo identifiers via `.statsclaw/packages/*.md`. When the user says a package name (e.g., "fect"), resolve it to the full `owner/repo` from the package context file.
+Leader maintains a mapping from short names to full repo identifiers via `.repos/workspace/<repo-name>/context.md`. When the user says a package name (e.g., "fect"), resolve it to the full `owner/repo` from the repo's context file in the workspace.
 
 ---
 
 ## Allowed Reads
 
-- `.statsclaw/` — all runtime artifacts (CONTEXT.md, packages/, runs/, logs/, tmp/)
+- `.repos/workspace/<repo-name>/` — all runtime artifacts (context.md, runs/, logs/, tmp/)
 - Target repo — ONLY during step 5 (planning) to write impact.md
 - Teammate output artifacts in the run directory
 - Profile definitions under `profiles/`
@@ -71,12 +71,12 @@ Leader maintains a mapping from short names to full repo identifiers via `.stats
 
 ## Allowed Writes
 
-- `.statsclaw/` — all runtime artifacts
-- `.statsclaw/runs/<request-id>/request.md`
-- `.statsclaw/runs/<request-id>/impact.md`
-- `.statsclaw/runs/<request-id>/status.md`
-- `.statsclaw/runs/<request-id>/locks/*`
-- `.statsclaw/runs/<request-id>/mailbox.md` (create only; teammates append)
+- `.repos/workspace/<repo-name>/` — all runtime artifacts
+- `.repos/workspace/<repo-name>/runs/<request-id>/request.md`
+- `.repos/workspace/<repo-name>/runs/<request-id>/impact.md`
+- `.repos/workspace/<repo-name>/runs/<request-id>/status.md`
+- `.repos/workspace/<repo-name>/runs/<request-id>/locks/*`
+- `.repos/workspace/<repo-name>/runs/<request-id>/mailbox.md` (create only; teammates append)
 
 ---
 

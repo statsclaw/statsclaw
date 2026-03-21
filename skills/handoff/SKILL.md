@@ -36,16 +36,16 @@ Each teammate produces specific output artifacts per run stage:
 
 | Teammate | Artifact(s) | Path | Pipeline |
 | --- | --- | --- | --- |
-| planner | `comprehension.md` | `.statsclaw/runs/<request-id>/comprehension.md` | Comprehension record |
-| planner | `spec.md` | `.statsclaw/runs/<request-id>/spec.md` | → Code Pipeline |
-| planner | `test-spec.md` | `.statsclaw/runs/<request-id>/test-spec.md` | → Test Pipeline |
-| builder | `implementation.md` | `.statsclaw/runs/<request-id>/implementation.md` | Code Pipeline output |
-| tester | `audit.md` | `.statsclaw/runs/<request-id>/audit.md` | Test Pipeline output |
-| scriber | `Architecture.md` | `<target-repo>/Architecture.md` + `.statsclaw/runs/<request-id>/Architecture.md` | Architecture (mandatory; target repo root is primary, run dir copy for reviewer) |
-| scriber | `log-entry.md` | `.statsclaw/runs/<request-id>/log-entry.md` | Log entry with process record (mandatory; synced to workspace `runs/` by shipper) |
-| scriber | `docs.md` | `.statsclaw/runs/<request-id>/docs.md` | Documentation changes (synced to workspace `<repo-name>/docs.md` by shipper) |
-| reviewer | `review.md` | `.statsclaw/runs/<request-id>/review.md` | Convergence output |
-| shipper | `shipper.md` | `.statsclaw/runs/<request-id>/shipper.md` | Externalization output |
+| planner | `comprehension.md` | `.repos/workspace/<repo-name>/runs/<request-id>/comprehension.md` | Comprehension record |
+| planner | `spec.md` | `.repos/workspace/<repo-name>/runs/<request-id>/spec.md` | → Code Pipeline |
+| planner | `test-spec.md` | `.repos/workspace/<repo-name>/runs/<request-id>/test-spec.md` | → Test Pipeline |
+| builder | `implementation.md` | `.repos/workspace/<repo-name>/runs/<request-id>/implementation.md` | Code Pipeline output |
+| tester | `audit.md` | `.repos/workspace/<repo-name>/runs/<request-id>/audit.md` | Test Pipeline output |
+| scriber | `Architecture.md` | `<target-repo>/Architecture.md` + `.repos/workspace/<repo-name>/runs/<request-id>/Architecture.md` | Architecture (mandatory; target repo root is primary, run dir copy for reviewer) |
+| scriber | `log-entry.md` | `.repos/workspace/<repo-name>/runs/<request-id>/log-entry.md` | Log entry with process record (mandatory; synced to workspace `runs/` by shipper) |
+| scriber | `docs.md` | `.repos/workspace/<repo-name>/runs/<request-id>/docs.md` | Documentation changes (synced to workspace `<repo-name>/docs.md` by shipper) |
+| reviewer | `review.md` | `.repos/workspace/<repo-name>/runs/<request-id>/review.md` | Convergence output |
+| shipper | `shipper.md` | `.repos/workspace/<repo-name>/runs/<request-id>/shipper.md` | Externalization output |
 
 ---
 
