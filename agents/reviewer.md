@@ -36,11 +36,12 @@ Reviewer is uniquely positioned to see both sides. Its primary value is detectin
    - `impact.md` — what surfaces were identified
    - `comprehension.md` — planner's comprehension verification
    - `spec.md` — implementation specification (code pipeline input)
-   - `test-spec.md` — test specification (test pipeline input)
-   - `implementation.md` — what builder changed (code pipeline output)
-   - `audit.md` — validation evidence (test pipeline output)
+   - `test-spec.md` — test specification (test pipeline input; **absent in docs-only workflow 3**)
+   - `implementation.md` — what builder changed (code pipeline output; **absent in docs-only workflow 3**)
+   - `audit.md` — validation evidence (test pipeline output; **absent in docs-only workflow 3**)
    - `docs.md` — documentation changes (if present)
    - `mailbox.md` — any inter-teammate notes
+   - In **docs-only workflow 3**: builder and tester are not dispatched, so `test-spec.md`, `implementation.md`, and `audit.md` do not exist. Reviewer reviews scriber's documentation output directly — skip pipeline convergence steps (2–5) and focus on documentation quality (step 8).
 3. Read the active profile for expected validation commands.
 
 ---
@@ -71,6 +72,8 @@ Reviewer is uniquely positioned to see both sides. Its primary value is detectin
 ---
 
 ## Workflow
+
+**Docs-only workflow 3**: Steps 2–5 (pipeline isolation, cross-comparison, convergence, coverage) do not apply because builder and tester are not dispatched. Reviewer skips directly from step 1 to step 7 (challenge validation evidence is also skipped — no tester output) and step 8 (documentation quality).
 
 ### Step 1 — Verify Comprehension Foundation
 
@@ -108,7 +111,7 @@ This is the core value of the two-pipeline architecture. Check:
 
 **Verify Per-Test Result Table**: audit.md MUST contain a Per-Test Result Table with one row per metric per scenario. If the table is missing or incomplete (fewer rows than test scenarios in test-spec.md): **STOP — per-test result table missing or incomplete. Route to tester.**
 
-**Verify Before/After Comparison Table**: For code changes, audit.md MUST contain a Before/After Comparison Table showing how key metrics changed from old to new implementation. If the table is missing (and this is a code change, not a new feature): **STOP — before/after comparison table missing. Route to tester.** Check that any metrics that worsened are flagged and justified.
+**Verify Before/After Comparison Table**: For bug fixes, algorithm changes, and refactors that modify existing behavior, audit.md MUST contain a Before/After Comparison Table showing how key metrics changed. If the table is missing for such changes: **STOP — before/after comparison table missing. Route to tester.** Not required for new features with no prior implementation. Check that any metrics that worsened are flagged and justified.
 
 If the two pipelines converge: this is strong evidence of correctness.
 If they diverge: identify the specific discrepancy and route to the responsible agent.
@@ -219,7 +222,7 @@ Before issuing PASS, verify you have actually done — not assumed — the follo
 - [ ] Verified tester executed ALL test-spec.md scenarios (step 7)
 - [ ] Cross-referenced ALL numerical tolerances in audit.md against test-spec.md — no inflation (step 7a)
 - [ ] Verified Per-Test Result Table present in audit.md with all scenarios covered (step 4)
-- [ ] Verified Before/After Comparison Table present in audit.md for code changes (step 4)
+- [ ] Verified Before/After Comparison Table present in audit.md for bug fixes/algorithm changes/refactors (step 4)
 - [ ] Checked documentation, architecture diagram in target repo root + run dir, process-record log entry in run dir (with both tables), target repo clean of non-Architecture workflow artifacts (step 8)
 
 ---

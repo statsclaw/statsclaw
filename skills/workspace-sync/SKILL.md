@@ -42,6 +42,9 @@ workspace/
 - **`CHANGELOG.md`**: timeline index linking every workflow run. Append-only — each run adds an entry with date, slug, one-line summary, and status. Newest entries at the top.
 - **`HANDOFF.md`**: active handoff document — what the next developer or session needs to know. Overwritten each run with the latest handoff notes extracted from `log-entry.md`.
 - **`ref/`**: reference documents produced during workflows that are useful for future work (comparison tables, algorithm specs, design explorations). Files accumulate — never deleted.
+- **`runs/<request-id>/`**: active run directories containing all workflow artifacts (request.md, status.md, spec.md, audit.md, etc.). These are runtime state — created during workflow execution, cleaned up after 7 days. Not individually committed to the workspace repo.
+- **`runs/<YYYY-MM-DD>-<slug>.md`**: completed run log files promoted from `log-entry.md` by shipper. These are the permanent record — committed and pushed to the workspace repo.
+- **`logs/`** and **`tmp/`**: local-only directories for diagnostic output and transient data. Not committed to the workspace repo. Add them to the workspace repo's `.gitignore` if needed.
 - **`runs/<date>-<slug>.md`**: one file per workflow run. Full process record. Accumulates chronologically. Never overwritten or deleted.
 
 ---
@@ -259,9 +262,9 @@ cp "${RUN_DIR}/docs.md" "${WORKSPACE_DIR}/docs.md"
 # 5e. Copy reference docs to ref/ (if any were produced)
 # Only if scriber or planner produced reference materials for future work
 
-# 6. Commit and push
+# 6. Commit and push (only pushed artifacts, not local-only dirs)
 cd .repos/workspace
-git add "${REPO_NAME}/"
+git add "${REPO_NAME}/CHANGELOG.md" "${REPO_NAME}/HANDOFF.md" "${REPO_NAME}/docs.md" "${REPO_NAME}/runs/${LOGFILE}" "${REPO_NAME}/ref/"
 git commit -m "sync: ${REPO_NAME} — <short description of the change>"
 git push origin main
 ```
