@@ -8,7 +8,7 @@ All workflow-generated logs, process records, handoff documents, and reference m
 
 The **workspace repo** is a per-user GitHub repository that accumulates all StatsClaw workflow artifacts across all projects. Each target repository gets its own folder inside the workspace repo. This separation ensures:
 
-1. **Target repos stay clean** — only source code + necessary user-facing documentation (README, help files, vignettes, man pages)
+1. **Target repos stay clean** — only source code, `Architecture.md`, and necessary user-facing documentation (README, help files, vignettes, man pages)
 2. **Full traceability** — every workflow run's process record, before/after comparisons, and design decisions are preserved
 3. **Cross-project visibility** — all workflow history in one place
 
@@ -22,6 +22,7 @@ workspace/
 ├── <repo-name>/
 │   ├── CHANGELOG.md              # timeline index of all runs
 │   ├── HANDOFF.md                # active handoff for next session
+│   ├── docs.md                   # latest documentation change summary
 │   ├── ref/                      # reference docs for future work
 │   │   └── <topic>.md
 │   └── runs/                     # individual workflow logs
@@ -199,7 +200,7 @@ The shipper agent handles pushing to BOTH repos at the end of the workflow.
 
 ### Target Repo Push (Steps 1–3)
 
-Standard shipper agent workflow — stage code + user-facing docs, commit, push. NO workflow artifacts.
+Standard shipper agent workflow — stage code + user-facing docs + `Architecture.md`, commit, push. No other workflow artifacts.
 
 ### Workspace Repo Push (Steps 4–6)
 
@@ -217,14 +218,17 @@ mkdir -p "${WORKSPACE_DIR}/ref"
 LOGFILE=$(grep -oP '(?<=<!-- filename: ).*(?= -->)' "${RUN_DIR}/log-entry.md")
 cp "${RUN_DIR}/log-entry.md" "${WORKSPACE_DIR}/runs/${LOGFILE}"
 
-# 5b. Update CHANGELOG.md (prepend new entry to timeline index)
+# 5b. Copy docs.md (overwrite with latest documentation change summary)
+cp "${RUN_DIR}/docs.md" "${WORKSPACE_DIR}/docs.md"
+
+# 5c. Update CHANGELOG.md (prepend new entry to timeline index)
 # Format: | date | slug | one-line summary | status |
 # Shipper reads implementation.md/request.md for the summary line
 
-# 5c. Update HANDOFF.md (overwrite with latest handoff notes)
+# 5d. Update HANDOFF.md (overwrite with latest handoff notes)
 # Extract "Handoff Notes" section from log-entry.md and write to HANDOFF.md
 
-# 5d. Copy reference docs to ref/ (if any were produced)
+# 5e. Copy reference docs to ref/ (if any were produced)
 # Only if scriber or planner produced reference materials for future work
 
 # 6. Commit and push
@@ -282,11 +286,12 @@ If the workflow does NOT include a ship step (workflows 1, 3, 6, 8), leader MUST
 | Source code changes | Yes | No | Builder's work |
 | Unit tests | Yes | No | Builder's work |
 | User-facing docs (README, help, vignettes) | Yes | No | Scriber's work |
-| `runs/<date>-<slug>.md` | **No** | Yes | Scriber writes `log-entry.md` to run dir; shipper syncs to `runs/` |
-| `CHANGELOG.md` | **No** | Yes | Shipper maintains — timeline index of all runs |
-| `HANDOFF.md` | **No** | Yes | Shipper maintains — latest handoff notes |
-| `ref/<topic>.md` | **No** | Yes (if produced) | Reference docs for future work |
-| `Architecture.md` | **No** | **No** | Stays in local run directory only |
+| `Architecture.md` | **Yes** (root) | No | Scriber writes to target repo root + run directory; committed by shipper |
+| `docs.md` | No | **Yes** | Scriber writes to run dir; shipper syncs to workspace `<repo-name>/docs.md` |
+| `runs/<date>-<slug>.md` | No | **Yes** | Scriber writes `log-entry.md` to run dir; shipper syncs to `runs/` |
+| `CHANGELOG.md` | No | **Yes** | Shipper maintains — timeline index of all runs |
+| `HANDOFF.md` | No | **Yes** | Shipper maintains — latest handoff notes |
+| `ref/<topic>.md` | No | **Yes** (if produced) | Reference docs for future work |
 | Run directory artifacts (spec.md, audit.md, etc.) | No | No | Stay in `.statsclaw/runs/` locally |
 
 ---

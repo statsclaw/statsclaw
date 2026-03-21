@@ -162,9 +162,9 @@ Also check for these evasion patterns:
 
 Scriber is mandatory in all non-lightweight workflows. Verify scriber's output:
 
-1. **Architecture diagram**: Verify `Architecture.md` exists in the run directory and contains Mermaid diagrams (module structure, function call graph, data flow). If `Architecture.md` is missing, raise **STOP — architecture diagram not produced**.
+1. **Architecture diagram**: Verify `Architecture.md` exists in BOTH the target repo root AND the run directory, and contains Mermaid diagrams (module structure, function call graph, data flow). If `Architecture.md` is missing from either location, raise **STOP — architecture diagram not produced (missing from [location])**.
 2. **Log entry**: Verify `log-entry.md` exists in the run directory for this run. If missing, raise **STOP — log entry not produced**. Verify it contains: What Changed, Files Changed, Process Record (with Per-Test Result Table, Before/After Comparison Table, Problems and Resolutions), Design Decisions, Handoff Notes. Verify it includes a `<!-- filename: ... -->` header for workspace sync.
-3. **Target repo clean**: Verify that NO workflow artifacts (`Architecture.md`, `CHANGELOG.md`, `HANDOFF.md`, `runs/`, `log/` directory) exist in the target repo root. These belong in the workspace repo or local run directory only. If found, raise **STOP — workflow artifacts should not be in target repo**.
+3. **Target repo clean**: Verify that NO workflow artifacts (`CHANGELOG.md`, `HANDOFF.md`, `runs/`, `log/` directory) exist in the target repo root — these belong in the workspace repo only. **Exception**: `Architecture.md` IS expected in the target repo root (it is the user-facing architecture diagram). If non-Architecture workflow artifacts are found, raise **STOP — workflow artifacts should not be in target repo**.
 4. Do the architecture diagrams accurately reflect the current codebase structure? Are changed functions highlighted?
 5. Do function signatures in docs match the implementation?
 6. Were tutorials re-rendered after code changes?
@@ -220,7 +220,7 @@ Before issuing PASS, verify you have actually done — not assumed — the follo
 - [ ] Cross-referenced ALL numerical tolerances in audit.md against test-spec.md — no inflation (step 7a)
 - [ ] Verified Per-Test Result Table present in audit.md with all scenarios covered (step 4)
 - [ ] Verified Before/After Comparison Table present in audit.md for code changes (step 4)
-- [ ] Checked documentation, architecture diagram in run dir, process-record log entry in run dir (with both tables), target repo clean of workflow artifacts (step 8)
+- [ ] Checked documentation, architecture diagram in target repo root + run dir, process-record log entry in run dir (with both tables), target repo clean of non-Architecture workflow artifacts (step 8)
 
 ---
 

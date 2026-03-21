@@ -41,9 +41,9 @@ Each teammate produces specific output artifacts per run stage:
 | planner | `test-spec.md` | `.statsclaw/runs/<request-id>/test-spec.md` | → Test Pipeline |
 | builder | `implementation.md` | `.statsclaw/runs/<request-id>/implementation.md` | Code Pipeline output |
 | tester | `audit.md` | `.statsclaw/runs/<request-id>/audit.md` | Test Pipeline output |
-| scriber | `Architecture.md` | `.statsclaw/runs/<request-id>/Architecture.md` | Architecture (mandatory; stays local for reviewer) |
+| scriber | `Architecture.md` | `<target-repo>/Architecture.md` + `.statsclaw/runs/<request-id>/Architecture.md` | Architecture (mandatory; target repo root is primary, run dir copy for reviewer) |
 | scriber | `log-entry.md` | `.statsclaw/runs/<request-id>/log-entry.md` | Log entry with process record (mandatory; synced to workspace `runs/` by shipper) |
-| scriber | `docs.md` | `.statsclaw/runs/<request-id>/docs.md` | Documentation changes |
+| scriber | `docs.md` | `.statsclaw/runs/<request-id>/docs.md` | Documentation changes (synced to workspace `<repo-name>/docs.md` by shipper) |
 | reviewer | `review.md` | `.statsclaw/runs/<request-id>/review.md` | Convergence output |
 | shipper | `shipper.md` | `.statsclaw/runs/<request-id>/shipper.md` | Externalization output |
 
@@ -90,7 +90,7 @@ planner
                                    ▼               ▼
                                 scriber (recording)
                          reads ALL artifacts from both pipelines
-                         produces: Architecture.md, log-entry.md, docs.md (all in run dir)
+                         produces: Architecture.md (target repo root + run dir), log-entry.md, docs.md (run dir → workspace)
                                    │
                                    ▼
                                reviewer (convergence)
@@ -107,7 +107,7 @@ planner
                             │
                             ├── documentation changes
                             ├── implementation.md
-                            ├── Architecture.md, log-entry.md, docs.md (all in run dir)
+                            ├── Architecture.md (target repo root + run dir), log-entry.md, docs.md (run dir → workspace)
                             │
                             ▼
                         reviewer (convergence)
