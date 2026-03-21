@@ -167,11 +167,11 @@ The goal is to **guide the user to a complete answer in one round**. Planner mus
 
 #### Max Rounds
 
-Planner may raise HOLD up to **3 rounds**. After 3 rounds:
-- If remaining gaps are minor and can be resolved by a reasonable default assumption, state the assumption explicitly in `comprehension.md`, mark verdict as `UNDERSTOOD WITH ASSUMPTIONS`, and proceed.
-- If remaining gaps are fundamental (the core method cannot be specified), raise a final HOLD explaining what is still missing and why specs cannot be produced. Leader will set status to `HOLD` and present the situation to the user.
+Planner may raise HOLD up to **3 rounds**. After 3 rounds, planner MUST resolve — no further HOLDs:
+- If remaining gaps are minor: state assumptions explicitly in `comprehension.md`, mark verdict as `UNDERSTOOD WITH ASSUMPTIONS`, and proceed to spec production.
+- If remaining gaps are fundamental: mark verdict as `UNSPECIFIABLE`, explain what is missing and why specs cannot be produced. Leader will set status to `HOLD` and present the situation to the user. Planner does NOT raise a 4th HOLD — the `UNSPECIFIABLE` verdict is the final output.
 
-The 3-round limit prevents endless back-and-forth while ensuring planner makes a genuine effort to understand.
+The 3-round limit is a hard cap, not advisory.
 
 #### 0e. Write Comprehension Record
 

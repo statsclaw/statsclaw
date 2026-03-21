@@ -113,8 +113,8 @@ When planner raises **HOLD with comprehension questions**, leader MUST:
 2. Forward ALL questions to the user via `AskUserQuestion`. Present them clearly — include any formulas or symbols planner is asking about. When planner provides multiple-choice options, present those options to the user.
 3. After the user answers, **re-dispatch planner** with the original context PLUS the user's answers appended to the dispatch prompt.
 4. If planner raises HOLD again, repeat steps 1–3.
-5. **Max 3 rounds.** After 3 HOLD rounds, planner must either proceed with explicit assumptions (`UNDERSTOOD WITH ASSUMPTIONS`) or declare the task unspecifiable. Leader does NOT allow a 4th round.
-6. Advance to `SPEC_READY` when planner's `comprehension.md` shows `FULLY UNDERSTOOD` or `UNDERSTOOD WITH ASSUMPTIONS`.
+5. **Max 3 rounds.** After 3 HOLD rounds, planner must either proceed with explicit assumptions (`UNDERSTOOD WITH ASSUMPTIONS`) or declare the task unspecifiable (`UNSPECIFIABLE`). Leader does NOT allow a 4th round.
+6. Advance to `SPEC_READY` when planner's `comprehension.md` shows `FULLY UNDERSTOOD` or `UNDERSTOOD WITH ASSUMPTIONS`. If verdict is `UNSPECIFIABLE`, set status to `HOLD` and inform the user.
 
 **This loop is the exception to "autonomous continuation"** — leader MUST pause and ask the user when planner has comprehension questions.
 

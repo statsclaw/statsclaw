@@ -84,11 +84,14 @@ If the remote points to StatsClaw or any repo other than the user's target, **ha
 
 ### Step 3 — Pull Latest from Both Repos
 
-Before any commits, pull latest from BOTH repos to avoid conflicts:
+Before any commits, pull latest from BOTH repos to avoid conflicts. Read the branch name from `request.md` (field `base_branch` or `branch`). If not specified, use the current branch of the target repo checkout.
 
 ```bash
+# Determine branch name from request.md or current branch
+BRANCH=$(git -C "$TARGET" rev-parse --abbrev-ref HEAD)
+
 # Pull target repo (get any remote changes)
-git -C "$TARGET" pull --rebase origin <branch-name> 2>&1 || true
+git -C "$TARGET" pull --rebase origin "$BRANCH" 2>&1 || true
 
 # Pull workspace repo (get any concurrent workspace syncs)
 git -C .repos/workspace pull origin main 2>&1 || true

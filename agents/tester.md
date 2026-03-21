@@ -157,14 +157,15 @@ If test-spec.md includes cross-reference benchmarks:
 - Compare against published results or analytical solutions
 - Flag quantities with relative error above the specified tolerance
 
-### Step 5b — Before/After Comparison Table (MANDATORY for code changes)
+### Step 5b — Before/After Comparison Table
 
-When the change modifies algorithms, estimators, numerical methods, or any logic that produces quantitative output, tester MUST produce a comparison table showing how key metrics changed from the old implementation to the new one.
+**Required** for bug fixes, algorithm changes, and refactors that modify existing behavior. **Not required** for new features with no prior implementation — note "N/A — new feature" and skip this table.
+
+When applicable, tester MUST produce a comparison table showing how key metrics changed from the old implementation to the new one.
 
 **How to obtain "before" values**:
 - If `test-spec.md` provides baseline/reference values from the pre-change code, use those
 - Otherwise, run the relevant tests on the pre-change code FIRST (before builder's changes are merged), record results, then run again on post-change code
-- If baseline values are unavailable and pre-change code cannot be executed (e.g., new feature with no prior implementation), note "N/A — new feature" and skip this table
 
 **Before/After Comparison Table**:
 
