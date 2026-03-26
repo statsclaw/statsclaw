@@ -39,7 +39,9 @@ Interrupt states:
 | comprehension.md | planner | Comprehension | pending | |
 | spec.md | planner | → Code | pending | |
 | test-spec.md | planner | → Test | pending | |
+| sim-spec.md | planner | → Simulation | pending | |
 | implementation.md | builder | Code | pending | |
+| simulation.md | simulator | Simulation | pending | |
 | audit.md | tester | Test | pending | |
 | Architecture.md | scriber | Architecture | pending | |
 | log-entry.md | scriber | Process Record | pending | |
@@ -51,15 +53,17 @@ Interrupt states:
 
 | Check | Status |
 | --- | --- |
-| Builder received only spec.md (not test-spec.md) | pending |
-| Tester received only test-spec.md (not spec.md) | pending |
-| Reviewer received ALL artifacts from both pipelines | pending |
+| Builder received only spec.md (not test-spec.md or sim-spec.md) | pending |
+| Tester received only test-spec.md (not spec.md or sim-spec.md) | pending |
+| Simulator received only sim-spec.md (not spec.md or test-spec.md) | pending |
+| Reviewer received ALL artifacts from all pipelines | pending |
 
 ## Active Isolation
 
 | Teammate | Isolation | Worktree Path |
 | --- | --- | --- |
 | builder | worktree | |
+| simulator | worktree | |
 | scriber | worktree | |
 
 ## Open Risks

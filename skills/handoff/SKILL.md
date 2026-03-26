@@ -23,7 +23,7 @@ Downstream teammates MUST reuse upstream artifacts. They MUST NOT re-discover or
 **ALL artifacts passed between agents MUST use the `.md` (Markdown) file extension.** This is a hard requirement, not a style preference. Markdown ensures artifacts are human-readable, diff-friendly, and renderable on GitHub.
 
 Rules:
-- Every handoff artifact is a `.md` file: `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `review.md`, `docs.md`, `shipper.md`, `comprehension.md`, `Architecture.md`, `mailbox.md`, `credentials.md`, `status.md`, `request.md`, `impact.md`
+- Every handoff artifact is a `.md` file: `spec.md`, `test-spec.md`, `sim-spec.md`, `implementation.md`, `simulation.md`, `audit.md`, `review.md`, `docs.md`, `shipper.md`, `comprehension.md`, `Architecture.md`, `mailbox.md`, `credentials.md`, `status.md`, `request.md`, `impact.md`
 - Log entries in the run directory MUST be `.md` files: `log-entry.md` (with a `<!-- filename: YYYY-MM-DD-slug.md -->` header for workspace `runs/` naming)
 - Lock files MUST be `.md` files
 - No agent may produce a handoff artifact in any other format (no `.txt`, `.json`, `.yaml`, `.html`)
@@ -39,7 +39,9 @@ Each teammate produces specific output artifacts per run stage:
 | planner | `comprehension.md` | `.repos/workspace/<repo-name>/runs/<request-id>/comprehension.md` | Comprehension record |
 | planner | `spec.md` | `.repos/workspace/<repo-name>/runs/<request-id>/spec.md` | → Code Pipeline |
 | planner | `test-spec.md` | `.repos/workspace/<repo-name>/runs/<request-id>/test-spec.md` | → Test Pipeline |
+| planner | `sim-spec.md` | `.repos/workspace/<repo-name>/runs/<request-id>/sim-spec.md` | → Simulation Pipeline (workflows 11, 12) |
 | builder | `implementation.md` | `.repos/workspace/<repo-name>/runs/<request-id>/implementation.md` | Code Pipeline output |
+| simulator | `simulation.md` | `.repos/workspace/<repo-name>/runs/<request-id>/simulation.md` | Simulation Pipeline output (workflows 11, 12) |
 | tester | `audit.md` | `.repos/workspace/<repo-name>/runs/<request-id>/audit.md` | Test Pipeline output |
 | scriber | `Architecture.md` | `<target-repo>/Architecture.md` + `.repos/workspace/<repo-name>/runs/<request-id>/Architecture.md` | Architecture (mandatory; target repo root is primary, run dir copy for reviewer) |
 | scriber | `log-entry.md` | `.repos/workspace/<repo-name>/runs/<request-id>/log-entry.md` | Log entry with process record (mandatory; synced to workspace `runs/` by shipper) |
@@ -63,8 +65,9 @@ A clear status indicator:
 
 | Teammate | Possible Verdicts |
 | --- | --- |
-| planner | `SPEC_READY` — comprehension verified, both specs produced | `HOLD` — needs user input to resolve ambiguity |
+| planner | `SPEC_READY` — comprehension verified, all specs produced (spec.md, test-spec.md, and sim-spec.md for simulation workflows) | `HOLD` — needs user input to resolve ambiguity |
 | builder | `IMPLEMENTED` — code and unit tests written | `HOLD` — spec unclear or API conflict |
+| simulator | `SIMULATED` — DGP and harness written, smoke run clean | `HOLD` — sim-spec unclear or infeasible |
 | tester | `PASS` — all validation checks green | `BLOCK` — validation failed (routes to builder/scriber/planner) |
 | scriber (recording mode) | `DOCUMENTED` — recording artifacts produced | `HOLD` — implementation unclear or contradicts spec |
 | scriber (implementer mode) | `IMPLEMENTED` + `DOCUMENTED` — docs written and recorded | `HOLD` — spec unclear or contradicts existing docs |
@@ -116,12 +119,42 @@ planner
                          shipper
 ```
 
+### Simulation Workflows (11, 12)
+
+```
+planner
+├── spec.md ──────────→ builder (code pipeline) — workflow 11 only
+│                           │
+│                           └── implementation.md
+│                                      │
+├── test-spec.md ─────→ tester (test pipeline)     │
+│                            │                      │
+│                            └── audit.md           │
+│                                   │               │
+└── sim-spec.md ──────→ simulator (simulation pipeline)
+                            │                      │
+                            └── simulation.md      │
+                                   │               │
+                                   ▼               ▼
+                                scriber (recording)
+                         reads ALL artifacts from all pipelines
+                         produces: Architecture.md, log-entry.md, docs.md
+                                   │
+                                   ▼
+                               reviewer (convergence)
+                                   │
+                                   ▼
+                                shipper
+```
+
 **Key properties:**
-1. Planner produces specs (only `spec.md` is used in docs-only; `test-spec.md` is unused)
+1. Planner produces specs (only `spec.md` is used in docs-only; `test-spec.md` is unused; simulation workflows use all three: `spec.md`, `test-spec.md`, `sim-spec.md`)
 2. **Code workflows**: builder ∥ tester in parallel, then scriber records
-3. **Docs-only**: scriber replaces builder as implementer. No tester — docs don't need testing. Reviewer reviews directly.
-4. Scriber is MANDATORY — the single owner of all documentation and recording
-5. Reviewer is the convergence agent that cross-compares all outputs
+3. **Simulation + code workflows (11)**: builder ∥ tester ∥ simulator in parallel, then scriber records
+4. **Simulation-only workflows (12)**: simulator ∥ tester in parallel (no builder), then scriber records
+5. **Docs-only**: scriber replaces builder as implementer. No tester — docs don't need testing. Reviewer reviews directly.
+6. Scriber is MANDATORY — the single owner of all documentation and recording
+7. Reviewer is the convergence agent that cross-compares all outputs
 
 ---
 
@@ -137,8 +170,12 @@ planner
 - Leader passes: `test-spec.md`, `request.md`, `impact.md`, `mailbox.md`
 - Leader MUST NOT pass: `spec.md`
 
-**Builder + Tester → Scriber (Recording)**
-- Leader passes: ALL available artifacts — `comprehension.md`, `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `request.md`, `impact.md`, `mailbox.md`
+**Planner → Simulator (Simulation Pipeline) — workflows 11, 12 only**
+- Leader passes: `sim-spec.md`, `request.md`, `impact.md`, `mailbox.md`
+- Leader MUST NOT pass: `spec.md`, `test-spec.md`
+
+**Builder + Tester (+ Simulator) → Scriber (Recording)**
+- Leader passes: ALL available artifacts — `comprehension.md`, `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `request.md`, `impact.md`, `mailbox.md`. For simulation workflows: also `sim-spec.md` and `simulation.md`.
 - Scriber reads everything to produce the process-record log entry, architecture diagram, and docs
 
 ### Docs-Only Workflow (3)
@@ -151,8 +188,8 @@ planner
 ### All Workflows
 
 **→ Reviewer (Convergence)**
-- Leader passes: ALL artifacts — `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `Architecture.md`, `docs.md`, `request.md`, `impact.md`, `mailbox.md`, `comprehension.md`
-- Reviewer is the convergence agent that cross-compares both pipelines AND scriber's output
+- Leader passes: ALL artifacts — `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `Architecture.md`, `docs.md`, `request.md`, `impact.md`, `mailbox.md`, `comprehension.md`. For simulation workflows: also `sim-spec.md` and `simulation.md`.
+- Reviewer is the convergence agent that cross-compares all pipelines AND scriber's output
 
 **Reviewer → Shipper**
 - Leader passes: `review.md`, `credentials.md`, `implementation.md`, `audit.md`
@@ -171,14 +208,16 @@ After each teammate returns, leader MUST:
 6. **Dispatch the next teammate** with only the artifacts allowed by pipeline rules.
 
 ### After Planner Completes:
-- Verify `spec.md` exists (and `test-spec.md` for code workflows)
+- Verify `spec.md` exists (and `test-spec.md` for code workflows, and `sim-spec.md` for simulation workflows)
 - **Code workflows**: Dispatch builder AND tester IN PARALLEL in the same message. Give builder only `spec.md`; give tester only `test-spec.md`.
+- **Simulation + code workflow (11)**: Dispatch builder, tester, AND simulator IN PARALLEL in the same message. Give builder only `spec.md`; give tester only `test-spec.md`; give simulator only `sim-spec.md`.
+- **Simulation-only workflow (12)**: Dispatch simulator AND tester IN PARALLEL. Give simulator only `sim-spec.md`; give tester only `test-spec.md`. No builder.
 - **Docs-only workflow**: Dispatch scriber with `spec.md` (as implementer). After scriber completes, dispatch reviewer directly.
 
-### After Builder and Tester Both Complete (Code Workflows):
-- Read `implementation.md` and `audit.md`
-- Check for BLOCK from tester (if so, respawn builder with failure details)
-- If both succeeded, dispatch scriber for recording with ALL artifacts. After scriber completes, dispatch reviewer.
+### After Builder and Tester (and Simulator) Complete (Code/Simulation Workflows):
+- Read `implementation.md` (if builder was dispatched), `simulation.md` (if simulator was dispatched), and `audit.md`
+- Check for BLOCK from tester (if so, respawn builder or simulator with failure details based on routing)
+- If all succeeded, dispatch scriber for recording with ALL artifacts. After scriber completes, dispatch reviewer.
 
 ---
 

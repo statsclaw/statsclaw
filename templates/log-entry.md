@@ -56,6 +56,22 @@ Additional notes:
 - [Edge case results]
 - [Any warnings or deferred items]
 
+**Simulation Results** (simulation workflows only — omit this section for non-simulation workflows):
+
+Simulation Result Table (from `audit.md`):
+
+| Criterion | Metric | Target | Actual | At N | Threshold | MC SE | Verdict |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| [criterion] | [metric] | [target] | [actual] | [N] | [threshold] | [MC SE] | [PASS/FAIL] |
+
+Full simulation output (key scenarios):
+
+| N | DGP | Bias | Rel.Bias | SD | RMSE | Coverage(95%) | SE.Ratio | Failure% |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| [N] | [dgp] | [bias] | [rel.bias] | [sd] | [rmse] | [coverage] | [se.ratio] | [fail%] |
+
+[Convergence diagnostics and any unexpected patterns.]
+
 ### Problems Encountered and Resolutions
 
 [Record EVERY problem that occurred during the workflow, including BLOCK signals, HOLD signals, respawns, and how each was resolved. If no problems occurred, write "No problems encountered."]

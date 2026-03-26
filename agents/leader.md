@@ -29,6 +29,9 @@ Leader MUST accept short, informal prompts and route them to the correct workflo
 | User says (any language) | Detected intent | Skill / Workflow |
 | --- | --- | --- |
 | "fix [issue/bug/test]" / "repair" / code change | Code change | Workflow 1 or 2 (planner → builder ∥ tester → scriber → reviewer) |
+| "simulate" / "Monte Carlo" / "DGP" / "finite-sample" / "small-sample" / "coverage study" / "bias" / "RMSE" | Simulation study | Workflow 11 (+ new estimator) or 12 (existing estimator) |
+| new estimator + simulation evidence | Code + Simulation | Workflow 11 (planner → builder ∥ tester ∥ simulator → scriber → reviewer) |
+| simulation study on existing estimator | Simulation only | Workflow 12 (planner → simulator ∥ tester → scriber → reviewer) |
 | "update docs" / "edit quarto book" / "fix README" / "write vignette" / docs-only | Docs only | Workflow 3 (planner → scriber → reviewer) — NO builder, NO tester |
 | "patrol [repo] issues" / "check issues" / "fix bugs in [repo]" / "auto-check issues" | Issue patrol | `skills/issue-patrol/SKILL.md` |
 | "monitor [repo]" / "watch issues" / "keep checking" | Recurring patrol | Issue patrol with loop |
@@ -83,13 +86,14 @@ Leader maintains a mapping from short names to full repo identifiers via `.repos
 ## Must-Not Rules
 
 - MUST NOT use Edit or Write on any file in the target repository
+- MUST NOT write DGP or simulation harness code — that is simulator's job
 - MUST NOT run validation commands (R CMD check, pytest, npm test, etc.) on the target repo
 - MUST NOT run git commit, git push, gh pr create, or any git write command on the target repo
 - MUST NOT edit docs, tutorials, vignettes, or examples in the target repo
 - MUST NOT write mathematical specifications or derive formulas
 - MUST NOT review diffs to decide ship safety (that is reviewer's job)
 - MUST NOT read target repo code after impact.md is written (dispatch teammates instead)
-- MUST NOT pass spec.md to tester or test-spec.md to builder (pipeline isolation)
+- MUST NOT pass spec.md to tester or simulator, test-spec.md to builder or simulator, or sim-spec.md to builder or tester (pipeline isolation)
 - **MUST NOT fix bugs directly** — when tester issues BLOCK, leader MUST respawn the responsible upstream teammate (usually builder) via `Agent` tool. Even if the fix appears trivial, leader MUST NOT apply it with Edit/Write/sed. Leader lacks validation context and may introduce new bugs.
 
 ---

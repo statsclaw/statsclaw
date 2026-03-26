@@ -9,7 +9,7 @@ All runtime state lives inside the workspace repo under `.repos/workspace/<repo-
 ## What You Install
 
 - `CLAUDE.md` — orchestration policy (the authoritative reference)
-- `agents/` — agent definitions (leader, planner, builder, tester, scriber, reviewer, shipper)
+- `agents/` — agent definitions (leader, planner, builder, tester, simulator, scriber, reviewer, shipper)
 - `skills/` — shared protocol skills (credential-setup, isolation, handoff, mailbox, issue-patrol, profile-detection)
 - `profiles/` — language-specific execution rules (R, Python, TypeScript, Stata, Go, Rust, C, C++)
 - `templates/` — runtime artifact templates (context, status, credentials, mailbox, lock, log-entry, architecture)
@@ -18,50 +18,56 @@ Agent Teams is enabled at the project level through `.claude/settings.json`.
 
 ---
 
-## Two-Pipeline Architecture
+## Multi-Pipeline Architecture
 
-StatsClaw uses two fully isolated execution pipelines that converge at the reviewer:
+StatsClaw uses fully isolated execution pipelines that converge at the reviewer. The base architecture uses two pipelines (code + test). When simulation is requested, a third pipeline (simulation) is added:
 
 ```
                     planner (bridge)
-                   /                \
-        spec.md  /                    \  test-spec.md
-               /                        \
-          builder                      tester
-      (code pipeline)            (test pipeline)
-               \                        /
-                \                      /
-                   scriber (recording)
-                       |
-                   reviewer (convergence)
-                       |
-                     shipper
+                   /    |          \
+        spec.md   /     |           \  sim-spec.md
+                 /      |            \
+            builder  test-spec.md   simulator
+       (code pipeline)  |      (simulation pipeline)
+                 \      |            /
+                  \     v           /
+                   \  tester      /
+                    \   |        /
+                     \  |       /
+                      scriber (recording)
+                          |
+                      reviewer (convergence)
+                          |
+                        shipper
 ```
 
 | Layer | Agent | Pipeline | Role |
 | --- | --- | --- | --- |
 | Control | `leader` | — | Plans work, dispatches teammates, manages state |
-| Analysis | `planner` | Bridge | Produces `spec.md` AND `test-spec.md` from requirements |
-| Code | `builder` | Code | Implements from `spec.md` only (never sees test-spec.md) |
-| Test | `tester` | Test | Validates from `test-spec.md` only (never sees spec.md) |
-| Recording | `scriber` | Both | Architecture, process-record log, documentation (mandatory) |
-| Convergence | `reviewer` | Both | Cross-compares both pipelines; issues ship verdict |
+| Analysis | `planner` | Bridge | Produces `spec.md`, `test-spec.md`, and `sim-spec.md` (simulation workflows) |
+| Code | `builder` | Code | Implements from `spec.md` only (never sees test-spec.md or sim-spec.md) |
+| Test | `tester` | Test | Validates from `test-spec.md` only (never sees spec.md or sim-spec.md) |
+| Simulation | `simulator` | Simulation | Implements DGP + Monte Carlo harness from `sim-spec.md` only (workflows 11, 12) |
+| Recording | `scriber` | All | Architecture, process-record log, documentation (mandatory) |
+| Convergence | `reviewer` | All | Cross-compares all pipelines; issues ship verdict |
 | Ship | `shipper` | — | Commits, pushes, PRs, issue comments (conditional) |
 
 **Key properties:**
-- **Planner is always mandatory** — it bridges both pipelines
-- **Builder handles code, scriber handles docs** — for docs-only requests, scriber replaces builder as implementer
-- **Builder and tester run in parallel** (code workflows) — each with its own isolated spec
-- **Pipeline isolation is enforced** — builder/scriber never sees test-spec.md, tester never sees spec.md
-- **Adversarial verification** — if both pipelines converge independently, confidence is high
+- **Planner is always mandatory** — it bridges all pipelines
+- **Builder handles code, scriber handles docs, simulator handles Monte Carlo studies** — for docs-only requests, scriber replaces builder as implementer
+- **Builder, tester, and simulator run in parallel** (simulation workflows) — each with its own isolated spec
+- **Pipeline isolation is enforced** — each pipeline never sees another's spec
+- **Adversarial verification** — if all pipelines converge independently, confidence is high
 
 ---
 
 ## Workflow
 
 ```text
-Code:      leader → planner → [builder ∥ tester] → scriber → reviewer → shipper?
-Docs-only: leader → planner → scriber → reviewer → shipper?
+Code:           leader → planner → [builder ∥ tester] → scriber → reviewer → shipper?
+Docs-only:      leader → planner → scriber → reviewer → shipper?
+Simulation+Code: leader → planner → [builder ∥ tester ∥ simulator] → scriber → reviewer → shipper?
+Simulation-only: leader → planner → [simulator ∥ tester] → scriber → reviewer → shipper?
 ```
 
 States: `CREDENTIALS_VERIFIED → NEW → PLANNED → SPEC_READY → PIPELINES_COMPLETE → DOCUMENTED → REVIEW_PASSED → READY_TO_SHIP → DONE`
@@ -82,6 +88,8 @@ StatsClaw acquires the workspace repo, creates the per-repo runtime directory, d
 patrol fect issues on cfe
 fix fect issue #42
 Work on ~/GitHub/fect. Fix the failing tests.
+simulate the finite-sample properties of the new estimator
+run Monte Carlo: check consistency and coverage
 ship it
 ```
 
@@ -109,7 +117,9 @@ All runtime state lives inside the workspace repo, organized per target reposito
         │       ├── comprehension.md  # comprehension verification (from planner)
         │       ├── spec.md           # code pipeline input (from planner)
         │       ├── test-spec.md      # test pipeline input (from planner)
+        │       ├── sim-spec.md       # simulation pipeline input (from planner, workflows 11/12)
         │       ├── implementation.md # code pipeline output (from builder)
+        │       ├── simulation.md     # simulation pipeline output (from simulator, workflows 11/12)
         │       ├── audit.md          # test pipeline output (from tester)
         │       ├── Architecture.md   # from scriber (primary copy in target repo root)
         │       ├── log-entry.md      # process record (from scriber; promoted to runs/<date>-<slug>.md)
@@ -168,10 +178,10 @@ This keeps target repos clean (code + essential docs only) while preserving full
 
 - **Credentials first, work second.** Verify push access before creating a run.
 - **Team Leader dispatches, never does.** Leader plans and coordinates; teammates do the work.
-- **Two pipelines, fully isolated.** Code pipeline and test pipeline never see each other's specs.
+- **Multi-pipeline, fully isolated.** Code, test, and simulation pipelines never see each other's specs.
 - **Planner first, always.** Every non-trivial request starts with dual-spec production.
 - **Adversarial verification by design.** Independent convergence proves correctness.
 - **Hard gates, not soft advice.** State transitions have preconditions; artifacts are verified.
-- **Worktree isolation for writers.** Builder and scriber run in isolated git worktrees.
+- **Worktree isolation for writers.** Builder, simulator, and scriber run in isolated git worktrees.
 - **Surgical scope.** Each run modifies only what the request requires.
 - **Explicit ship actions.** Nothing is pushed without user instruction or active patrol skill.
