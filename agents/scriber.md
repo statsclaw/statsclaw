@@ -32,6 +32,7 @@ Scriber is the **single owner** of all documentation, recording, logging, and pr
 6. **Code workflows only** (skip in docs-only workflow 3): Read `test-spec.md` from the run directory for test scenarios, tolerances, and acceptance criteria.
 7. **Code workflows only** (skip in docs-only workflow 3): Read `implementation.md` from the run directory for what changed.
 8. **Code workflows only** (skip in docs-only workflow 3): Read `audit.md` from the run directory for validation results and evidence.
+8b. **Simulation workflows only** (workflows 11, 12): Read `sim-spec.md` for the simulation design and `simulation.md` for the simulator's output (DGP implementation, smoke run results, acceptance criteria assessment).
 9. Read `review.md` from the run directory if it exists (may not exist yet — scriber runs before reviewer in the standard flow).
 10. Read `mailbox.md` for interface changes, signal history (BLOCK/HOLD/STOP events), and handoff notes.
 11. Read the active profile for docs conventions.
@@ -41,7 +42,7 @@ Scriber is the **single owner** of all documentation, recording, logging, and pr
 
 ## Allowed Reads
 
-- Run directory: ALL available artifacts. Code workflows: comprehension.md, spec.md, test-spec.md, implementation.md, audit.md, review.md, request.md, impact.md, mailbox.md. Docs-only workflow 3: comprehension.md, spec.md, request.md, impact.md, mailbox.md (no test-spec.md, implementation.md, or audit.md — builder and tester are not dispatched)
+- Run directory: ALL available artifacts. Code workflows: comprehension.md, spec.md, test-spec.md, implementation.md, audit.md, review.md, request.md, impact.md, mailbox.md. Simulation workflows (11, 12): also sim-spec.md and simulation.md. Docs-only workflow 3: comprehension.md, spec.md, request.md, impact.md, mailbox.md (no test-spec.md, implementation.md, or audit.md — builder and tester are not dispatched)
 - Target repo: all files (source, docs, examples, tutorials)
 - Profiles: active profile for docs conventions
 
@@ -161,9 +162,10 @@ Key formatting rules (from the template):
    - **What Changed**: Summarize from `implementation.md`
    - **Files Changed**: Table of all files modified/created/deleted (from `implementation.md`)
    - **Process Record** (MANDATORY — this records the entire workflow):
-     - **Proposal**: Summarize key points from `spec.md` (algorithm/approach, critical design choices) and `test-spec.md` (test scenarios, tolerances, benchmarks)
-     - **Implementation Notes**: Key decisions from `implementation.md`, deviations from spec, unit tests written
+     - **Proposal**: Summarize key points from `spec.md` (algorithm/approach, critical design choices) and `test-spec.md` (test scenarios, tolerances, benchmarks). For simulation workflows: also summarize `sim-spec.md` (DGP design, scenario grid, acceptance criteria).
+     - **Implementation Notes**: Key decisions from `implementation.md`, deviations from spec, unit tests written. For simulation workflows: also key decisions from `simulation.md` (DGP implementation, harness design, parallelization approach).
      - **Validation Results**: Copy the **Per-Test Result Table** from `audit.md` (every test with metric, expected, actual, tolerance, rel. error, verdict). Copy the **Before/After Comparison Table** from `audit.md` (old vs new metrics with interpretation). Include pass/fail summary counts and any additional notes.
+     - **Simulation Results** (simulation workflows only): Copy the **Simulation Result Table** from `audit.md` (acceptance criteria with metric, target, actual, threshold, MC SE, verdict). Include the full simulation output tables (bias, RMSE, coverage, size/power across all scenarios). Summarize convergence diagnostics and any unexpected patterns.
      - **Problems Encountered and Resolutions**: EVERY BLOCK, HOLD, or STOP signal that occurred, who it was routed to, and how it was resolved. Read `mailbox.md` for the full signal history. If no problems occurred, explicitly state "No problems encountered."
      - **Review Summary**: If `review.md` exists (e.g., from a previous reviewer pass or re-run), include pipeline isolation status, convergence analysis, tolerance integrity verification, and final verdict. If `review.md` does not exist yet, write "Pending — reviewer review follows scriber."
    - **Design Decisions**: Key rationale from `spec.md` and `implementation.md` — capture decisions that would otherwise be lost
@@ -270,6 +272,7 @@ Append to `mailbox.md` if contradictions with spec or implementation were found.
 - Architecture diagram contains at least: module structure (Mermaid), function call graph (Mermaid), reference table
 - Log entry contains at least: What Changed, Files Changed table, Process Record (with Proposal, Implementation Notes, Validation Results, Problems and Resolutions, Review Summary), Design Decisions, Handoff Notes
 - Process Record includes Per-Test Result Table and Before/After Comparison Table (copied from `audit.md`), signal history from mailbox.md, and all BLOCK/HOLD/STOP events
+- For simulation workflows: Process Record includes Simulation Result Table and full simulation output tables (copied from `audit.md`), convergence diagnostics, and DGP/harness design summary (from `simulation.md`)
 - Changed functions/modules are highlighted in the architecture diagram
 - Every exported function/class is documented
 - No parameter is undocumented

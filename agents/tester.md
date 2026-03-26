@@ -184,6 +184,50 @@ Rules:
 - **Interpretation** = one-line explanation of whether the change is an improvement, regression, or neutral
 - If a metric worsened, explicitly flag it even if still within tolerance
 
+### Step 5c — Simulation Validation (SIMULATION WORKFLOWS ONLY)
+
+**This step applies ONLY to simulation workflows (11, 12).** For non-simulation workflows, skip to Step 6.
+
+When `test-spec.md` contains a **Simulation Validation** section, tester MUST:
+
+1. **Run the full simulation**: Execute the simulation harness code (written by simulator) with the full number of replications specified in `test-spec.md`. Do NOT reduce replications to save time.
+
+2. **Collect results**: Read the simulation output tables produced by the harness.
+
+3. **Validate acceptance criteria**: For each criterion in the Simulation Validation section of `test-spec.md`, check pass/fail:
+
+**Simulation Result Table (MANDATORY for simulation workflows)**:
+
+| Criterion | Metric | Target | Actual | At N | Threshold | MC SE | Verdict |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Consistency | Rel. Bias | < 5% | 2.1% | 500 | 5% | 0.3% | PASS |
+| Coverage | 95% CI | [0.93, 0.97] | 0.948 | 500 | ±0.02 | 0.005 | PASS |
+| Size | α = 0.05 | [0.03, 0.07] | 0.052 | 500 | ±0.02 | 0.005 | PASS |
+| SE accuracy | SE ratio | [0.95, 1.05] | 0.99 | 500 | ±0.05 | 0.01 | PASS |
+| Convergence | RMSE slope | [-0.6, -0.4] | -0.51 | all | — | 0.02 | PASS |
+
+Rules for this table:
+- One row per acceptance criterion per scenario (or per scenario group if criteria apply to all)
+- **MC SE** column: Monte Carlo standard error for the metric — confirms deviations are or are not within sampling noise
+- Include ALL acceptance criteria from `test-spec.md` — no silent omissions
+- If a criterion fails, flag it clearly and route per the failure routing table
+
+4. **Convergence diagnostics**: Verify that metrics converge as sample size grows:
+   - Bias should decrease with N (consistency)
+   - RMSE should decrease at approximately 1/√N rate
+   - Coverage should approach nominal level
+   - SE ratio should approach 1.0
+
+5. **Reproducibility check**: Re-run at least one scenario with the same seed and verify identical results.
+
+6. **Include full simulation results tables** in `audit.md` — the complete output from the simulation harness, not just summaries.
+
+**BLOCK routing for simulation failures**:
+- If simulation code crashes or produces NaN → route to **simulator**
+- If results fail acceptance criteria and the DGP/harness looks correct → route to **builder** (estimator bug)
+- If acceptance criteria seem theoretically wrong → route to **planner**
+- If seed produces non-reproducible results → route to **simulator**
+
 ### Step 6 — Run Examples/Docs Build (if applicable)
 
 Run example validation or docs build commands from the profile.
@@ -216,9 +260,13 @@ For each failure, identify the responsible teammate:
 | --- | --- |
 | Wrong result, numerical error, crash in source code | builder |
 | Behavioral contract violated in source code | builder |
+| DGP implementation error, simulation harness bug, wrong seed logic | simulator |
+| Simulation results fail acceptance criteria due to DGP or harness issue | simulator |
+| Simulation results fail acceptance criteria due to estimator bug | builder |
 | Documentation error, example fails, vignette broken | scriber |
 | Docs build fails (quarto, pkgdown, sphinx) | scriber |
 | Correct behavior but wrong math in test-spec.md | planner |
+| Acceptance criteria too strict/wrong for this estimator's theory | planner |
 | Config/manifest inconsistency | builder |
 
 ### Step 9 — Write Output
@@ -248,7 +296,10 @@ Append to `mailbox.md` with failure routing if BLOCK is raised.
 - Numeric failures include relative error, not just raw difference
 - Environment info is recorded
 - Did not edit any files in the target repo
-- Did not read spec.md or implementation.md (pipeline isolation)
+- For simulation workflows: Simulation Result Table present with all acceptance criteria evaluated
+- For simulation workflows: Reproducibility check performed (same seed → same result)
+- For simulation workflows: Full simulation results tables included in audit.md
+- Did not read spec.md, implementation.md, or sim-spec.md (pipeline isolation)
 
 ---
 
