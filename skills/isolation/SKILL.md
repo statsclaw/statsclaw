@@ -10,33 +10,39 @@ The two-pipeline architecture enforces strict information barriers between the c
 
 ### Code Pipeline (builder)
 - **Receives**: `spec.md` (from planner), `request.md`, `impact.md`
-- **Never receives**: `test-spec.md`, `audit.md`
+- **Never receives**: `test-spec.md`, `sim-spec.md`, `audit.md`, `simulation.md`
 - **Produces**: `implementation.md`, code changes, unit tests
 
 ### Test Pipeline (tester)
 - **Receives**: `test-spec.md` (from planner), `request.md`, `impact.md`
-- **Never receives**: `spec.md`, `implementation.md`
+- **Never receives**: `spec.md`, `sim-spec.md`, `implementation.md`, `simulation.md`
 - **Produces**: `audit.md`, validation evidence
+
+### Simulation Pipeline (simulator) — workflows 11, 12 only
+- **Receives**: `sim-spec.md` (from planner), `request.md`, `impact.md`
+- **Never receives**: `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`
+- **Produces**: `simulation.md`, DGP code, simulation harness code
 
 ### Bridge (planner)
 - **Receives**: `request.md`, `impact.md`, target repo read access
-- **Produces**: BOTH `spec.md` AND `test-spec.md`
-- **Ensures**: the two specs are independently sufficient — neither requires the other
+- **Produces**: `spec.md`, `test-spec.md`, and `sim-spec.md` (simulation workflows only)
+- **Ensures**: all specs are independently sufficient — none requires reading another
 
 ### Convergence Point (reviewer)
-- **Receives**: ALL artifacts from BOTH pipelines
-- **Only agent that sees both sides**
-- **Verifies**: convergence, isolation integrity, and cross-consistency
+- **Receives**: ALL artifacts from ALL pipelines
+- **Only agent that sees all sides**
+- **Verifies**: convergence, isolation integrity, and cross-consistency across all pipelines
 
 ### Isolation Enforcement
 
 Leader is responsible for enforcing pipeline isolation at dispatch time:
 
-1. When dispatching builder: include `spec.md` in the prompt, NEVER mention `test-spec.md`
-2. When dispatching tester: include `test-spec.md` in the prompt, NEVER mention `spec.md` or `implementation.md`
-3. When dispatching reviewer: include ALL artifacts — reviewer is the convergence point
+1. When dispatching builder: include `spec.md` in the prompt, NEVER mention `test-spec.md` or `sim-spec.md`
+2. When dispatching tester: include `test-spec.md` in the prompt, NEVER mention `spec.md`, `sim-spec.md`, or `implementation.md`
+3. When dispatching simulator: include `sim-spec.md` in the prompt, NEVER mention `spec.md`, `test-spec.md`, or `implementation.md`
+4. When dispatching reviewer: include ALL artifacts — reviewer is the convergence point
 
-**Why**: If builder knows what tests will be run, it can "teach to the test" — passing validation without actually satisfying the requirement. If tester knows how the code works, it can't provide truly independent verification. The two-pipeline design ensures adversarial verification: both sides must independently converge on the same correct result.
+**Why**: If builder knows what tests will be run, it can "teach to the test" — passing validation without actually satisfying the requirement. If tester knows how the code works, it can't provide truly independent verification. If simulator knows the implementation details, it can't provide independent evaluation of finite-sample properties. The multi-pipeline design ensures adversarial verification: all sides must independently converge on the same correct result.
 
 ---
 
@@ -45,6 +51,7 @@ Leader is responsible for enforcing pipeline isolation at dispatch time:
 Use `isolation: "worktree"` when dispatching any teammate that **writes** to the target repository:
 
 - **builder** — implements code and test changes
+- **simulator** — implements DGP and simulation harness code
 - **scriber** — updates documentation, examples, tutorials, and vignettes
 
 Worktree isolation gives each writing teammate its own working copy of the repository. This prevents concurrent writers from interfering with each other and ensures that partial work from one teammate never corrupts another's checkout.
@@ -109,9 +116,10 @@ After a writing teammate completes in its worktree:
 | Teammate | Pipeline | Writes to target repo? | Use worktree? | Receives |
 | --- | --- | --- | --- | --- |
 | planner | Bridge | No | No | request.md, impact.md |
-| builder | Code | Yes | Yes | spec.md (NEVER test-spec.md) |
-| tester | Test | No (runs commands) | No | test-spec.md (NEVER spec.md) |
-| scriber (scriber) | Both | Yes | Yes | ALL artifacts (reads everything to produce process record) |
+| builder | Code | Yes | Yes | spec.md (NEVER test-spec.md or sim-spec.md) |
+| tester | Test | No (runs commands) | No | test-spec.md (NEVER spec.md or sim-spec.md) |
+| simulator | Simulation | Yes | Yes | sim-spec.md (NEVER spec.md or test-spec.md) — workflows 11, 12 only |
+| scriber (scriber) | All | Yes | Yes | ALL artifacts (reads everything to produce process record) |
 | scriber (implementer) | Docs | Yes | Yes | spec.md (NEVER test-spec.md) — replaces builder in docs-only workflow |
 | reviewer | Convergence | No (reviews only) | No | ALL artifacts |
 | shipper | — | No (git/gh commands) | No | review.md, credentials.md |

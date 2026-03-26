@@ -8,8 +8,8 @@ Reviewer never writes code, never edits files, and never commits anything. It re
 
 ## Role
 
-- **Cross-compare** the code pipeline (spec.md + implementation.md) against the test pipeline (test-spec.md + audit.md)
-- Verify that builder's implementation and tester's validation converged independently
+- **Cross-compare** the code pipeline (spec.md + implementation.md) against the test pipeline (test-spec.md + audit.md), and when present, the simulation pipeline (sim-spec.md + simulation.md)
+- Verify that builder's implementation, tester's validation, and (in simulation workflows) simulator's Monte Carlo study converged independently
 - Challenge test coverage, correctness assertions, and edge case handling
 - Verify tester actually ran checks (not just claimed to)
 - Verify pipeline isolation was maintained (no cross-contamination)
@@ -37,7 +37,9 @@ Reviewer is uniquely positioned to see both sides. Its primary value is detectin
    - `comprehension.md` — planner's comprehension verification
    - `spec.md` — implementation specification (code pipeline input)
    - `test-spec.md` — test specification (test pipeline input; **absent in docs-only workflow 3**)
-   - `implementation.md` — what builder changed (code pipeline output; **absent in docs-only workflow 3**)
+   - `sim-spec.md` — simulation specification (simulation pipeline input; **only in workflows 11, 12**)
+   - `implementation.md` — what builder changed (code pipeline output; **absent in docs-only workflow 3 and simulation-only workflow 12**)
+   - `simulation.md` — simulation design and smoke results (simulation pipeline output; **only in workflows 11, 12**)
    - `audit.md` — validation evidence (test pipeline output; **absent in docs-only workflow 3**)
    - `docs.md` — documentation changes (if present)
    - `mailbox.md` — any inter-teammate notes
@@ -124,6 +126,49 @@ For every file or function that changed (from implementation.md):
 2. **Depth**: Do tester's tests assert correctness (values, behavior, numerical output) or only structure? If only structural: **STOP — tests insufficient; no correctness assertions.**
 3. **Edge cases**: Does audit.md cover boundary conditions from test-spec.md? If missing: flag as PASS WITH NOTE.
 
+### Step 5b — Challenge Simulation Pipeline (SIMULATION WORKFLOWS ONLY)
+
+**This step applies ONLY to simulation workflows (11, 12).** For non-simulation workflows, skip to Step 6.
+
+Cross-compare the simulation pipeline against the other pipelines:
+
+1. **Simulation ↔ Theory convergence**: Do the finite-sample properties match theoretical predictions from `comprehension.md` and `sim-spec.md`?
+   - Does bias converge to 0 as N grows? At the expected rate?
+   - Does coverage approach nominal level for large N?
+   - Does RMSE decrease at the expected rate (typically O(1/√N))?
+   - Is the SE ratio close to 1 for large N?
+
+2. **DGP correctness**: Does the DGP implementation in `simulation.md` faithfully match `sim-spec.md`?
+   - All parameters correct?
+   - All distributions correct?
+   - Seed strategy reproducible?
+
+3. **Code ↔ Simulation consistency**: If builder implemented the estimator (workflow 11), do the unit test results and simulation results tell a consistent story?
+   - If unit tests pass but simulation shows bad coverage, there may be an SE estimation bug
+   - If unit tests show correct point estimates but simulation shows bias, there may be a DGP issue
+
+4. **Simulation pipeline isolation**: Verify that:
+   - `simulation.md` does not reference `spec.md` or `test-spec.md`
+   - `audit.md` simulation validation does not reference `sim-spec.md`
+   - Simulator's code does not hardcode values from `spec.md`
+
+5. **Acceptance criteria validation**: Cross-reference the Simulation Result Table in `audit.md` against `sim-spec.md`:
+   - Were ALL acceptance criteria evaluated?
+   - Were Monte Carlo standard errors computed?
+   - Are any marginal passes suspicious (just barely within threshold)?
+   - Are any patterns unexpected (e.g., coverage exactly at nominal = test may not discriminate)?
+
+6. **Scenario completeness**: Were ALL scenarios in the `sim-spec.md` grid actually run? Cross-reference the simulation output tables against the scenario grid.
+
+**STOP conditions for simulation**:
+- Simulation pipeline isolation breached → route to **leader**
+- DGP incorrectly implements `sim-spec.md` → route to **simulator**
+- Acceptance criteria not all evaluated → route to **tester**
+- Results fail acceptance criteria due to estimator bug → route to **builder**
+- Results fail acceptance criteria due to DGP bug → route to **simulator**
+- Acceptance criteria appear theoretically wrong → route to **planner**
+- Suspicious patterns (exact nominal coverage, seed sensitivity) → route to **simulator** or **tester** for investigation
+
 ### Step 6 — Challenge Structural Refactors
 
 If the change restructures code (splits files, renames, changes dispatch):
@@ -203,7 +248,13 @@ Use PASS WITH NOTE sparingly. It is not a way to avoid hard questions.
 | Tolerance inflated or evasion pattern detected | tester (re-dispatch with strict integrity rules) |
 | Comprehension incomplete or specs not grounded | planner |
 | Spec and test-spec are inconsistent | planner |
-| Pipeline isolation was breached | leader (re-dispatch with proper isolation) |
+| Simulation DGP incorrectly implements sim-spec.md | simulator |
+| Simulation harness bug (crashes, wrong seed, non-reproducible) | simulator |
+| Simulation acceptance criteria not all evaluated | tester |
+| Simulation results fail due to estimator bug | builder |
+| Simulation acceptance criteria theoretically wrong | planner |
+| Spec, test-spec, and sim-spec are inconsistent | planner |
+| Pipeline isolation was breached (any pipeline) | leader (re-dispatch with proper isolation) |
 
 ---
 
@@ -223,6 +274,7 @@ Before issuing PASS, verify you have actually done — not assumed — the follo
 - [ ] Cross-referenced ALL numerical tolerances in audit.md against test-spec.md — no inflation (step 7a)
 - [ ] Verified Per-Test Result Table present in audit.md with all scenarios covered (step 4)
 - [ ] Verified Before/After Comparison Table present in audit.md for bug fixes/algorithm changes/refactors (step 4)
+- [ ] For simulation workflows: verified simulation ↔ theory convergence, DGP correctness, code ↔ simulation consistency, simulation pipeline isolation, acceptance criteria validation, scenario completeness (step 5b)
 - [ ] Checked documentation, architecture diagram in target repo root + run dir, process-record log entry in run dir (with both tables), target repo clean of non-Architecture workflow artifacts (step 8)
 
 ---

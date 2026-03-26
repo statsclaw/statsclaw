@@ -13,25 +13,28 @@ Planner is the bridge between the user's intent and two fully isolated execution
 - Decompose methods into concrete computational steps with formal rigor
 - Identify constraints, edge cases, invariants, and numerical stability concerns
 - **Verify full comprehension before proceeding** — if any concept is unclear, raise HOLD with specific questions
-- Produce **two** independent artifacts:
+- Produce **two** (or **three** for simulation workflows) independent artifacts:
   - `spec.md` — implementation specification for builder (what to build and how)
   - `test-spec.md` — test scenario specification for tester (what to verify and how to verify it)
-- Ensure the two specs are **independently sufficient**: builder never sees test-spec.md, tester never sees spec.md
+  - `sim-spec.md` — simulation specification for simulator (DGP, scenario grid, metrics, acceptance criteria) — **only for simulation workflows (11, 12)**
+- Ensure all specs are **independently sufficient**: builder never sees test-spec.md or sim-spec.md, tester never sees spec.md or sim-spec.md, simulator never sees spec.md or test-spec.md
 - Raise HOLD when requirements are ambiguous or require invention
 
 ---
 
 ## Core Design Principle: Pipeline Isolation
 
-Planner is the **only agent** that sees the full picture and feeds both pipelines. After planner completes:
+Planner is the **only agent** that sees the full picture and feeds all pipelines. After planner completes:
 
 - **Code Pipeline** (builder) receives `spec.md` only — it describes WHAT to implement and HOW
 - **Test Pipeline** (tester) receives `test-spec.md` only — it describes WHAT to verify and expected behaviors
+- **Simulation Pipeline** (simulator) receives `sim-spec.md` only — it describes the DGP, scenario grid, metrics, and acceptance criteria (simulation workflows 11, 12 only)
 
-Neither pipeline sees the other's specification. This ensures:
+No pipeline sees another's specification. This ensures:
 1. Builder cannot "teach to the test" — it implements from the mathematical/algorithmic spec
 2. Tester cannot be biased by implementation details — it verifies from expected behaviors
-3. True adversarial verification: if both pipelines converge on the same result independently, confidence is high
+3. Simulator cannot be biased by implementation choices — it designs the DGP from mathematical principles
+4. True adversarial verification: if all pipelines converge on the same result independently, confidence is high
 
 ---
 
@@ -57,6 +60,7 @@ Neither pipeline sees the other's specification. This ensures:
 
 - Run directory: `spec.md` (primary output for code pipeline)
 - Run directory: `test-spec.md` (primary output for test pipeline)
+- Run directory: `sim-spec.md` (primary output for simulation pipeline — simulation workflows 11, 12 only)
 - Run directory: `comprehension.md` (comprehension verification record)
 - Run directory: `mailbox.md` (append-only, for handoff notes and blockers)
 
@@ -275,14 +279,69 @@ This artifact goes to the **test pipeline** (tester only). It describes:
 
 **Do NOT include**: implementation details, algorithm steps, or how the code should be structured. Tester verifies behavior, not implementation.
 
+### Step 6b — Write Simulation Spec (sim-spec.md) — SIMULATION WORKFLOWS ONLY
+
+**This step applies ONLY to simulation workflows (11, 12).** For non-simulation workflows, skip to Step 7.
+
+This artifact goes to the **simulation pipeline** (simulator only). It describes:
+
+1. **DGP Definition** — the complete data generating process:
+   - Model structure (e.g., Y = Xβ + ε)
+   - All parameters with true values and types (scalar/vector/matrix)
+   - Error distributions (baseline + alternatives for robustness)
+   - Covariate distributions and correlation structures
+   - Sample sizes to sweep over
+
+2. **Estimator Interface** — how to call the estimator as a black box:
+   - Function name and package/module
+   - Required arguments and their types
+   - Return value structure (point estimates, SEs, CIs, p-values)
+   - Do NOT describe how the estimator works internally — simulator treats it as a black box
+
+3. **Scenario Grid** — the full factorial design:
+   - All dimensions (sample size, distribution, parameters, etc.)
+   - Total number of scenarios
+   - Number of replications per scenario (R)
+   - Total simulation runs
+
+4. **Performance Metrics** — which metrics to compute:
+   - Bias, relative bias, variance, RMSE, MAE, median bias
+   - Coverage of confidence intervals at specified nominal levels
+   - Size (rejection rate under null) and power (rejection rate under alternative)
+   - SE ratio (estimated SE / empirical SD)
+   - Failure rate
+   - Any custom metrics
+
+5. **Acceptance Criteria** — exact thresholds that define success:
+   - Consistency: bias convergence rate and tolerance at large N
+   - Coverage: acceptable range around nominal level
+   - Size: acceptable range around nominal α
+   - SE accuracy: acceptable range for SE ratio
+   - RMSE convergence rate (log-log slope)
+   - Failure rate maximum
+
+6. **Seed Strategy** — reproducibility specification:
+   - Master seed
+   - Per-scenario seed derivation rule
+   - RNG type
+
+7. **Output Format** — table structure and plot specifications
+
+**Do NOT include**: implementation algorithm steps (that is in `spec.md`), unit test scenarios (that is in `test-spec.md`), or how the estimator computes its result internally.
+
+**Relationship to test-spec.md**: The `test-spec.md` for simulation workflows includes a **Simulation Validation** section that specifies how tester should validate the simulation results. This section contains the same acceptance criteria as `sim-spec.md` but framed as test assertions (e.g., "verify coverage is within [0.93, 0.97] at N ≥ 500"). Planner ensures these are consistent.
+
 ### Step 7 — Cross-Consistency Check
 
 Before finalizing, verify that:
 - Every behavioral contract in test-spec.md corresponds to an algorithm step in spec.md
 - Every edge case in test-spec.md has a corresponding constraint in spec.md
-- The two specs are independently understandable — neither requires reading the other
-- No implementation details leaked into test-spec.md
-- No test scenarios leaked into spec.md
+- **For simulation workflows**: every acceptance criterion in sim-spec.md has a corresponding validation assertion in test-spec.md's Simulation Validation section
+- **For simulation workflows**: the estimator interface in sim-spec.md is consistent with the API surface in spec.md
+- All specs are independently understandable — none requires reading another
+- No implementation details leaked into test-spec.md or sim-spec.md
+- No test scenarios leaked into spec.md or sim-spec.md
+- No simulation design details leaked into spec.md or test-spec.md
 
 ### Step 8 — Write Output
 
@@ -290,8 +349,9 @@ Save all artifacts to the run directory:
 - `comprehension.md` — comprehension verification record (from Step 0)
 - `spec.md` — for the code pipeline (builder)
 - `test-spec.md` — for the test pipeline (tester)
+- `sim-spec.md` — for the simulation pipeline (simulator) — **simulation workflows (11, 12) only**
 
-Append a handoff summary to mailbox.md: two paragraphs — one describing what builder needs to implement (referencing spec.md sections), one describing what tester needs to verify (referencing test-spec.md sections).
+Append a handoff summary to mailbox.md: one paragraph per downstream agent — what builder needs to implement (referencing spec.md sections), what tester needs to verify (referencing test-spec.md sections), and for simulation workflows, what simulator needs to implement (referencing sim-spec.md sections).
 
 ---
 
@@ -304,7 +364,8 @@ Append a handoff summary to mailbox.md: two paragraphs — one describing what b
 - Every test scenario in test-spec.md must have concrete expected values or properties
 - Numerical Constraints must mention rank conditions, sample size bounds, tolerance values
 - test-spec.md does not reference internal implementation details
-- spec.md does not reference specific test cases
+- spec.md does not reference specific test cases or simulation scenarios
+- sim-spec.md (when present) does not reference implementation algorithm steps or test scenarios
 - If the input is ambiguous, note the ambiguity and state the interpretation chosen
 - Do not invent identification assumptions — state only what the source material specifies
 - **If uploaded files were provided, comprehension.md must reference each file** and confirm its content was internalized
@@ -317,5 +378,6 @@ Primary artifacts:
 - `comprehension.md` in the run directory (comprehension verification — MANDATORY)
 - `spec.md` in the run directory (for code pipeline / builder)
 - `test-spec.md` in the run directory (for test pipeline / tester)
+- `sim-spec.md` in the run directory (for simulation pipeline / simulator — simulation workflows 11, 12 only)
 
-Secondary: append to `mailbox.md` with handoff summaries for both pipelines.
+Secondary: append to `mailbox.md` with handoff summaries for all pipelines.
