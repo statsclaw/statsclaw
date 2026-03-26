@@ -44,6 +44,37 @@ Leader outputs the progress bar directly as text (markdown) to the user. No tool
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+### Simulation Pipeline (Workflows 11, 12)
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  StatsClaw Progress (simulation)                             [4/7] │
+│                                                                     │
+│  [✔] Credentials ── [✔] Plan ── [✔] Specs ── [▶] Build/Sim/Test    │
+│       ── [ ] Docs ── [ ] Review ── [ ] Ship                        │
+│                                                                     │
+│  ▶ Active (parallel):                                               │
+│    ├─ builder: implementing estimator in worktree...               │
+│    ├─ simulator: implementing DGP + harness in worktree...         │
+│    └─ tester: preparing validation scenarios...                    │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Simulation-Only Pipeline (Workflow 12)
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  StatsClaw Progress (simulation-only)                        [4/7] │
+│                                                                     │
+│  [✔] Credentials ── [✔] Plan ── [✔] Specs ── [▶] Sim/Test          │
+│       ── [ ] Docs ── [ ] Review ── [ ] Ship                        │
+│                                                                     │
+│  ▶ Active (parallel):                                               │
+│    ├─ simulator: implementing DGP + harness in worktree...         │
+│    └─ tester: preparing validation scenarios...                    │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
 ### Lightweight Pipelines (Workflows 6, 7, 8)
 
 ```
@@ -93,6 +124,30 @@ Leader outputs the progress bar directly as text (markdown) to the user. No tool
 | `SPEC_READY` | 3 | Specs |
 | `DOCUMENTED` | 4 | Docs/Implement |
 | `REVIEW_PASSED` | 5 | Review |
+
+### Simulation Pipeline (Workflow 11)
+
+| State | Step # | Label |
+| --- | --- | --- |
+| `CREDENTIALS_VERIFIED` | 1 | Credentials |
+| `PLANNED` | 2 | Plan |
+| `SPEC_READY` | 3 | Specs |
+| `PIPELINES_COMPLETE` | 4 | Build/Sim/Test |
+| `DOCUMENTED` | 5 | Docs |
+| `REVIEW_PASSED` | 6 | Review |
+| `DONE` | 7 | Ship |
+
+### Simulation-Only Pipeline (Workflow 12)
+
+| State | Step # | Label |
+| --- | --- | --- |
+| `CREDENTIALS_VERIFIED` | 1 | Credentials |
+| `PLANNED` | 2 | Plan |
+| `SPEC_READY` | 3 | Specs |
+| `PIPELINES_COMPLETE` | 4 | Sim/Test |
+| `DOCUMENTED` | 5 | Docs |
+| `REVIEW_PASSED` | 6 | Review |
+| `DONE` | 7 | Ship |
 
 ### Simplified Pipeline
 
