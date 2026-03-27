@@ -1,10 +1,10 @@
 blank_issues_enabled: true
 contact_links:
   - name: Discussions - Ideas & Brainstorm
-    url: https://github.com/xuyiqing/statsclaw/discussions/categories/ideas
+    url: https://github.com/statsclaw/statsclaw/discussions/categories/ideas
     about: "Share and discuss ideas for StatsClaw's future"
   - name: Discussions - Q&A
-    url: https://github.com/xuyiqing/statsclaw/discussions/categories/q-a
+    url: https://github.com/statsclaw/statsclaw/discussions/categories/q-a
     about: "Ask questions about using StatsClaw"
   - name: StatsClaw Website
     url: https://statsclaw.ai
