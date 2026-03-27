@@ -1,0 +1,27 @@
+title: "Ideas & Feature Brainstorm"
+labels:
+  - "idea"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share your ideas for StatsClaw! This is the place to brainstorm features,
+        discuss use cases, and help shape the roadmap.
+
+        All ideas are welcome — from small improvements to ambitious new capabilities.
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+      description: What would you like to see in StatsClaw?
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: "Why is this useful? How would you or others benefit?"
+    validations:
+      required: false

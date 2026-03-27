@@ -174,6 +174,23 @@ This keeps target repos clean (code + essential docs only) while preserving full
 
 ---
 
+## Get Involved
+
+StatsClaw is an open-source community project. We welcome everyone — statisticians, econometricians, developers, and users.
+
+| What you want to do | Where to go |
+| --- | --- |
+| Request a feature | [Open a feature request](../../issues/new?template=feature-request.yml) |
+| Submit a paper to turn into a package | [Paper-to-Package request](../../issues/new?template=paper-to-package.yml) |
+| Report a bug | [Bug report](../../issues/new?template=bug-report.yml) |
+| Discuss ideas & brainstorm | [Discussions](../../discussions) |
+| Contribute code | [Contributing Guide](CONTRIBUTING.md) |
+| See what's planned | [Roadmap](ROADMAP.md) |
+
+**Website**: [statsclaw.ai](https://statsclaw.ai)
+
+---
+
 ## Design Principles
 
 - **Credentials first, work second.** Verify push access before creating a run.
