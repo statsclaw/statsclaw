@@ -1,0 +1,52 @@
+name: "Feature Request"
+description: "Suggest a new feature or improvement for StatsClaw"
+title: "[Feature]: "
+labels: ["enhancement", "community"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement! Your ideas help shape the [Roadmap](../../ROADMAP.md).
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What would you like StatsClaw to do?
+      description: Describe the feature or improvement you'd like to see.
+      placeholder: "e.g., Support Julia language profile for generating Julia packages"
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use case
+      description: How would you use this feature? What problem does it solve?
+      placeholder: "e.g., I work primarily in Julia and want to generate packages for my estimators"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of StatsClaw does this relate to?
+      options:
+        - Agent behavior (leader, planner, builder, tester, etc.)
+        - Language profile (R, Python, Stata, etc.)
+        - Paper-to-Package pipeline
+        - Simulation workflows
+        - Documentation & tutorials
+        - CI/CD & packaging
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Any other details, screenshots, or references.
+      placeholder: "Links to related papers, examples, etc."
+    validations:
+      required: false

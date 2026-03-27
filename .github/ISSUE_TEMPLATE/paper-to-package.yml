@@ -1,0 +1,67 @@
+name: "Paper-to-Package Request"
+description: "Submit a paper or method to be turned into a statistical package"
+title: "[Paper]: "
+labels: ["paper-to-package", "community"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a statistical method described in a paper? Submit it here and we'll work on turning it into an installable package.
+
+        This is a core goal of StatsClaw: **paper in, package out**.
+
+  - type: textarea
+    id: paper
+    attributes:
+      label: Paper or method reference
+      description: "Link to the paper (arXiv, journal URL, DOI) or describe the method."
+      placeholder: "e.g., https://arxiv.org/abs/xxxx.xxxxx or 'Synthetic control method for causal inference by Abadie et al.'"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: target-language
+    attributes:
+      label: Target language
+      description: What language should the package be in?
+      multiple: true
+      options:
+        - R
+        - Python
+        - Stata
+        - Julia
+        - TypeScript
+        - Go
+        - Rust
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: key-features
+    attributes:
+      label: Key features to implement
+      description: Which parts of the paper should the package cover?
+      placeholder: |
+        - Main estimator (Section 3)
+        - Bootstrap inference (Section 4)
+        - Simulation from Section 5
+    validations:
+      required: false
+
+  - type: textarea
+    id: existing-implementations
+    attributes:
+      label: Existing implementations
+      description: "Are there existing packages for this method? What's missing?"
+      placeholder: "e.g., There's an R package 'foo' but it lacks the bootstrap extension from the 2024 paper"
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: "Attach PDFs, formulas, or any other helpful material."
+    validations:
+      required: false
