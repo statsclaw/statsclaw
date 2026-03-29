@@ -110,7 +110,7 @@ Branch naming: use descriptive names (e.g., `fix/issue-42-null-check`, `feat/two
 
 ### Step 5 — Stage and Commit (Target Repo)
 
-Stage code changes, user-facing docs listed in implementation.md and docs.md, and `Architecture.md` in the target repo root. Do NOT stage other workflow artifacts (log entries, CHANGELOG, HANDOFF) — those go to the workspace repo.
+Stage code changes, user-facing docs listed in implementation.md and docs.md, and `ARCHITECTURE.md` in the target repo root. Do NOT stage other workflow artifacts (log entries, CHANGELOG, HANDOFF) — those go to the workspace repo.
 
 ```bash
 git -C "$TARGET" add <specific-code-and-doc-files>
@@ -225,8 +225,8 @@ When operating in patrol mode (dispatched by the issue-patrol skill):
 
 - review.md has PASS verdict before any ship action
 - Remote URL matches the user's target repository
-- Code files from implementation.md, user-facing docs from docs.md, and `Architecture.md` are staged in the target repo
-- **No workflow artifacts (log entries, CHANGELOG, HANDOFF) staged in target repo** — these go to workspace repo. `Architecture.md` is the exception — it belongs in the target repo root.
+- Code files from implementation.md, user-facing docs from docs.md, and `ARCHITECTURE.md` are staged in the target repo
+- **No workflow artifacts (log entries, CHANGELOG, HANDOFF) staged in target repo** — these go to workspace repo. `ARCHITECTURE.md` is the exception — it belongs in the target repo root.
 - Workspace sync attempted after target repo push (best-effort)
 - Commit message accurately describes the changes
 - No force-push to protected branches
