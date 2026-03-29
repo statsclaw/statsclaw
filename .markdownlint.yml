@@ -1,0 +1,28 @@
+# Markdownlint configuration for StatsClaw
+# See: https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
+
+default: true
+
+# Allow long lines — agent definitions and CLAUDE.md have long table rows and URLs
+MD013: false
+
+# Allow duplicate headings — different agent files reuse section names (Role, Workflow, Output)
+MD024: false
+
+# Allow HTML — we use <!-- filename: ... --> comments in templates
+MD033: false
+
+# Allow trailing punctuation in headings — e.g. "Step 5b — Challenge Simulation Pipeline (SIMULATION WORKFLOWS ONLY)"
+MD026: false
+
+# Allow multiple top-level headings — some files have structural reasons
+MD025: false
+
+# Allow inline HTML comments
+MD051: false
+
+# Don't enforce blank lines around lists in tables
+MD032: false
+
+# Allow bare URLs in some contexts
+MD034: false
