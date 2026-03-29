@@ -11,99 +11,24 @@ permissions:
 
 jobs:
   # ─────────────────────────────────────────────────────────
-  # 1. Validate all internal cross-references
+  # 1. Framework structure & cross-reference integrity
   # ─────────────────────────────────────────────────────────
-  cross-references:
-    name: Cross-reference integrity
+  validate-structure:
+    name: Validate structure
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Check file references in CLAUDE.md
-        run: |
-          errors=0
-
-          # Extract all file paths referenced in CLAUDE.md (backtick-quoted paths)
-          # Patterns: `agents/leader.md`, `skills/isolation/SKILL.md`, `templates/context.md`, `profiles/r-package.md`
-          for dir in agents skills templates profiles; do
-            grep -oP '`'"$dir"'/[^`]+`' CLAUDE.md | tr -d '`' | sort -u | while read -r ref; do
-              if [ ! -f "$ref" ]; then
-                echo "::error file=CLAUDE.md::Broken reference: $ref does not exist"
-                echo "FAIL" >> /tmp/ref-errors
-              fi
-            done
-          done
-
-          # Check references in agent files
-          for agent in agents/*.md; do
-            grep -oP '`(agents|skills|templates|profiles)/[^`]+`' "$agent" 2>/dev/null | tr -d '`' | sort -u | while read -r ref; do
-              if [ ! -f "$ref" ]; then
-                echo "::error file=$agent::Broken reference: $ref does not exist"
-                echo "FAIL" >> /tmp/ref-errors
-              fi
-            done
-          done
-
-          # Check references in skill files
-          find skills -name 'SKILL.md' | while read -r skill; do
-            grep -oP '`(agents|skills|templates|profiles)/[^`]+`' "$skill" 2>/dev/null | tr -d '`' | sort -u | while read -r ref; do
-              if [ ! -f "$ref" ]; then
-                echo "::error file=$skill::Broken reference: $ref does not exist"
-                echo "FAIL" >> /tmp/ref-errors
-              fi
-            done
-          done
-
-          if [ -f /tmp/ref-errors ]; then
-            echo "Cross-reference check failed"
-            exit 1
-          fi
-          echo "All cross-references valid"
-
-      - name: Check agent completeness
-        run: |
-          # Every agent listed in CLAUDE.md Agent Teams Model table must have a file
-          expected_agents="leader planner builder tester scriber simulator reviewer shipper"
-          for agent in $expected_agents; do
-            if [ ! -f "agents/${agent}.md" ]; then
-              echo "::error::Missing agent definition: agents/${agent}.md"
-              exit 1
-            fi
-          done
-          echo "All expected agent files present"
-
-      - name: Check template completeness
-        run: |
-          # Every template listed in the Runtime Layout must exist
-          expected_templates="context status credentials mailbox lock log-entry ARCHITECTURE"
-          for tmpl in $expected_templates; do
-            if [ ! -f "templates/${tmpl}.md" ]; then
-              echo "::error::Missing template: templates/${tmpl}.md"
-              exit 1
-            fi
-          done
-          echo "All expected template files present"
-
-      - name: Check skill completeness
-        run: |
-          # Every skill directory must contain SKILL.md
-          for dir in skills/*/; do
-            if [ ! -f "${dir}SKILL.md" ]; then
-              echo "::error::Missing skill definition: ${dir}SKILL.md"
-              exit 1
-            fi
-          done
-          echo "All skill directories have SKILL.md"
+      - name: Run structure validation
+        run: bash .github/scripts/validate-structure.sh
 
   # ─────────────────────────────────────────────────────────
   # 2. Markdown lint
   # ─────────────────────────────────────────────────────────
-  markdown-lint:
-    name: Markdown lint
+  lint-markdown:
+    name: Lint Markdown
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Lint Markdown files
         uses: DavidAnson/markdownlint-cli2-action@v19
         with:
@@ -115,63 +40,12 @@ jobs:
   # ─────────────────────────────────────────────────────────
   # 3. YAML validation
   # ─────────────────────────────────────────────────────────
-  yaml-validate:
-    name: YAML validation
+  validate-yaml:
+    name: Validate YAML
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Validate YAML files
         run: |
           pip install yamllint --quiet
           yamllint -d relaxed .github/ISSUE_TEMPLATE/*.yml .github/DISCUSSION_CATEGORY_FORMS/*.yml .github/workflows/*.yml
-
-  # ─────────────────────────────────────────────────────────
-  # 4. Structure validation
-  # ─────────────────────────────────────────────────────────
-  structure:
-    name: Framework structure
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Verify required top-level files
-        run: |
-          for f in CLAUDE.md README.md CONTRIBUTING.md ROADMAP.md; do
-            if [ ! -f "$f" ]; then
-              echo "::error::Missing required file: $f"
-              exit 1
-            fi
-          done
-
-      - name: Verify no runtime artifacts committed
-        run: |
-          # .repos/ should never be committed
-          if [ -d ".repos" ] && [ "$(ls -A .repos 2>/dev/null)" ]; then
-            echo "::error::.repos/ directory contains files — runtime artifacts must not be committed"
-            exit 1
-          fi
-          echo "No runtime artifacts found"
-
-      - name: Check agent file structure
-        run: |
-          # Each agent file should have: Role, Allowed Reads, Allowed Writes, Must-Not Rules, Workflow, Output
-          required_sections="Role|Allowed Reads|Allowed Writes|Must-Not Rules"
-          for agent in agents/*.md; do
-            for section in "Role" "Allowed Reads" "Allowed Writes" "Must-Not Rules"; do
-              if ! grep -q "## $section" "$agent" && ! grep -q "## ${section}" "$agent"; then
-                echo "::warning file=$agent::Missing section: ## $section"
-              fi
-            done
-          done
-          echo "Agent structure check complete"
-
-      - name: Verify profile coverage matches README
-        run: |
-          # Count profiles and compare
-          profile_count=$(ls profiles/*.md 2>/dev/null | wc -l)
-          if [ "$profile_count" -lt 1 ]; then
-            echo "::error::No profiles found in profiles/"
-            exit 1
-          fi
-          echo "Found $profile_count language profiles"

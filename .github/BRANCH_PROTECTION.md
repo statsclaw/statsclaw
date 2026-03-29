@@ -37,7 +37,7 @@ All ephemeral branches are deleted after their PR is merged.
 | Required approvals | **1** (raise to 2 when team grows) | Every change is reviewed |
 | Dismiss stale reviews on push | **Yes** | New pushes require re-review |
 | Require status checks to pass | **Yes** — all CI jobs | Gate on validation |
-| Required status checks | `cross-references`, `markdown-lint`, `yaml-validate`, `structure` | All must pass |
+| Required status checks | `validate-structure`, `lint-markdown`, `validate-yaml` | All must pass |
 | Require branches up to date | **Yes** | Prevent merge-induced breakage |
 | Require conversation resolution | **Yes** | All review comments addressed |
 | Require linear history | **Yes** | Enforces squash merge |
@@ -66,10 +66,9 @@ gh api repos/statsclaw/statsclaw/branches/main/protection -X PUT -f '
   "required_status_checks": {
     "strict": true,
     "contexts": [
-      "Cross-reference integrity",
-      "Markdown lint",
-      "YAML validation",
-      "Framework structure"
+      "Validate structure",
+      "Lint Markdown",
+      "Validate YAML"
     ]
   },
   "enforce_admins": false,
@@ -198,10 +197,9 @@ Every PR and push to `main`/`release/v*` runs:
 
 | Job | What it checks |
 | --- | --- |
-| **Cross-reference integrity** | All file paths in CLAUDE.md, agents, and skills point to existing files |
-| **Markdown lint** | Consistent formatting across all `.md` files |
-| **YAML validation** | Issue templates and workflow files are valid YAML |
-| **Framework structure** | Required files exist, agent files have expected sections, no runtime artifacts committed |
+| **Validate structure** | All cross-references resolve, required files exist, agent sections present, no runtime artifacts committed |
+| **Lint Markdown** | Consistent formatting across all `.md` files |
+| **Validate YAML** | Issue templates and workflow files are valid YAML |
 
 Tag pushes (`v*`) additionally trigger:
 
