@@ -4,7 +4,7 @@ StatsClaw is a reusable workflow framework for building, validating, documenting
 
 StatsClaw does **not** version user runtime state. All request state, project contexts, generated specs, shared task lists, mailboxes, locks, and run artifacts live inside the **workspace repository** under `.repos/workspace/<repo-name>/`. The workspace repo is a user-specified GitHub repository (e.g., `[username]/workspace`) that serves as both the runtime state directory and the permanent log archive. There is no separate `.statsclaw/` directory.
 
-This keeps target repos clean (code + `Architecture.md` + essential user-facing docs only). **Exception**: `Architecture.md` is written to the target repo root so users and contributors can see the system architecture directly. See `skills/workspace-sync/SKILL.md` for details.
+This keeps target repos clean (code + `ARCHITECTURE.md` + essential user-facing docs only). **Exception**: `ARCHITECTURE.md` is written to the target repo root so users and contributors can see the system architecture directly. See `skills/workspace-sync/SKILL.md` for details.
 
 ---
 
@@ -64,13 +64,13 @@ This section is the entry point for every non-trivial user request. You MUST fol
      - **Simulation only** (existing estimator, no code changes): dispatch **simulator + tester IN PARALLEL**. Simulator gets `sim-spec.md`, tester gets `test-spec.md`. No builder needed.
      - **Docs-only changes** (quarto books, vignettes, tutorials, README, examples, man pages — NO source code): dispatch **scriber** only (from `spec.md`). Scriber implements the docs AND produces recording artifacts. No builder, no tester — docs don't need testing. After scriber, go directly to reviewer.
    - c. **scriber** — **ALWAYS dispatched** in every non-lightweight workflow. Dispatch with `isolation: "worktree"`. Scriber is the **single owner** of all documentation, logging, and process recording.
-     - **In code workflows (1, 2, 4, 5)**: scriber is dispatched AFTER both builder and tester complete. Reads ALL available run artifacts. Produces `Architecture.md`, log entry with process record, and `docs.md`.
-     - **In simulation workflows (11, 12)**: scriber is dispatched AFTER builder (if any), tester, and simulator all complete. Reads ALL available run artifacts including `simulation.md`. Produces `Architecture.md`, log entry with process record (including simulation results tables), and `docs.md`.
-     - **In docs-only workflow (3)**: scriber IS the implementer — receives `spec.md` and implements documentation changes. Also produces `Architecture.md`, log entry, and `docs.md` in the same dispatch.
+     - **In code workflows (1, 2, 4, 5)**: scriber is dispatched AFTER both builder and tester complete. Reads ALL available run artifacts. Produces `ARCHITECTURE.md`, log entry with process record, and `docs.md`.
+     - **In simulation workflows (11, 12)**: scriber is dispatched AFTER builder (if any), tester, and simulator all complete. Reads ALL available run artifacts including `simulation.md`. Produces `ARCHITECTURE.md`, log entry with process record (including simulation results tables), and `docs.md`.
+     - **In docs-only workflow (3)**: scriber IS the implementer — receives `spec.md` and implements documentation changes. Also produces `ARCHITECTURE.md`, log entry, and `docs.md` in the same dispatch.
      - Update status to `DOCUMENTED` after scriber completes.
      - **Log entry**: Every scriber run MUST produce a log entry in the run directory using the template at `templates/log-entry.md`. The log entry includes a **process record** (complete audit trail of proposals, tests, problems, and resolutions), a **handoff document** (what the next developer needs to know), and a **design note** (key decisions and rationale). The shipper agent later syncs this log entry to the workspace repo's `runs/` directory, and extracts handoff notes into `HANDOFF.md`. Logs do NOT go to the target repo. See `skills/workspace-sync/SKILL.md`.
    - d. **reviewer** — ALWAYS dispatched after scriber completes. Reads ALL available artifacts. Produces `review.md` with verdict. Update status to `REVIEW_PASSED` or `STOPPED`.
-   - e. **shipper** — ONLY if the user asked to ship, or issue-patrol is active. Produces `shipper.md`. Shipper commits code changes + `Architecture.md` to the target repo, then syncs to the workspace repo: copies run log to `runs/`, copies `docs.md`, updates `CHANGELOG.md` and `HANDOFF.md`. See `skills/workspace-sync/SKILL.md`.
+   - e. **shipper** — ONLY if the user asked to ship, or issue-patrol is active. Produces `shipper.md`. Shipper commits code changes + `ARCHITECTURE.md` to the target repo, then syncs to the workspace repo: copies run log to `runs/`, copies `docs.md`, updates `CHANGELOG.md` and `HANDOFF.md`. See `skills/workspace-sync/SKILL.md`.
    - f. **workspace sync** — If the workflow does NOT include a ship step (workflows 1, 3, 6, 8, 10, 11, 12), leader MUST still dispatch shipper with a **workspace-sync-only** task after the last mandatory step (reviewer or tester). This ensures workflow logs are always pushed to the workspace repo even when no code is shipped.
    - **PIPELINE ISOLATION**: builder NEVER receives `test-spec.md` or `sim-spec.md`. Tester NEVER receives `spec.md`, `sim-spec.md`, or `implementation.md`. Simulator NEVER receives `spec.md`, `test-spec.md`, or `implementation.md`. In docs-only workflows, scriber receives `spec.md` (as implementer); no tester is dispatched. See `skills/isolation/SKILL.md`.
 7. **GATE**: Update `status.md` after EVERY teammate completes. Read the output artifact. Do NOT proceed past `STOP` or `BLOCK` signals. Respawn the responsible teammate on failure (max 3 retries per teammate before `HOLD`).
@@ -99,7 +99,7 @@ Short prompts MUST work. A user message like "Work on https://github.com/foo/bar
 | `PIPELINES_COMPLETE` | Builder dispatched with `isolation: "worktree"`, tester dispatched (code workflows only); simulator dispatched with `isolation: "worktree"` (simulation workflows only) | Agent tool calls must exist |
 | `PIPELINES_COMPLETE` | Pipeline isolation verified (code workflows only) | Builder prompt has no test-spec.md or sim-spec.md; tester prompt has no spec.md or sim-spec.md; simulator prompt has no spec.md or test-spec.md |
 | `PIPELINES_COMPLETE` | Leader did NOT run any validation command directly | Self-check: no Bash calls to R CMD check, pytest, npm test, etc. |
-| `DOCUMENTED` | `Architecture.md` exists in target repo root AND run directory; `docs.md` exists in run directory; log entry with process record exists in run directory | Read all file paths; verify log entry contains Process Record section |
+| `DOCUMENTED` | `ARCHITECTURE.md` exists in target repo root AND run directory; `docs.md` exists in run directory; log entry with process record exists in run directory | Read all file paths; verify log entry contains Process Record section |
 | `DOCUMENTED` | Scriber was dispatched via `Agent` tool | Agent tool call must exist |
 | `REVIEW_PASSED` | `review.md` exists with verdict `PASS` or `PASS WITH NOTE` (standard workflows); OR `audit.md` exists with verdict PASS (workflow 10 — tester acts as quality gate) | Read the file, check verdict |
 | `REVIEW_PASSED` | Reviewer was dispatched via `Agent` tool (standard workflows); OR tester dispatched (workflow 10) | Agent tool call must exist |
@@ -298,7 +298,7 @@ Each agent's full workflow, allowed reads/writes, and must-not rules are defined
 **Workflow details**: Each workflow's agent cooperation, artifacts, and state transitions are documented in the respective agent definitions (`agents/*.md`) and skills (`skills/*.md`). Key references:
 
 - **Workflows 1–5**: Two-pipeline flow. See `skills/handoff/SKILL.md` for artifact flow between agents.
-- **Workflow 3**: Docs-only — scriber replaces builder as the implementer. Scriber receives `spec.md` (what docs to write), produces documentation changes + recording artifacts (Architecture.md, log entry, docs.md). No builder or tester is dispatched. Reviewer reviews directly after scriber. State goes `SPEC_READY` → `DOCUMENTED` (skips `PIPELINES_COMPLETE`).
+- **Workflow 3**: Docs-only — scriber replaces builder as the implementer. Scriber receives `spec.md` (what docs to write), produces documentation changes + recording artifacts (ARCHITECTURE.md, log entry, docs.md). No builder or tester is dispatched. Reviewer reviews directly after scriber. State goes `SPEC_READY` → `DOCUMENTED` (skips `PIPELINES_COMPLETE`).
 - **Workflow 4**: See `skills/issue-patrol/SKILL.md` for patrol phases (scan, triage, fix loop, report).
 - **Workflow 6**: Lightweight — no planner, builder, or reviewer. Tester runs profile validation commands directly. State jumps directly from `PLANNED` to `PIPELINES_COMPLETE` (tester-only).
 - **Workflows 7–8**: Lightweight — skip the full pipeline. These are for already-completed work that needs shipping or review. State model requirements for `SPEC_READY` and `PIPELINES_COMPLETE` are waived; reviewer reads whatever artifacts are available.
@@ -459,7 +459,7 @@ For non-trivial requests, you MUST continue through the selected workflow withou
 - **Worktree isolation for writers.** `isolation: "worktree"` for builder, scriber, and simulator.
 - **Ship actions are explicit.** Do not push unless the user asked, issue-patrol is active, or a single-issue fix was requested (workflow 5 — fixing an issue implies pushing the fix).
 - **Surgical scope.** Each run modifies only what the request requires.
-- **Clean target repos.** Workflow logs, process records, and handoff documents live in the workspace repo — never the target repo. `Architecture.md` is the one exception: it lives in the target repo root so users can see the system architecture. Target repos contain only code + `Architecture.md` + essential user-facing docs.
+- **Clean target repos.** Workflow logs, process records, and handoff documents live in the workspace repo — never the target repo. `ARCHITECTURE.md` is the one exception: it lives in the target repo root so users can see the system architecture. Target repos contain only code + `ARCHITECTURE.md` + essential user-facing docs.
 - **One runtime, one location.** All runtime state lives in `.repos/workspace/<repo-name>/`. No separate `.statsclaw/` directory — the workspace repo IS the runtime store.
 - **Parallel when possible.** Builder and tester are ALWAYS dispatched in parallel. In simulation workflows, builder, tester, and simulator are ALL dispatched in parallel.
 - **Tolerance integrity is absolute.** Tester MUST NEVER relax tolerances, thresholds, or acceptance criteria to make a failing test pass. The only valid response to a genuine failure is BLOCK. Reviewer cross-audits every tolerance against test-spec.md.
@@ -492,7 +492,7 @@ All runtime state lives inside the workspace repo, organized per target reposito
         │       ├── implementation.md # code pipeline output (from builder)
         │       ├── simulation.md     # simulation pipeline output (from simulator, workflows 11/12)
         │       ├── audit.md          # test pipeline output (from tester)
-        │       ├── Architecture.md   # from scriber; copy for reviewer (primary copy in target repo root)
+        │       ├── ARCHITECTURE.md   # from scriber; copy for reviewer (primary copy in target repo root)
         │       ├── log-entry.md      # from scriber; promoted to runs/<date>-<slug>.md by shipper
         │       ├── docs.md           # from scriber
         │       ├── review.md
@@ -552,6 +552,6 @@ StatsClaw/
 │   ├── mailbox.md
 │   ├── lock.md
 │   ├── log-entry.md
-│   └── Architecture.md
+│   └── ARCHITECTURE.md
 └── .repos/                # target repo checkouts + workspace repo (runtime state), git-ignored; symlinks supported
 ```

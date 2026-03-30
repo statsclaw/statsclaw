@@ -15,7 +15,7 @@ StatsClaw is building toward a world where statisticians and econometricians can
 - [x] Issue patrol — scan and auto-fix GitHub issues
 - [x] Simulation study workflows (Monte Carlo, DGP, coverage)
 - [ ] Comprehensive test suite for the framework itself
-- [ ] CI/CD pipeline for StatsClaw repo
+- [x] CI/CD pipeline for StatsClaw repo
 
 ## Phase 2: Paper-to-Package Pipeline
 

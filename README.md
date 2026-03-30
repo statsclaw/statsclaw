@@ -121,7 +121,7 @@ All runtime state lives inside the workspace repo, organized per target reposito
         │       ├── implementation.md # code pipeline output (from builder)
         │       ├── simulation.md     # simulation pipeline output (from simulator, workflows 11/12)
         │       ├── audit.md          # test pipeline output (from tester)
-        │       ├── Architecture.md   # from scriber (primary copy in target repo root)
+        │       ├── ARCHITECTURE.md   # from scriber (primary copy in target repo root)
         │       ├── log-entry.md      # process record (from scriber; promoted to runs/<date>-<slug>.md)
         │       ├── docs.md           # documentation changes (from scriber)
         │       ├── review.md         # convergence verdict (from reviewer)
