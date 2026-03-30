@@ -43,7 +43,7 @@ Interrupt states:
 | implementation.md | builder | Code | pending | |
 | simulation.md | simulator | Simulation | pending | |
 | audit.md | tester | Test | pending | |
-| Architecture.md | scriber | Architecture | pending | |
+| ARCHITECTURE.md | scriber | Architecture | pending | |
 | log-entry.md | scriber | Process Record | pending | |
 | docs.md | scriber | Code | pending | |
 | review.md | reviewer | Convergence | pending | |

@@ -75,7 +75,7 @@ No planner, no scriber, no reviewer. Leader writes a lightweight spec directly i
 CREDENTIALS_VERIFIED → PLANNED → PIPELINES_COMPLETE → REVIEW_PASSED → DONE
 ```
 
-Skipped states: `SPEC_READY`, `DOCUMENTED`. No `comprehension.md`, `spec.md`, `test-spec.md`, `Architecture.md`, `docs.md`, or `review.md` from reviewer.
+Skipped states: `SPEC_READY`, `DOCUMENTED`. No `comprehension.md`, `spec.md`, `test-spec.md`, `ARCHITECTURE.md`, `docs.md`, or `review.md` from reviewer.
 
 ### Steps
 
@@ -109,7 +109,7 @@ Skipped states: `SPEC_READY`, `DOCUMENTED`. No `comprehension.md`, `spec.md`, `t
 | reviewer | Tester provides sufficient quality gate |
 | `spec.md` / `test-spec.md` | Builder uses `request.md` directly; tester validates against acceptance criteria |
 | `comprehension.md` | No uploaded material to comprehend |
-| `Architecture.md` | Small change doesn't warrant architecture documentation |
+| `ARCHITECTURE.md` | Small change doesn't warrant architecture documentation |
 | Log entry | No process record for routine changes |
 
 ### Escalation

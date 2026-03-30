@@ -23,7 +23,7 @@ Downstream teammates MUST reuse upstream artifacts. They MUST NOT re-discover or
 **ALL artifacts passed between agents MUST use the `.md` (Markdown) file extension.** This is a hard requirement, not a style preference. Markdown ensures artifacts are human-readable, diff-friendly, and renderable on GitHub.
 
 Rules:
-- Every handoff artifact is a `.md` file: `spec.md`, `test-spec.md`, `sim-spec.md`, `implementation.md`, `simulation.md`, `audit.md`, `review.md`, `docs.md`, `shipper.md`, `comprehension.md`, `Architecture.md`, `mailbox.md`, `credentials.md`, `status.md`, `request.md`, `impact.md`
+- Every handoff artifact is a `.md` file: `spec.md`, `test-spec.md`, `sim-spec.md`, `implementation.md`, `simulation.md`, `audit.md`, `review.md`, `docs.md`, `shipper.md`, `comprehension.md`, `ARCHITECTURE.md`, `mailbox.md`, `credentials.md`, `status.md`, `request.md`, `impact.md`
 - Log entries in the run directory MUST be `.md` files: `log-entry.md` (with a `<!-- filename: YYYY-MM-DD-slug.md -->` header for workspace `runs/` naming)
 - Lock files MUST be `.md` files
 - No agent may produce a handoff artifact in any other format (no `.txt`, `.json`, `.yaml`, `.html`)
@@ -43,7 +43,7 @@ Each teammate produces specific output artifacts per run stage:
 | builder | `implementation.md` | `.repos/workspace/<repo-name>/runs/<request-id>/implementation.md` | Code Pipeline output |
 | simulator | `simulation.md` | `.repos/workspace/<repo-name>/runs/<request-id>/simulation.md` | Simulation Pipeline output (workflows 11, 12) |
 | tester | `audit.md` | `.repos/workspace/<repo-name>/runs/<request-id>/audit.md` | Test Pipeline output |
-| scriber | `Architecture.md` | `<target-repo>/Architecture.md` + `.repos/workspace/<repo-name>/runs/<request-id>/Architecture.md` | Architecture (mandatory; target repo root is primary, run dir copy for reviewer) |
+| scriber | `ARCHITECTURE.md` | `<target-repo>/ARCHITECTURE.md` + `.repos/workspace/<repo-name>/runs/<request-id>/ARCHITECTURE.md` | Architecture (mandatory; target repo root is primary, run dir copy for reviewer) |
 | scriber | `log-entry.md` | `.repos/workspace/<repo-name>/runs/<request-id>/log-entry.md` | Log entry with process record (mandatory; synced to workspace `runs/` by shipper) |
 | scriber | `docs.md` | `.repos/workspace/<repo-name>/runs/<request-id>/docs.md` | Documentation changes (synced to workspace `<repo-name>/docs.md` by shipper) |
 | reviewer | `review.md` | `.repos/workspace/<repo-name>/runs/<request-id>/review.md` | Convergence output |
@@ -93,7 +93,7 @@ planner
                                    ▼               ▼
                                 scriber (recording)
                          reads ALL artifacts from both pipelines
-                         produces: Architecture.md (target repo root + run dir), log-entry.md, docs.md (run dir → workspace)
+                         produces: ARCHITECTURE.md (target repo root + run dir), log-entry.md, docs.md (run dir → workspace)
                                    │
                                    ▼
                                reviewer (convergence)
@@ -110,7 +110,7 @@ planner
                             │
                             ├── documentation changes
                             ├── implementation.md
-                            ├── Architecture.md (target repo root + run dir), log-entry.md, docs.md (run dir → workspace)
+                            ├── ARCHITECTURE.md (target repo root + run dir), log-entry.md, docs.md (run dir → workspace)
                             │
                             ▼
                         reviewer (convergence)
@@ -138,7 +138,7 @@ planner
                                    ▼               ▼
                                 scriber (recording)
                          reads ALL artifacts from all pipelines
-                         produces: Architecture.md, log-entry.md, docs.md
+                         produces: ARCHITECTURE.md, log-entry.md, docs.md
                                    │
                                    ▼
                                reviewer (convergence)
@@ -188,7 +188,7 @@ planner
 ### All Workflows
 
 **→ Reviewer (Convergence)**
-- Leader passes: ALL artifacts — `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `Architecture.md`, `docs.md`, `request.md`, `impact.md`, `mailbox.md`, `comprehension.md`. For simulation workflows: also `sim-spec.md` and `simulation.md`.
+- Leader passes: ALL artifacts — `spec.md`, `test-spec.md`, `implementation.md`, `audit.md`, `ARCHITECTURE.md`, `docs.md`, `request.md`, `impact.md`, `mailbox.md`, `comprehension.md`. For simulation workflows: also `sim-spec.md` and `simulation.md`.
 - Reviewer is the convergence agent that cross-compares all pipelines AND scriber's output
 
 **Reviewer → Shipper**

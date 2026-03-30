@@ -23,12 +23,22 @@ No coding required! You can help by:
    git clone https://github.com/<your-username>/statsclaw.git
    cd statsclaw
    ```
-3. Create a branch for your work:
+3. Create a branch for your work using the naming convention:
    ```bash
+   # For new features (agents, skills, profiles, templates)
    git checkout -b feature/your-feature-name
+
+   # For bug fixes
+   git checkout -b fix/short-description
+
+   # For documentation changes
+   git checkout -b docs/short-description
+
+   # For repo maintenance (CI, config, etc.)
+   git checkout -b chore/short-description
    ```
 4. Make your changes
-5. Push and open a Pull Request
+5. Push and open a Pull Request against `main`
 
 #### What Can You Work On?
 
@@ -46,6 +56,14 @@ Check [issues labeled `good first issue`](../../issues?q=is%3Aissue+is%3Aopen+la
 - Follow existing patterns in the codebase
 - Agent definitions use Markdown — keep them clear and structured
 - Test your changes with Claude Code before submitting
+- All PRs must pass CI checks (cross-reference integrity, markdown lint, YAML validation, structure validation)
+
+#### Branching & Merge Rules
+
+- All changes go through Pull Requests — no direct pushes to `main`
+- PRs are **squash-merged** to keep a clean linear history
+- Branch naming: `feature/`, `fix/`, `docs/`, `chore/` prefixes
+- See [Branch Protection](.github/BRANCH_PROTECTION.md) for full details
 
 ### 3. Add a Language Profile
 

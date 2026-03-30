@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "release/v*"]
+  pull_request:
+    branches: [main, "release/v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  # ─────────────────────────────────────────────────────────
+  # 1. Framework structure & cross-reference integrity
+  # ─────────────────────────────────────────────────────────
+  validate-structure:
+    name: Validate structure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run structure validation
+        run: bash .github/scripts/validate-structure.sh
+
+  # ─────────────────────────────────────────────────────────
+  # 2. Markdown lint
+  # ─────────────────────────────────────────────────────────
+  lint-markdown:
+    name: Lint Markdown
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lint Markdown files
+        uses: DavidAnson/markdownlint-cli2-action@v19
+        with:
+          config: .markdownlint.yml
+          globs: |
+            **/*.md
+            !.repos/**
+
+  # ─────────────────────────────────────────────────────────
+  # 3. YAML validation
+  # ─────────────────────────────────────────────────────────
+  validate-yaml:
+    name: Validate YAML
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate YAML files
+        run: |
+          pip install yamllint --quiet
+          yamllint -d relaxed .github/ISSUE_TEMPLATE/*.yml .github/DISCUSSION_CATEGORY_FORMS/*.yml .github/workflows/*.yml

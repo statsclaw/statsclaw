@@ -8,7 +8,7 @@ All workflow-generated logs, process records, handoff documents, reference mater
 
 The **workspace repo** is a per-user GitHub repository that serves dual roles: (1) it is the **runtime state directory** where all workflow artifacts are written during execution, and (2) it is the **permanent archive** where completed run logs, changelogs, and handoff documents are pushed. Each target repository gets its own folder inside the workspace repo. This ensures:
 
-1. **Target repos stay clean** — only source code, `Architecture.md`, and necessary user-facing documentation (README, help files, vignettes, man pages)
+1. **Target repos stay clean** — only source code, `ARCHITECTURE.md`, and necessary user-facing documentation (README, help files, vignettes, man pages)
 2. **Full traceability** — every workflow run's process record, before/after comparisons, and design decisions are preserved
 3. **Cross-project visibility** — all workflow history in one place
 4. **No redundant state directories** — runtime state and final logs live in the same place
@@ -231,7 +231,7 @@ The shipper agent handles pushing to BOTH repos at the end of the workflow.
 
 ### Target Repo Push (Steps 1–3)
 
-Standard shipper agent workflow — stage code + user-facing docs + `Architecture.md`, commit, push. No other workflow artifacts.
+Standard shipper agent workflow — stage code + user-facing docs + `ARCHITECTURE.md`, commit, push. No other workflow artifacts.
 
 ### Workspace Repo Push (Steps 4–6)
 
@@ -317,7 +317,7 @@ If the workflow does NOT include a ship step (workflows 1, 3, 6, 8), leader MUST
 | Source code changes | Yes | No | Builder's work |
 | Unit tests | Yes | No | Builder's work |
 | User-facing docs (README, help, vignettes) | Yes | No | Scriber's work |
-| `Architecture.md` | **Yes** (root) | No | Scriber writes to target repo root + run directory; committed by shipper |
+| `ARCHITECTURE.md` | **Yes** (root) | No | Scriber writes to target repo root + run directory; committed by shipper |
 | `docs.md` | No | **Yes** | Scriber writes to run dir; shipper syncs to workspace `<repo-name>/docs.md` |
 | `runs/<date>-<slug>.md` | No | **Yes** | Scriber writes `log-entry.md` to run dir; shipper syncs to `runs/` |
 | `CHANGELOG.md` | No | **Yes** | Shipper maintains — timeline index of all runs |

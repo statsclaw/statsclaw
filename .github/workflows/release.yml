@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate tag format
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          if ! echo "$TAG" | grep -qP '^v\d+\.\d+\.\d+(-[a-z0-9.]+)?$'; then
+            echo "::error::Invalid tag format: $TAG (expected vX.Y.Z or vX.Y.Z-suffix)"
+            exit 1
+          fi
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+
+      - name: Generate changelog from last tag
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -z "$PREV_TAG" ]; then
+            echo "## Initial Release" > /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+            git log --pretty=format:"- %s" >> /tmp/release-notes.md
+          else
+            echo "## Changes since $PREV_TAG" > /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+            git log --pretty=format:"- %s" "${PREV_TAG}..HEAD" >> /tmp/release-notes.md
+          fi
+
+      - name: Count framework components
+        run: |
+          echo "" >> /tmp/release-notes.md
+          echo "" >> /tmp/release-notes.md
+          echo "## Framework Components" >> /tmp/release-notes.md
+          echo "" >> /tmp/release-notes.md
+          echo "- **Agents**: $(ls agents/*.md | wc -l)" >> /tmp/release-notes.md
+          echo "- **Skills**: $(find skills -name 'SKILL.md' | wc -l)" >> /tmp/release-notes.md
+          echo "- **Profiles**: $(ls profiles/*.md | wc -l)" >> /tmp/release-notes.md
+          echo "- **Templates**: $(ls templates/*.md | wc -l)" >> /tmp/release-notes.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: /tmp/release-notes.md
+          generate_release_notes: false
+          prerelease: ${{ contains(github.ref, '-alpha') || contains(github.ref, '-beta') || contains(github.ref, '-rc') }}
