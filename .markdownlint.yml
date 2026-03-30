@@ -12,17 +12,38 @@ MD024: false
 # Allow HTML — we use <!-- filename: ... --> comments in templates
 MD033: false
 
-# Allow trailing punctuation in headings — e.g. "Step 5b — Challenge Simulation Pipeline (SIMULATION WORKFLOWS ONLY)"
+# Allow trailing punctuation in headings
 MD026: false
 
-# Allow multiple top-level headings — some files have structural reasons
+# Allow multiple top-level headings
 MD025: false
 
-# Allow inline HTML comments
-MD051: false
+# Don't require first line to be a heading — PR template starts with ##
+MD041: false
 
-# Don't enforce blank lines around lists in tables
+# Allow bare URLs
+MD034: false
+
+# Code blocks without language specifiers — many blocks are pseudocode or generic config
+MD040: false
+
+# Allow code blocks without surrounding blank lines — agent definitions nest code in lists
+MD031: false
+
+# Allow headings without surrounding blank lines — compact formatting in skill files
+MD022: false
+
+# Allow non-sequential ordered list numbers — we use intentional numbering (e.g., 4. 5. 6.)
+MD029: false
+
+# Allow table column count mismatches — some tables use inline pipe notation
+MD056: false
+
+# Allow table column style variations
+MD060: false
+
+# Allow lists without surrounding blank lines — compact formatting in templates and skills
 MD032: false
 
-# Allow bare URLs in some contexts
-MD034: false
+# Allow bold text as sub-headings — handoff skill uses **bold** for pipeline labels
+MD036: false
