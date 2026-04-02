@@ -1,39 +1,26 @@
 # StatsClaw
 
-**A workflow framework for statistical package development.**
+StatsClaw is a framework-only product for Claude Code that turns a plain repository into an Agent Teams workflow across multiple languages. It ships orchestration rules, agent definitions, project profiles, and runtime templates.
 
-**An open-source tool that helps researchers build, test, and document statistical software packages with AI agent teams.**
-
-[Website](https://statsclaw.ai) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [Discussions](https://github.com/statsclaw/statsclaw/discussions)
+All runtime state lives inside the workspace repo under `.repos/workspace/<repo-name>/` and is git-ignored from StatsClaw.
 
 ---
 
-## What is StatsClaw?
+## What You Install
 
-StatsClaw is a framework for [Claude Code](https://claude.ai/code) that uses **AI agent teams** to assist with statistical package development. You describe what you need — a bug fix, a new feature, a cross-language translation — and StatsClaw coordinates multiple AI agents to help you build, test, and document the result. It works best when a domain expert stays in the loop to guide decisions.
+- `CLAUDE.md` — orchestration policy (the authoritative reference)
+- `agents/` — agent definitions (leader, planner, builder, tester, simulator, scriber, reviewer, shipper)
+- `skills/` — shared protocol skills (credential-setup, isolation, handoff, mailbox, issue-patrol, profile-detection)
+- `profiles/` — language-specific execution rules (R, Python, TypeScript, Stata, Go, Rust, C, C++)
+- `templates/` — runtime artifact templates (context, status, credentials, mailbox, lock, log-entry, architecture)
 
----
-
-## How It Works
-
-StatsClaw orchestrates a team of **8 specialized AI agents**, each operating under strict information isolation:
-
-| Agent | Role |
-|:------|:-----|
-| **Leader** | Orchestrates the workflow, dispatches agents, enforces isolation |
-| **Planner** | Reads your paper/formulas, executes deep comprehension protocol, produces specifications |
-| **Builder** | Writes source code from `spec.md` (never sees the test spec) |
-| **Tester** | Validates independently from `test-spec.md` (never sees the code spec) |
-| **Simulator** | Runs Monte Carlo studies from `sim-spec.md` (never sees either spec) |
-| **Scriber** | Documents architecture, generates tutorials, maintains audit trail |
-| **Reviewer** | Cross-checks all pipelines, audits tolerance integrity, issues ship/no-ship verdict |
-| **Shipper** | Commits, pushes, opens PRs, handles package distribution |
-
-The **code**, **test**, and **simulation** pipelines are fully isolated — they never see each other's specs. If all pipelines converge independently, confidence in correctness is high. This is **adversarial verification by design**.
+Agent Teams is enabled at the project level through `.claude/settings.json`.
 
 ---
 
 ## Multi-Pipeline Architecture
+
+StatsClaw uses fully isolated execution pipelines that converge at the reviewer. The base architecture uses two pipelines (code + test). When simulation is requested, a third pipeline (simulation) is added:
 
 ```
                     planner (bridge)
@@ -54,8 +41,18 @@ The **code**, **test**, and **simulation** pipelines are fully isolated — they
                         shipper
 ```
 
-**Key properties:**
+| Layer | Agent | Pipeline | Role |
+| --- | --- | --- | --- |
+| Control | `leader` | — | Plans work, dispatches teammates, manages state |
+| Analysis | `planner` | Bridge | Produces `spec.md`, `test-spec.md`, and `sim-spec.md` (simulation workflows) |
+| Code | `builder` | Code | Implements from `spec.md` only (never sees test-spec.md or sim-spec.md) |
+| Test | `tester` | Test | Validates from `test-spec.md` only (never sees spec.md or sim-spec.md) |
+| Simulation | `simulator` | Simulation | Implements DGP + Monte Carlo harness from `sim-spec.md` only (workflows 11, 12) |
+| Recording | `scriber` | All | Architecture, process-record log, documentation (mandatory) |
+| Convergence | `reviewer` | All | Cross-compares all pipelines; issues ship verdict |
+| Ship | `shipper` | — | Commits, pushes, PRs, issue comments (conditional) |
 
+**Key properties:**
 - **Planner is always mandatory** — it bridges all pipelines
 - **Builder handles code, scriber handles docs, simulator handles Monte Carlo studies** — for docs-only requests, scriber replaces builder as implementer
 - **Builder, tester, and simulator run in parallel** (simulation workflows) — each with its own isolated spec
@@ -64,40 +61,11 @@ The **code**, **test**, and **simulation** pipelines are fully isolated — they
 
 ---
 
-## Supported Languages
-
-| R | Python | Stata | TypeScript | Go | Rust | C | C++ |
-|:-:|:------:|:-----:|:----------:|:--:|:----:|:-:|:---:|
-
-More languages coming — [Julia is next](https://github.com/statsclaw/statsclaw/issues/3)! Want another? [Let us know](https://github.com/statsclaw/statsclaw/issues/new?template=feature-request.yml).
-
----
-
-## Quick Start
-
-### Prerequisites
-
-1. **Claude Code** — [Install Claude Code](https://claude.ai/code)
-2. **GitHub access** — Push access to your target repository
-3. **Workspace repo** — A GitHub repo for storing workflow artifacts (auto-created if needed)
-
-### Your First Task
-
-Just tell StatsClaw what you want. It auto-detects the language, selects the right workflow, and starts working:
-
-```
-work on https://github.com/your-org/your-package resolve the issues
-```
-
-StatsClaw will auto-detect the language, select a workflow, and start working. It will ask you clarification questions when it encounters ambiguity — your domain expertise guides the process. Results vary depending on task complexity; expect to iterate.
-
----
-
 ## Workflow
 
 ```text
-Code:            leader → planner → [builder ∥ tester] → scriber → reviewer → shipper?
-Docs-only:       leader → planner → scriber → reviewer → shipper?
+Code:           leader → planner → [builder ∥ tester] → scriber → reviewer → shipper?
+Docs-only:      leader → planner → scriber → reviewer → shipper?
 Simulation+Code: leader → planner → [builder ∥ tester ∥ simulator] → scriber → reviewer → shipper?
 Simulation-only: leader → planner → [simulator ∥ tester] → scriber → reviewer → shipper?
 ```
@@ -108,71 +76,22 @@ Signals: `HOLD` (ambiguous, ask user), `BLOCK` (validation failed), `STOP` (unsa
 
 ---
 
-## What Can StatsClaw Help With?
+## Quick Start
 
-| Task | How it helps | Limitations |
-|:-----|:-------------|:------------|
-| **Implementing methods** | Assists with translating specs into code | Requires researcher to validate mathematical correctness |
-| **Cross-language translation** | Handles R/Python idiom differences | May miss subtle numerical edge cases without careful review |
-| **Testing & validation** | Independent test pipeline catches bugs tests miss | Empirical verification, not formal proofs |
-| **Monte Carlo studies** | Automates simulation harness and reporting | Researcher must design meaningful DGPs and metrics |
-| **Paper-driven features** | Reads methodology papers to design new functionality | Extracts concepts, not full estimator implementations |
-| **Bug fixing** | Adversarial architecture helps find hidden bugs | Complex domain bugs still need human insight |
-| **Documentation** | Generates Quarto books, API docs | Needs researcher review for accuracy |
+1. Clone this repository.
+2. Open it in Claude Code.
+3. Tell Claude what you want and include the target project path.
 
----
+StatsClaw acquires the workspace repo, creates the per-repo runtime directory, detects the project profile, verifies credentials, and runs the full workflow autonomously. Short prompts work:
 
-## Example Prompts
-
+```text
+patrol fect issues on cfe
+fix fect issue #42
+Work on ~/GitHub/fect. Fix the failing tests.
+simulate the finite-sample properties of the new estimator
+run Monte Carlo: check consistency and coverage
+ship it
 ```
-# Fix a specific issue
-fix issue #42 in my-package
-
-# Build from scratch
-build a Python package from this R code
-
-# Cross-language migration
-rewrite the Python backends in pure R and ship it
-
-# Simulation study
-run a Monte Carlo study comparing these three estimators
-
-# Paper to package
-build the R works from this PDF
-
-# Paper-driven feature
-read Correia (2016) and add network visualization to panelView
-
-# Documentation
-update the documentation for v2.0
-```
-
----
-
-## Learn by Example
-
-We provide examples from our own usage. Each is a real repository you can inspect and learn from. Your mileage may vary — these represent what worked for us with active researcher involvement.
-
-| Example | Repo | What it demonstrates |
-|:--------|:-----|:---------------------|
-| Iterative refactoring (1 to 2) | [`statsclaw/example-fect`](https://github.com/statsclaw/example-fect) | Multi-day, researcher-guided refactoring of an R package |
-| Python from R source (0 to 1) | [`statsclaw/example-R2PY`](https://github.com/statsclaw/example-R2PY) | Building a Python package from an R reference |
-| Paper to package + Monte Carlo | [`statsclaw/example-probit`](https://github.com/statsclaw/example-probit) | PDF manuscript to R/C++ package + simulation |
-| Paper-driven feature addition | [`statsclaw/example-panelView`](https://github.com/statsclaw/example-panelView) | Reading a methodology paper to design a new feature |
-
-See the [workspace example](https://github.com/statsclaw/example-workspace) for the actual workflow artifacts produced during these examples.
-
----
-
-## What You Install
-
-- `CLAUDE.md` — orchestration policy (the authoritative reference)
-- `agents/` — agent definitions (leader, planner, builder, tester, simulator, scriber, reviewer, shipper)
-- `skills/` — shared protocol skills (credential-setup, isolation, handoff, mailbox, issue-patrol, profile-detection)
-- `profiles/` — language-specific execution rules (R, Python, TypeScript, Stata, Go, Rust, C, C++)
-- `templates/` — runtime artifact templates (context, status, credentials, mailbox, lock, log-entry, architecture)
-
-Agent Teams is enabled at the project level through `.claude/settings.json`.
 
 ---
 
@@ -221,14 +140,12 @@ All runtime state lives inside the workspace repo, organized per target reposito
 StatsClaw/
 ├── CLAUDE.md           # orchestration policy
 ├── README.md
-├── agents/             # agent definitions
-├── skills/             # shared protocol skills (10 skills)
+├── agents/            # agent definitions
+├── skills/             # shared protocol skills (9 skills)
 ├── profiles/           # language execution rules (8 languages)
 ├── templates/          # runtime artifact templates
 └── .repos/             # target repo checkouts + workspace repo (runtime state, git-ignored; symlinks supported)
 ```
-
----
 
 ## Workspace Repository
 
@@ -257,6 +174,23 @@ This keeps target repos clean (code + essential docs only) while preserving full
 
 ---
 
+## Get Involved
+
+StatsClaw is an open-source community project. We welcome everyone — statisticians, econometricians, developers, and users.
+
+| What you want to do | Where to go |
+| --- | --- |
+| Request a feature | [Open a feature request](../../issues/new?template=feature-request.yml) |
+| Submit a paper to turn into a package | [Paper-to-Package request](../../issues/new?template=paper-to-package.yml) |
+| Report a bug | [Bug report](../../issues/new?template=bug-report.yml) |
+| Discuss ideas & brainstorm | [Discussions](../../discussions) |
+| Contribute code | [Contributing Guide](CONTRIBUTING.md) |
+| See what's planned | [Roadmap](ROADMAP.md) |
+
+**Website**: [statsclaw.ai](https://statsclaw.ai)
+
+---
+
 ## Design Principles
 
 - **Credentials first, work second.** Verify push access before creating a run.
@@ -268,20 +202,3 @@ This keeps target repos clean (code + essential docs only) while preserving full
 - **Worktree isolation for writers.** Builder, simulator, and scriber run in isolated git worktrees.
 - **Surgical scope.** Each run modifies only what the request requires.
 - **Explicit ship actions.** Nothing is pushed without user instruction or active patrol skill.
-
----
-
-## Get Involved
-
-We are building StatsClaw in the open. Everyone is welcome.
-
-- **Share an idea** — [Discussions](https://github.com/statsclaw/statsclaw/discussions/categories/ideas)
-- **Report a bug** — [Bug report](https://github.com/statsclaw/statsclaw/issues/new?template=bug-report.yml)
-- **Contribute code** — [Contributing guide](CONTRIBUTING.md)
-- **See what is planned** — [Roadmap](ROADMAP.md)
-
----
-
-**[statsclaw.ai](https://statsclaw.ai)**
-
-*A tool for statisticians and econometricians. Works best with an expert in the loop.*
