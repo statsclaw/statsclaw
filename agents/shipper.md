@@ -26,10 +26,11 @@ Shipper handles all git write operations and GitHub interactions: committing, pu
 7. Read `audit.md` for validation evidence (referenced in PR body).
 8. Read `docs.md` if it exists for documentation change summary.
 9. Read `mailbox.md` for any notes relevant to shipping.
-10. Verify the local git checkout points to the correct target repository.
-11. Verify the remote URL matches the user's target (not StatsClaw).
-12. Test push access with `git push --dry-run origin <branch>` before attempting any real push. If it fails, halt and write shipper.md noting the failure — do NOT waste time on commit/staging.
-13. Verify workspace repo exists locally at `.repos/workspace` (if workspace repo is available per `credentials.md`). Workspace structure is: `<repo-name>/CHANGELOG.md`, `HANDOFF.md`, `docs.md`, `ref/`, `runs/`.
+10. Read `context.md` from `.repos/workspace/<repo-name>/` for attribution settings (`CommitTrailers` field).
+11. Verify the local git checkout points to the correct target repository.
+12. Verify the remote URL matches the user's target (not StatsClaw).
+13. Test push access with `git push --dry-run origin <branch>` before attempting any real push. If it fails, halt and write shipper.md noting the failure — do NOT waste time on commit/staging.
+14. Verify workspace repo exists locally at `.repos/workspace` (if workspace repo is available per `credentials.md`). Workspace structure is: `<repo-name>/CHANGELOG.md`, `HANDOFF.md`, `docs.md`, `ref/`, `runs/`.
 
 ---
 
@@ -121,6 +122,31 @@ Write a commit message that:
 - References the request ID or issue number if applicable
 - Includes a brief body if the change is non-trivial
 
+#### Attribution Trailer
+
+Read `context.md` for the `CommitTrailers` field. If it contains `"statsclaw"` (the default), append a `Co-authored-by` trailer to every commit message:
+
+```
+Co-authored-by: StatsClaw <statsclaw@users.noreply.github.com>
+```
+
+This credits both the user (the git committer) and the StatsClaw framework as co-authors. The trailer follows the standard Git co-author convention recognized by GitHub.
+
+If `CommitTrailers` is empty (`""`), omit the trailer entirely — commits are attributed to the user alone.
+
+Example commit with trailer:
+```bash
+git -C "$TARGET" commit -m "$(cat <<'EOF'
+Fix null check in twoway estimator (#42)
+
+Adds defensive null check before matrix inversion to prevent
+segfault on empty panels.
+
+Co-authored-by: StatsClaw <statsclaw@users.noreply.github.com>
+EOF
+)"
+```
+
 ### Step 6 — Push Target Repo
 
 ```bash
@@ -148,6 +174,7 @@ After pushing the target repo (or as a standalone workspace-sync task), sync wor
    git commit -m "sync: <repo-name> — <short description>"
    git push origin main
    ```
+   Workspace repo commits do NOT include the `Co-authored-by` trailer — attribution applies only to target repo commits.
 7. If workspace push fails, retry up to 3 times with exponential backoff (2s, 4s, 8s). If all retries fail, **warn the user**: "Workspace repo push failed — workflow logs for this run were not synced. Artifacts remain in the local run directory."
 
 **Workspace sync is non-blocking** — a workspace sync failure MUST NOT undo or block the target repo push, PR, or issue comments.
@@ -208,6 +235,7 @@ Save `shipper.md` to the run directory with:
 - PR URL (if created)
 - Issue comments posted (issue number, comment URL, comment body summary)
 - **Workspace sync status**: workspace repo URL, files synced (run log, docs.md, CHANGELOG, HANDOFF, ref), workspace commit SHA, push status (or failure reason)
+- Attribution trailer included (yes/no)
 - Any errors encountered
 
 ### Step 11 — Patrol Mode Extensions (if dispatched by issue-patrol)
