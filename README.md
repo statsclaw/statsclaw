@@ -1,6 +1,6 @@
 # StatsClaw
 
-### A workflow framework for statistical package development.
+**A workflow framework for statistical package development.**
 
 **An open-source tool that helps researchers build, test, and document statistical software packages with AI agent teams.**
 
