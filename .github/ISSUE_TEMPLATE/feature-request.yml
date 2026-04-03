@@ -37,6 +37,7 @@ body:
         - Paper-to-Package pipeline
         - Simulation workflows
         - Documentation & tutorials
+        - Brain system & knowledge sharing
         - CI/CD & packaging
         - Other
     validations:

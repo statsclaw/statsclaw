@@ -16,7 +16,7 @@ StatsClaw is a framework for [Claude Code](https://claude.ai/code) that uses **A
 
 ## How It Works
 
-StatsClaw orchestrates a team of **8 specialized AI agents**, each operating under strict information isolation:
+StatsClaw orchestrates a team of **9 specialized AI agents**, each operating under strict information isolation:
 
 | Agent | Role |
 |:------|:-----|
@@ -26,6 +26,7 @@ StatsClaw orchestrates a team of **8 specialized AI agents**, each operating und
 | **Tester** | Validates independently from `test-spec.md` (never sees the code spec) |
 | **Simulator** | Runs Monte Carlo studies from `sim-spec.md` (never sees either spec) |
 | **Scriber** | Documents architecture, generates tutorials, maintains audit trail |
+| **Distiller** | Extracts reusable knowledge for the shared brain (brain mode only) |
 | **Reviewer** | Cross-checks all pipelines, audits tolerance integrity, issues ship/no-ship verdict |
 | **Shipper** | Commits, pushes, opens PRs, handles package distribution |
 
@@ -48,6 +49,8 @@ The **code**, **test**, and **simulation** pipelines are fully isolated — they
                     \   |        /
                      \  |       /
                       scriber (recording)
+                          |
+                      distiller (brain mode only)
                           |
                       reviewer (convergence)
                           |
@@ -96,13 +99,13 @@ StatsClaw will auto-detect the language, select a workflow, and start working. I
 ## Workflow
 
 ```text
-Code:            leader → planner → [builder ∥ tester] → scriber → reviewer → shipper?
+Code:            leader → planner → [builder ∥ tester] → scriber → [distiller]? → reviewer → shipper?
 Docs-only:       leader → planner → scriber → reviewer → shipper?
-Simulation+Code: leader → planner → [builder ∥ tester ∥ simulator] → scriber → reviewer → shipper?
-Simulation-only: leader → planner → [simulator ∥ tester] → scriber → reviewer → shipper?
+Simulation+Code: leader → planner → [builder ∥ tester ∥ simulator] → scriber → [distiller]? → reviewer → shipper?
+Simulation-only: leader → planner → [simulator ∥ tester] → scriber → [distiller]? → reviewer → shipper?
 ```
 
-States: `CREDENTIALS_VERIFIED → NEW → PLANNED → SPEC_READY → PIPELINES_COMPLETE → DOCUMENTED → REVIEW_PASSED → READY_TO_SHIP → DONE`
+States: `CREDENTIALS_VERIFIED → NEW → PLANNED → SPEC_READY → PIPELINES_COMPLETE → DOCUMENTED → [KNOWLEDGE_EXTRACTED]? → REVIEW_PASSED → READY_TO_SHIP → DONE`
 
 Signals: `HOLD` (ambiguous, ask user), `BLOCK` (validation failed), `STOP` (unsafe to ship)
 
@@ -167,10 +170,10 @@ See the [workspace example](https://github.com/statsclaw/example-workspace) for 
 ## What You Install
 
 - `CLAUDE.md` — orchestration policy (the authoritative reference)
-- `agents/` — agent definitions (leader, planner, builder, tester, simulator, scriber, reviewer, shipper)
-- `skills/` — shared protocol skills (credential-setup, isolation, handoff, mailbox, issue-patrol, profile-detection)
+- `agents/` — agent definitions (leader, planner, builder, tester, simulator, scriber, distiller, reviewer, shipper)
+- `skills/` — shared protocol skills (credential-setup, isolation, handoff, mailbox, issue-patrol, profile-detection, brain-sync, privacy-scrub)
 - `profiles/` — language-specific execution rules (R, Python, TypeScript, Stata, Go, Rust, C, C++)
-- `templates/` — runtime artifact templates (context, status, credentials, mailbox, lock, log-entry, architecture)
+- `templates/` — runtime artifact templates and repo scaffolding (brain-repo, brain-seedbank-repo)
 
 Agent Teams is enabled at the project level through `.claude/settings.json`.
 
@@ -183,6 +186,8 @@ All runtime state lives inside the workspace repo, organized per target reposito
 ```text
 .repos/
 ├── <target-repo>/                    # target repo checkout
+├── brain/                            # statsclaw/brain clone (brain mode only)
+├── brain-seedbank/                   # statsclaw/brain-seedbank clone (brain mode only)
 └── workspace/                        # workspace repo (GitHub)
     └── <repo-name>/                  # per-target-repo runtime + logs
         ├── context.md                # active project context
@@ -205,6 +210,7 @@ All runtime state lives inside the workspace repo, organized per target reposito
         │       ├── ARCHITECTURE.md   # from scriber (primary copy in target repo root)
         │       ├── log-entry.md      # process record (from scriber; promoted to runs/<date>-<slug>.md)
         │       ├── docs.md           # documentation changes (from scriber)
+        │       ├── brain-contributions.md  # knowledge entries (from distiller, brain mode only)
         │       ├── review.md         # convergence verdict (from reviewer)
         │       ├── shipper.md        # ship actions (from shipper)
         │       ├── mailbox.md        # inter-teammate communication
@@ -221,11 +227,11 @@ All runtime state lives inside the workspace repo, organized per target reposito
 StatsClaw/
 ├── CLAUDE.md           # orchestration policy
 ├── README.md
-├── agents/             # agent definitions
-├── skills/             # shared protocol skills (10 skills)
+├── agents/             # agent definitions (9 agents including distiller)
+├── skills/             # shared protocol skills (13 skills including brain-sync, privacy-scrub)
 ├── profiles/           # language execution rules (8 languages)
-├── templates/          # runtime artifact templates
-└── .repos/             # target repo checkouts + workspace repo (runtime state, git-ignored; symlinks supported)
+├── templates/          # runtime artifact templates + repo scaffolding (brain-repo, brain-seedbank-repo)
+└── .repos/             # target repo checkouts + workspace + brain repos (runtime state, git-ignored)
 ```
 
 ---
@@ -257,6 +263,27 @@ This keeps target repos clean (code + essential docs only) while preserving full
 
 ---
 
+## Shared Brain
+
+StatsClaw has a shared knowledge system where techniques discovered during workflows — mathematical methods, coding patterns, validation strategies, simulation designs — are extracted, privacy-scrubbed, and contributed to a collective knowledge base. When you enable Brain mode, your agents get smarter by reading knowledge contributed by all users.
+
+**How it works:**
+
+1. **Read** — Your agents automatically access relevant knowledge entries from [`statsclaw/brain`](https://github.com/statsclaw/brain)
+2. **Contribute** — After noteworthy workflows, the distiller agent extracts reusable knowledge. You review everything and approve or decline — nothing is shared without your explicit consent
+3. **Earn badges** — Accepted contributions earn virtual badges on the [Contributors leaderboard](https://github.com/statsclaw/brain/blob/main/CONTRIBUTORS.md)
+
+**Privacy guarantee:** All contributions are automatically scrubbed of repo names, file paths, usernames, proprietary code, and any identifying information. Only generic, reusable knowledge is shared.
+
+| Repo | Purpose |
+|:-----|:--------|
+| [`statsclaw/brain`](https://github.com/statsclaw/brain) | Curated knowledge — agents read from here |
+| [`statsclaw/brain-seedbank`](https://github.com/statsclaw/brain-seedbank) | Contribution staging — users submit PRs here |
+
+Brain mode is optional — you choose at session start. See [Brain System Documentation](.github/BRAIN.md) for full details.
+
+---
+
 ## Design Principles
 
 - **Credentials first, work second.** Verify push access before creating a run.
@@ -268,6 +295,7 @@ This keeps target repos clean (code + essential docs only) while preserving full
 - **Worktree isolation for writers.** Builder, simulator, and scriber run in isolated git worktrees.
 - **Surgical scope.** Each run modifies only what the request requires.
 - **Explicit ship actions.** Nothing is pushed without user instruction or active patrol skill.
+- **Collective knowledge, individual consent.** Brain mode lets agents learn from all users, but nothing is shared without explicit per-workflow approval.
 
 ---
 
@@ -278,6 +306,7 @@ We are building StatsClaw in the open. Everyone is welcome.
 - **Share an idea** — [Discussions](https://github.com/statsclaw/statsclaw/discussions/categories/ideas)
 - **Report a bug** — [Bug report](https://github.com/statsclaw/statsclaw/issues/new?template=bug-report.yml)
 - **Contribute code** — [Contributing guide](CONTRIBUTING.md)
+- **Contribute knowledge** — Enable Brain mode and your discoveries help everyone. [Learn more](.github/BRAIN.md)
 - **See what is planned** — [Roadmap](ROADMAP.md)
 
 ---

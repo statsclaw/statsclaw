@@ -24,6 +24,8 @@ This keeps target repos clean (code + `ARCHITECTURE.md` + essential user-facing 
 | `"ship it"` | Push current changes and create PR |
 | `"simulate the finite-sample properties"` | Runs Monte Carlo simulation study (workflow 11 or 12) |
 | `"run Monte Carlo for the new estimator"` | Implements estimator + runs simulation (workflow 11) |
+| `"enable brain"` | Enables Brain mode — agents read shared knowledge, noteworthy discoveries are offered for contribution |
+| `"turn off brain"` | Disables Brain mode — isolated mode, no shared knowledge |
 
 ### How It Works
 
