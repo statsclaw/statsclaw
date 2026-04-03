@@ -50,6 +50,7 @@ body:
         - Ship / Review (workflow 7/8)
         - Simulation (workflow 11/12)
         - Simplified (workflow 10)
+        - Brain / Knowledge sharing
         - Other / Unknown
     validations:
       required: false

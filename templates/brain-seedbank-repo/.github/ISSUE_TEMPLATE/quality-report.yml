@@ -1,0 +1,41 @@
+name: Quality or Privacy Report
+description: Report a knowledge entry with quality issues or privacy violations
+title: "[Report] "
+labels: ["quality-report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to report entries that have privacy violations (leaked
+        identifying information) or quality issues (incorrect, trivial, or duplicate).
+
+  - type: input
+    id: entry-path
+    attributes:
+      label: Entry path or PR number
+      description: Which entry or PR has the issue?
+      placeholder: "e.g., planner/math-methods/convergence-rate.md or PR #5"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: issue-type
+    attributes:
+      label: Issue type
+      options:
+        - Privacy violation (identifying info leaked)
+        - Technically incorrect
+        - Trivial / not useful
+        - Duplicate of existing entry
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Describe the issue. For privacy violations, note what identifying information was found.
+      placeholder: "The entry contains a reference to a specific GitHub repo..."
+    validations:
+      required: true

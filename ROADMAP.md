@@ -16,6 +16,8 @@ StatsClaw is building toward a world where statisticians and econometricians can
 - [x] Simulation study workflows (Monte Carlo, DGP, coverage)
 - [ ] Comprehensive test suite for the framework itself
 - [x] CI/CD pipeline for StatsClaw repo
+- [x] Brain knowledge-sharing system (distiller agent, brain-sync, privacy-scrub)
+- [x] Companion repos: [`statsclaw/brain`](https://github.com/statsclaw/brain), [`statsclaw/brain-seedbank`](https://github.com/statsclaw/brain-seedbank)
 
 ## Phase 2: Paper-to-Package Pipeline
 
@@ -45,6 +47,9 @@ StatsClaw is building toward a world where statisticians and econometricians can
 
 - [ ] Plugin architecture — community-contributed profiles and skills
 - [ ] Shared estimator registry — browse and build on existing implementations
+- [ ] Brain knowledge expansion — grow the shared knowledge base across domains
+- [ ] Brain search improvements — tag-based and semantic search for knowledge entries
+- [ ] Brain analytics — track which knowledge entries are most useful
 - [ ] Collaborative workflow — multiple contributors on one package
 - [ ] Benchmark suite — auto-compare new estimator against existing methods
 - [ ] Continuous integration for generated packages

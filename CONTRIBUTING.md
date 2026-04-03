@@ -36,6 +36,7 @@ No coding required! You can help by:
 - **Language profiles** (`profiles/`) — Add or improve language-specific rules
 - **Skills** (`skills/`) — Add new workflow skills
 - **Templates** (`templates/`) — Improve runtime artifact templates
+- **Brain system** (`agents/distiller.md`, `skills/brain-sync/`, `skills/privacy-scrub/`) — Improve knowledge extraction and privacy scrubbing
 - **Documentation** — Improve README, add examples, fix typos
 
 Check [issues labeled `good first issue`](../../issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) for beginner-friendly tasks.
@@ -71,6 +72,23 @@ Tried StatsClaw on your research? We'd love to hear about it:
 - Share your experience in [Discussions > Show and Tell](../../discussions/categories/show-and-tell)
 - Include what worked well and what could be improved
 - This directly influences our [Roadmap](ROADMAP.md)
+
+### 5. Contribute Knowledge to the Brain
+
+StatsClaw has a shared knowledge system where techniques, methods, and patterns discovered during workflows are extracted and shared with all users. When you use StatsClaw with Brain mode enabled:
+
+1. After noteworthy workflows, the **distiller agent** extracts reusable knowledge
+2. You review the extracted entries and **approve or decline** — nothing is shared without your explicit consent
+3. Approved entries are submitted as a PR to [`statsclaw/brain-seedbank`](https://github.com/statsclaw/brain-seedbank)
+4. Admin reviews and transfers accepted entries to [`statsclaw/brain`](https://github.com/statsclaw/brain)
+
+Every accepted contribution earns a virtual badge on the [Contributors leaderboard](https://github.com/statsclaw/brain/blob/main/CONTRIBUTORS.md).
+
+**What gets shared**: Mathematical methods, coding patterns, validation strategies, simulation designs — all genericized with no project-specific information.
+
+**What never gets shared**: Repo names, file paths, usernames, proprietary code, data column names, or any identifying information.
+
+See [Brain System Documentation](.github/BRAIN.md) for full details.
 
 ## Development Setup
 

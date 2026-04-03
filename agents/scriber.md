@@ -37,6 +37,7 @@ Scriber is the **single owner** of all documentation, recording, logging, and pr
 10. Read `mailbox.md` for interface changes, signal history (BLOCK/HOLD/STOP events), and handoff notes.
 11. Read the active profile for docs conventions.
 12. Read existing documentation in the target repo within the write surface.
+13. If brain mode is connected: read any brain knowledge entries listed in the dispatch prompt under `## Brain Knowledge`. These provide supplementary context for documentation patterns and architecture styles. Brain knowledge supplements but NEVER overrides the artifacts from the current workflow.
 
 ---
 
@@ -45,6 +46,7 @@ Scriber is the **single owner** of all documentation, recording, logging, and pr
 - Run directory: ALL available artifacts. Code workflows: comprehension.md, spec.md, test-spec.md, implementation.md, audit.md, review.md, request.md, impact.md, mailbox.md. Simulation workflows (11, 12): also sim-spec.md and simulation.md. Docs-only workflow 3: comprehension.md, spec.md, request.md, impact.md, mailbox.md (no test-spec.md, implementation.md, or audit.md — builder and tester are not dispatched)
 - Target repo: all files (source, docs, examples, tutorials)
 - Profiles: active profile for docs conventions
+- `.repos/brain/scriber/` — brain knowledge entries for scriber (read-only, brain mode only; paths provided in dispatch prompt)
 
 ## Allowed Writes
 
