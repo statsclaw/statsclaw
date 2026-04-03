@@ -14,6 +14,10 @@ CredentialStatus: ""          # PASS / FAIL / UNTESTED
 CredentialMethod: ""          # PAT / SSH / gh-cli / env-token
 CredentialVerifiedAt: ""      # YYYY-MM-DD HH:MM
 CommitTrailers: "statsclaw"   # co-author trailers appended to commits; set to "" to disable
+BrainMode: ""                 # "connected" | "isolated" | "" (not yet asked)
+BrainRepo: "statsclaw/brain"
+SeedbankRepo: "statsclaw/brain-seedbank"
+BrainLastPull: ""             # YYYY-MM-DD HH:MM
 ```
 
 ## Request Defaults

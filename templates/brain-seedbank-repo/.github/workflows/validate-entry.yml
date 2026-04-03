@@ -1,0 +1,104 @@
+name: Validate entries
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'planner/**'
+      - 'builder/**'
+      - 'tester/**'
+      - 'simulator/**'
+      - 'scriber/**'
+      - 'reviewer/**'
+      - 'general/**'
+
+jobs:
+  validate:
+    name: Validate brain entries
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check entry format
+        run: |
+          errors=0
+          for file in $(git diff --name-only --diff-filter=A origin/main...HEAD -- '*.md'); do
+            # Skip non-entry files
+            case "$file" in
+              README.md|CONTRIBUTING.md|CONTRIBUTORS.md|index.md|.github/*) continue ;;
+            esac
+
+            echo "Checking $file..."
+
+            # Check for brain-entry marker
+            if ! grep -q '<!-- brain-entry -->' "$file"; then
+              echo "::error file=$file::Missing <!-- brain-entry --> marker"
+              errors=$((errors + 1))
+            fi
+
+            # Check for required metadata
+            for field in domain subdomain tags contributor contributed; do
+              if ! grep -q "<!-- $field:" "$file"; then
+                echo "::error file=$file::Missing <!-- $field: --> metadata"
+                errors=$((errors + 1))
+              fi
+            done
+
+            # Check for required sections
+            for section in Summary Knowledge "When to Use" Example Pitfalls; do
+              if ! grep -q "## $section" "$file"; then
+                echo "::error file=$file::Missing ## $section section"
+                errors=$((errors + 1))
+              fi
+            done
+          done
+
+          if [ $errors -gt 0 ]; then
+            echo "::error::$errors format errors found"
+            exit 1
+          fi
+          echo "All entries have valid format."
+
+      - name: Scan for PII patterns
+        run: |
+          errors=0
+          for file in $(git diff --name-only --diff-filter=A origin/main...HEAD -- '*.md'); do
+            case "$file" in
+              README.md|CONTRIBUTING.md|CONTRIBUTORS.md|index.md|.github/*) continue ;;
+            esac
+
+            echo "PII scan: $file..."
+
+            # GitHub URLs
+            if grep -Pn 'github\.com/[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+' "$file"; then
+              echo "::error file=$file::Possible GitHub URL detected"
+              errors=$((errors + 1))
+            fi
+
+            # Home directory paths
+            if grep -Pn '(/home/|~/|C:\\\\Users\\\\)' "$file"; then
+              echo "::error file=$file::Possible home directory path detected"
+              errors=$((errors + 1))
+            fi
+
+            # Email addresses
+            if grep -Pn '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}' "$file"; then
+              # Exclude the contributor metadata line
+              matches=$(grep -Pn '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}' "$file" | grep -v '<!-- contributor:')
+              if [ -n "$matches" ]; then
+                echo "::error file=$file::Possible email address detected"
+                errors=$((errors + 1))
+              fi
+            fi
+
+            # File paths with extensions (common patterns)
+            if grep -Pn '(src|lib|R|tests|pkg)/[a-zA-Z0-9_.-]+\.[a-zA-Z]{1,4}' "$file"; then
+              echo "::warning file=$file::Possible file path detected — verify it's genericized"
+            fi
+          done
+
+          if [ $errors -gt 0 ]; then
+            echo "::error::$errors PII pattern(s) detected"
+            exit 1
+          fi
+          echo "PII scan passed."
