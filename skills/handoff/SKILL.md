@@ -149,9 +149,9 @@ planner
 
 **Key properties:**
 1. Planner produces specs (only `spec.md` is used in docs-only; `test-spec.md` is unused; simulation workflows use all three: `spec.md`, `test-spec.md`, `sim-spec.md`)
-2. **Code workflows**: builder ∥ tester in parallel, then scriber records
-3. **Simulation + code workflows (11)**: builder ∥ tester ∥ simulator in parallel, then scriber records
-4. **Simulation-only workflows (12)**: simulator ∥ tester in parallel (no builder), then scriber records
+2. **Code workflows**: builder first, then tester validates merged code, then scriber records
+3. **Simulation + code workflows (11)**: builder ∥ simulator in parallel, then tester validates all merged code, then scriber records
+4. **Simulation-only workflows (12)**: simulator first, then tester validates merged code (no builder), then scriber records
 5. **Docs-only**: scriber replaces builder as implementer. No tester — docs don't need testing. Reviewer reviews directly.
 6. Scriber is MANDATORY — the single owner of all documentation and recording
 7. Reviewer is the convergence agent that cross-compares all outputs
@@ -209,12 +209,12 @@ After each teammate returns, leader MUST:
 
 ### After Planner Completes:
 - Verify `spec.md` exists (and `test-spec.md` for code workflows, and `sim-spec.md` for simulation workflows)
-- **Code workflows**: Dispatch builder AND tester IN PARALLEL in the same message. Give builder only `spec.md`; give tester only `test-spec.md`.
-- **Simulation + code workflow (11)**: Dispatch builder, tester, AND simulator IN PARALLEL in the same message. Give builder only `spec.md`; give tester only `test-spec.md`; give simulator only `sim-spec.md`.
-- **Simulation-only workflow (12)**: Dispatch simulator AND tester IN PARALLEL. Give simulator only `sim-spec.md`; give tester only `test-spec.md`. No builder.
+- **Code workflows**: Dispatch builder first (with only `spec.md`). After builder completes and merges back, dispatch tester (with only `test-spec.md`) to validate the merged code.
+- **Simulation + code workflow (11)**: Dispatch builder AND simulator IN PARALLEL in the same message. Give builder only `spec.md`; give simulator only `sim-spec.md`. After both complete and merge back, dispatch tester (with only `test-spec.md`) to validate all merged code.
+- **Simulation-only workflow (12)**: Dispatch simulator first (with only `sim-spec.md`). After simulator completes and merges back, dispatch tester (with only `test-spec.md`). No builder.
 - **Docs-only workflow**: Dispatch scriber with `spec.md` (as implementer). After scriber completes, dispatch reviewer directly.
 
-### After Builder and Tester (and Simulator) Complete (Code/Simulation Workflows):
+### After Tester Completes (Code/Simulation Workflows):
 - Read `implementation.md` (if builder was dispatched), `simulation.md` (if simulator was dispatched), and `audit.md`
 - Check for BLOCK from tester (if so, respawn builder or simulator with failure details based on routing)
 - If all succeeded, dispatch scriber for recording with ALL artifacts. After scriber completes, dispatch reviewer.
@@ -266,4 +266,4 @@ Three signals, three owners, three responses. They never overlap.
 - **Artifact skipping**: Leader dispatches a teammate without pointing it to required upstream artifacts. The teammate then works from incomplete information.
 - **Direct handoff**: Two teammates communicate without leader mediation (e.g., builder writes instructions for tester inside a code comment). All coordination goes through artifacts and mailbox.
 - **Verdict ignoring**: Leader dispatches the next stage despite a `BLOCK` or `STOP` verdict. This violates the safety protocol.
-- **Sequential pipeline dispatch**: Leader dispatches builder first, waits for it to complete, then dispatches tester. This misses the parallel opportunity and may inadvertently leak implementation details.
+- **Premature tester dispatch**: Leader dispatches tester before builder (or simulator) has completed and merged back. Tester would validate pre-change code, producing meaningless results or false BLOCKs.

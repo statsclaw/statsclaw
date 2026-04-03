@@ -27,7 +27,7 @@ A short prompt like `"patrol fect issues on cfe"` is sufficient.
 3. **Prioritize** — Orders actionable issues by severity (crashes > test failures > warnings > minor bugs)
 4. **Fix Loop** — For each actionable issue, runs the full StatsClaw workflow:
    - Creates a fix branch from the specified base branch
-   - Dispatches planner → [builder ∥ tester] → reviewer → shipper
+   - Dispatches planner → builder → tester → reviewer → shipper
    - Pushes the fix and opens a PR
    - Posts a comment on the original issue linking the PR and summarizing the fix
 5. **Report** — Produces a patrol report summarizing all actions taken
@@ -82,9 +82,9 @@ For each actionable issue (in priority order):
 1. Create a sub-run: `.repos/workspace/<repo-name>/runs/PATROL-<timestamp>/issue-<number>/`
 2. Write `request.md` scoped to this specific issue
 3. Write `impact.md` based on the issue description and codebase exploration
-4. Run the full workflow: planner → [builder ∥ tester] → reviewer
+4. Run the full workflow: planner → builder → tester → reviewer
    - Planner produces `spec.md` and `test-spec.md` for the issue
-   - Builder and tester are dispatched in parallel with isolated specs
+   - Builder is dispatched first with `spec.md`; after builder completes, tester is dispatched with `test-spec.md`
 5. If reviewer PASS:
    - Dispatch shipper to create fix branch (`<branch_prefix>-issue-<number>-<short-desc>` from `<base_branch>`), push, create PR, and comment on the issue
    - The shipper agent MUST post a comment on the issue (see shipper agent's Issue Auto-Reply section)
@@ -152,7 +152,7 @@ Please review the PR and let us know if the fix addresses your concern.
 - **Never force-push** — always use regular push.
 - **Skip ambiguous issues** — if the issue doesn't clearly describe a bug, skip it and log why.
 - **One branch per issue** — never mix fixes for different issues in the same branch.
-- **Respect the full workflow** — every fix goes through planner → [builder ∥ tester] → reviewer. No shortcuts.
+- **Respect the full workflow** — every fix goes through planner → builder → tester → reviewer. No shortcuts.
 - **Credential gate** — do not attempt any GitHub operations without verified credentials.
 
 ---

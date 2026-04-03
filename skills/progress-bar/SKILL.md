@@ -233,16 +233,34 @@ When a signal interrupts the workflow, the progress bar shows the interruption:
 
 ---
 
-## Parallel Stage Indicator
+## Sequential Stage Indicator
 
-When builder and tester run in parallel, show both:
+When builder completes and tester runs next, show the active stage:
+
+```
+│  [✔] Credentials ── [✔] Plan ── [✔] Specs ── [▶] Build/Test        │
+│                                                                     │
+│  ▶ Active: builder: implementing changes in worktree...             │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+After builder completes:
+
+```
+│  [✔] Credentials ── [✔] Plan ── [✔] Specs ── [▶] Build/Test        │
+│                                                                     │
+│  ▶ Active: tester: running test scenarios...                        │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+In simulation workflows (11), builder and simulator run in parallel:
 
 ```
 │  [✔] Credentials ── [✔] Plan ── [✔] Specs ── [▶] Build/Test        │
 │                                                                     │
 │  ▶ Active (parallel):                                               │
 │    ├─ builder: implementing changes in worktree...                  │
-│    └─ tester: running test scenarios...                            │
+│    └─ simulator: implementing DGP in worktree...                    │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 

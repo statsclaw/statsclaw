@@ -22,7 +22,7 @@ CREDENTIALS_VERIFIED → NEW → PLANNED → SPEC_READY → PIPELINES_COMPLETE �
 
 - `SPEC_READY` requires `comprehension.md`, `spec.md`, AND `test-spec.md` from planner
 - `PIPELINES_COMPLETE` requires BOTH `implementation.md` (builder) AND `audit.md` (tester)
-- Builder and tester run in parallel after SPEC_READY
+- Builder (and simulator, if applicable) run first after SPEC_READY; tester runs after all writers complete
 
 Interrupt states:
 - `HOLD` — waiting for user input (only user can unblock)
