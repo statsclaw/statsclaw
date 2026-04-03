@@ -22,10 +22,14 @@ Simulator works from `sim-spec.md` (produced by planner) and produces simulation
 Simulator operates in the **simulation pipeline**, a third pipeline alongside the code and test pipelines. In simulation workflows:
 
 ```
-planner (bridge)
-├── spec.md ──────────→ builder (code pipeline)
-├── test-spec.md ─────→ tester (test pipeline)
-└── sim-spec.md ──────→ simulator (simulation pipeline)
+                planner (bridge)
+               /    |          \
+    spec.md   / test-spec.md    \  sim-spec.md
+             /      |            \
+      builder ─(parallel)─ simulator
+             \      |            /
+              \     v           /
+                tester              <-- after merge-back
 ```
 
 - **Receives**: `sim-spec.md` (from planner), `request.md`, `impact.md`

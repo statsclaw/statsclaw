@@ -183,22 +183,26 @@ RNG type: Mersenne-Twister (R) / numpy.random.default_rng (Python)
 When simulation is active, the two-pipeline architecture extends to three pipelines:
 
 ```
-                    planner (bridge)
-                   /    |          \
-        spec.md   /     |           \  sim-spec.md
-                 /      |            \
-            builder  test-spec.md   simulator
-       (code pipeline)  |      (simulation pipeline)
-                 \      |            /
-                  \     v           /
-                   \  tester      /
-                    \   |        /
-                     \  |       /
-                      scriber (recording)
-                          |
-                      reviewer (convergence)
-                          |
-                        shipper
+                      planner (bridge)
+                     /    |          \
+          spec.md   / test-spec.md    \  sim-spec.md
+                   /      |            \
+            builder ─ ─(parallel)─ ─ simulator
+       (code pipeline)    |    (simulation pipeline)
+                   \      |            /
+      implementation.md   |   simulation.md
+                    \     |          /
+                     \    v         /
+                       tester           <-- sequential, after merge-back
+                    (test pipeline)
+                         |
+                      audit.md
+                         |
+                    scriber (recording)
+                         |
+                    reviewer (convergence)
+                         |
+                       shipper
 ```
 
 **Key properties**:

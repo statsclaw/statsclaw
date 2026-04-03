@@ -37,22 +37,26 @@ The **code**, **test**, and **simulation** pipelines are fully isolated — they
 ## Multi-Pipeline Architecture
 
 ```
-                    planner (bridge)
-                   /    |          \
-        spec.md   /     |           \  sim-spec.md
-                 /      |            \
-            builder  test-spec.md   simulator
-       (code pipeline)  |      (simulation pipeline)
-                 \      |            /
-                  \     v           /
-                   \  tester      /
-                    \   |        /
-                     \  |       /
-                      scriber (recording)
-                          |
-                      distiller (brain mode only)
-                          |
-                      reviewer (convergence)
+                      planner (bridge)
+                     /    |          \
+          spec.md   / test-spec.md    \  sim-spec.md
+                   /      |            \
+            builder ─ ─(parallel)─ ─ simulator
+       (code pipeline)    |    (simulation pipeline)
+                   \      |            /
+      implementation.md   |   simulation.md
+                    \     |          /
+                     \    v         /
+                       tester           <-- sequential, after merge-back
+                    (test pipeline)
+                         |
+                      audit.md
+                         |
+                    scriber (recording)
+                         |
+                    distiller (brain mode only)
+                         |
+                    reviewer (convergence)
                           |
                         shipper
 ```
