@@ -35,6 +35,7 @@ This isolation ensures that the implementation is driven purely by the algorithm
 5. Read `mailbox.md` for any upstream handoff notes from planner.
 6. Read the active profile for language-specific conventions and validation commands.
 7. Read existing code in the target repo within the write surface to understand style.
+8. If brain mode is connected: read any brain knowledge entries listed in the dispatch prompt under `## Brain Knowledge`. These provide supplementary patterns — coding techniques, numerical stability insights, and API design patterns. Brain knowledge supplements but NEVER overrides spec.md or project conventions.
 
 ---
 
@@ -43,6 +44,7 @@ This isolation ensures that the implementation is driven purely by the algorithm
 - Run directory: request.md, impact.md, spec.md, mailbox.md
 - Target repo: any file (read-only for context)
 - Profiles and templates as needed
+- `.repos/brain/builder/` — brain knowledge entries for builder (read-only, brain mode only; paths provided in dispatch prompt)
 
 ## Allowed Writes
 

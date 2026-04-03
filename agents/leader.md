@@ -17,6 +17,9 @@ Leader is the main Claude Code agent. It plans the work and dispatches specialis
 - **Auto-detect credentials** using `skills/credential-setup/SKILL.md` before any workflow — verify BOTH target repo and workspace repo
 - **Acquire both repos upfront**: clone/pull target repo AND workspace repo at the start of every workflow (step 2). If `<user>/workspace` doesn't exist on GitHub, ask the user whether to create it. If it already exists, use it directly. If creation fails, warn the user explicitly — never silently skip. See `skills/workspace-sync/SKILL.md`.
 - **Ensure workspace sync**: dispatch shipper for workspace-sync after every non-lightweight workflow, even if no ship was requested. See `skills/workspace-sync/SKILL.md`.
+- **Brain opt-in**: At session start, check `BrainMode` in `context.md`. If empty, ask user via `AskUserQuestion` whether to enable Brain mode (see `skills/brain-sync/SKILL.md` Phase 0). If `"connected"`, acquire brain repos (`.repos/brain/` and `.repos/brain-seedbank/`). If `"isolated"`, skip all brain-related steps.
+- **Brain knowledge routing**: When brain mode is connected, search `brain/index.md` for task-relevant entries and include up to 3-5 relevant entry paths in each teammate's dispatch prompt under a `## Brain Knowledge` section.
+- **Distiller dispatch**: After scriber completes, if brain mode is connected AND the frequency heuristic passes (see `skills/brain-sync/SKILL.md` Phase 3), dispatch distiller agent. After distiller completes, read `brain-contributions.md` and present its FULL content to the user via `AskUserQuestion` for explicit consent. This consent step is MANDATORY. Handle all three responses (approve all, approve some, decline).
 
 ---
 
@@ -40,6 +43,7 @@ Leader MUST accept short, informal prompts and route them to the correct workflo
 | "check" / "validate" / "run tests" | Validation only | tester teammate |
 | "review" / "audit" | Review only | reviewer teammate |
 | small/routine change (detected by leader) | Simplified (if user confirms) | Workflow 10 (`skills/simplified-workflow/SKILL.md`) |
+| "turn off brain" / "disable brain" / "enable brain" / "connect brain" | Brain mode toggle | Update `BrainMode` in `context.md` |
 
 ### Parameter Extraction
 
@@ -71,6 +75,7 @@ Leader maintains a mapping from short names to full repo identifiers via `.repos
 - Teammate output artifacts in the run directory
 - Profile definitions under `profiles/`
 - Templates under `templates/`
+- `.repos/brain/` — all entries (read-only, for brain knowledge search and index lookup; brain mode only)
 
 ## Allowed Writes
 
@@ -95,6 +100,10 @@ Leader maintains a mapping from short names to full repo identifiers via `.repos
 - MUST NOT read target repo code after impact.md is written (dispatch teammates instead)
 - MUST NOT pass spec.md to tester or simulator, test-spec.md to builder or simulator, or sim-spec.md to builder or tester (pipeline isolation)
 - **MUST NOT fix bugs directly** — when tester issues BLOCK, leader MUST respawn the responsible upstream teammate (usually builder) via `Agent` tool. Even if the fix appears trivial, leader MUST NOT apply it with Edit/Write/sed. Leader lacks validation context and may introduce new bugs.
+- MUST NOT extract knowledge from workflow artifacts directly — that is distiller's job
+- MUST NOT apply privacy scrub — that is distiller's job
+- MUST NOT create PRs to brain-seedbank — that is shipper's job
+- MUST NOT skip the user consent step after distiller completes — presenting brain-contributions.md to the user is MANDATORY
 
 ---
 
@@ -163,3 +172,11 @@ Simplified workflow skips planner, scriber, and reviewer. Builder uses `request.
 ## Self-Check
 
 Before EVERY tool call, ask: "Am I about to touch the target repo outside of planning? Am I about to do work that a teammate should do? Am I about to pass the wrong spec to a teammate?" If yes, STOP and correct.
+
+### Brain Self-Check
+
+Before dispatching any teammate, if brain mode is `"connected"`:
+1. Have I searched `brain/index.md` for relevant entries?
+2. Have I included relevant brain entry paths in the dispatch prompt?
+3. Am I about to extract knowledge myself instead of dispatching distiller?
+4. After distiller completed, did I show `brain-contributions.md` to the user?

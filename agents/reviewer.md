@@ -45,6 +45,8 @@ Reviewer is uniquely positioned to see both sides. Its primary value is detectin
    - `mailbox.md` — any inter-teammate notes
    - In **docs-only workflow 3**: builder and tester are not dispatched, so `test-spec.md`, `implementation.md`, and `audit.md` do not exist. Reviewer reviews scriber's documentation output directly — skip pipeline convergence steps (2–5) and focus on documentation quality (step 8).
 3. Read the active profile for expected validation commands.
+4. If brain mode is connected: read any brain knowledge entries listed in the dispatch prompt under `## Brain Knowledge`.
+5. If `brain-contributions.md` exists in the run directory: read it for brain contribution review (Step 8b).
 
 ---
 
@@ -53,6 +55,7 @@ Reviewer is uniquely positioned to see both sides. Its primary value is detectin
 - Run directory: ALL artifacts (this is the ONLY agent that reads everything)
 - Target repo: ALL files (read-only)
 - Profiles and templates
+- `.repos/brain/` — all entries (read-only, for brain knowledge and duplicate checking; brain mode only)
 
 ## Allowed Writes
 
@@ -219,6 +222,29 @@ Scriber is mandatory in all non-lightweight workflows. Verify scriber's output:
 7. Does documentation cover the changed or new functionality?
 8. If `impact.md` lists documentation files in the write surface, verify `docs.md` exists. If docs are in scope but `docs.md` is missing, raise **STOP — documentation not updated**. (If no documentation files are in scope, `docs.md` is not required.)
 
+### Step 8b — Challenge Brain Contributions (BRAIN MODE ONLY)
+
+**This step applies ONLY when `brain-contributions.md` exists in the run directory.** Skip if brain mode is isolated or distiller was not dispatched.
+
+Verify every proposed knowledge entry in `brain-contributions.md`:
+
+1. **Privacy scrub compliance**: Cross-reference each entry against `skills/privacy-scrub/SKILL.md`:
+   - Scan for GitHub URLs, usernames, repo names, file paths, email addresses
+   - Verify all code examples use generic placeholder names
+   - Check that no project-specific identifiers leaked through
+   - If ANY identifying information found: **STOP — privacy scrub incomplete. Route to distiller.**
+
+2. **Quality gate verification**: For each entry, verify the 5-question gate:
+   - Is it reusable beyond this project?
+   - Is it non-trivial?
+   - Is it technically correct (grounded in validated workflow artifacts)?
+   - Is it novel (not duplicating existing brain entries)?
+   - If any entry fails: note in review.md but do NOT block the entire review — brain contributions are advisory
+
+3. **Consistency check**: Do the proposed entries accurately reflect what happened in the workflow? Cross-reference against comprehension.md, spec.md, implementation.md, and audit.md.
+
+If brain contribution issues are found but the code review passes: issue **PASS WITH NOTE** mentioning the brain contribution concerns. The code ship decision is independent of brain contribution quality.
+
 ### Step 9 — Issue Verdict
 
 **STOP** — explicit block. State:
@@ -276,6 +302,7 @@ Before issuing PASS, verify you have actually done — not assumed — the follo
 - [ ] Verified Before/After Comparison Table present in audit.md for bug fixes/algorithm changes/refactors (step 4)
 - [ ] For simulation workflows: verified simulation ↔ theory convergence, DGP correctness, code ↔ simulation consistency, simulation pipeline isolation, acceptance criteria validation, scenario completeness (step 5b)
 - [ ] Checked documentation, architecture diagram in target repo root + run dir, process-record log entry in run dir (with both tables), target repo clean of non-Architecture workflow artifacts (step 8)
+- [ ] For brain mode: if brain-contributions.md exists, verified privacy scrub compliance and entry quality (step 8b)
 
 ---
 
