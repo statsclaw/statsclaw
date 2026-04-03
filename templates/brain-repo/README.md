@@ -1,4 +1,16 @@
+<div align="center">
+
+<img src="https://avatars.githubusercontent.com/u/271365820?s=120" alt="StatsClaw" width="120">
+
 # StatsClaw Brain
+
+**Curated knowledge repository — reusable methods, patterns, and techniques contributed by the community**
+
+[StatsClaw](https://github.com/statsclaw/statsclaw) · [Contribute](https://github.com/statsclaw/brain-seedbank) · [Leaderboard](CONTRIBUTORS.md)
+
+</div>
+
+---
 
 The curated knowledge repository for [StatsClaw](https://github.com/statsclaw/statsclaw). This repo contains validated, privacy-scrubbed knowledge entries contributed by the StatsClaw community.
 

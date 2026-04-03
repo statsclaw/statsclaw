@@ -1,4 +1,16 @@
+<div align="center">
+
+<img src="https://avatars.githubusercontent.com/u/271365820?s=120" alt="StatsClaw" width="120">
+
 # StatsClaw Brain Seedbank
+
+**Contribution staging — submit knowledge entries here via PR**
+
+[StatsClaw](https://github.com/statsclaw/statsclaw) · [Brain (curated)](https://github.com/statsclaw/brain) · [How to Contribute](CONTRIBUTING.md)
+
+</div>
+
+---
 
 The contribution staging repo for [StatsClaw Brain](https://github.com/statsclaw/brain). When StatsClaw users opt into Brain mode, noteworthy knowledge from their workflows is extracted, privacy-scrubbed, and submitted here as PRs. Admin reviews contributions and transfers accepted entries to the curated `statsclaw/brain` repo.
 
