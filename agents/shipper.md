@@ -214,11 +214,18 @@ After workspace sync completes (or after target repo push if workspace sync was 
 6. **Update `index.md`** — append new entries to the seedbank index with tags
 
 7. **Commit and push**:
+   Apply the same `CommitTrailers` attribution as target repo commits (read `context.md`). If `CommitTrailers` contains `"statsclaw"`, append the Co-authored-by trailer:
    ```bash
    git -C .repos/brain-seedbank-fork add .
-   git -C .repos/brain-seedbank-fork commit -m "contribute: <domain> — <topic summary>"
+   git -C .repos/brain-seedbank-fork commit -m "$(cat <<'EOF'
+   contribute: <domain> — <topic summary>
+
+   Co-authored-by: StatsClaw <statsclaw@users.noreply.github.com>
+   EOF
+   )"
    git -C .repos/brain-seedbank-fork push -u origin contribute/<date>-<slug>
    ```
+   This ensures both the user (as git committer) and StatsClaw (as co-author) are credited on every brain contribution, just like target repo commits.
 
 8. **Create PR** from user's fork to `statsclaw/brain-seedbank` main:
    ```bash
