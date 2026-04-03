@@ -131,7 +131,7 @@ Write a commit message that:
 Read `context.md` for the `CommitTrailers` field. If it contains `"statsclaw"` (the default), append a `Co-authored-by` trailer to every commit message:
 
 ```
-Co-authored-by: StatsClaw <statsclaw@users.noreply.github.com>
+Co-authored-by: StatsClaw <271365820+statsclaw@users.noreply.github.com>
 ```
 
 This credits both the user (the git committer) and the StatsClaw framework as co-authors. The trailer follows the standard Git co-author convention recognized by GitHub.
@@ -146,7 +146,7 @@ Fix null check in twoway estimator (#42)
 Adds defensive null check before matrix inversion to prevent
 segfault on empty panels.
 
-Co-authored-by: StatsClaw <statsclaw@users.noreply.github.com>
+Co-authored-by: StatsClaw <271365820+statsclaw@users.noreply.github.com>
 EOF
 )"
 ```
@@ -220,7 +220,7 @@ After workspace sync completes (or after target repo push if workspace sync was 
    git -C .repos/brain-seedbank-fork commit -m "$(cat <<'EOF'
    contribute: <domain> — <topic summary>
 
-   Co-authored-by: StatsClaw <statsclaw@users.noreply.github.com>
+   Co-authored-by: StatsClaw <271365820+statsclaw@users.noreply.github.com>
    EOF
    )"
    git -C .repos/brain-seedbank-fork push -u origin contribute/<date>-<slug>
