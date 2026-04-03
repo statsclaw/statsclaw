@@ -61,13 +61,13 @@ This section is the entry point for every non-trivial user request. You MUST fol
 5. **LEADER PLANNING**: Read `agents/leader.md`. Act as `leader`. Explore the target repository to identify affected surfaces. Write `impact.md` (affected files, risk areas, required teammates). Identify the profile from `profiles/`. Update `status.md` to `PLANNED`.
 6. **DISPATCH TEAMMATES (Two-Pipeline Architecture)**: See "Agent Teams Model" below for the architecture. Dispatch per the selected workflow:
    - a. **planner** — ALWAYS dispatched for non-trivial requests. **MANDATORY when the user uploads files** (PDF, Word, txt, tex, images with formulas) — these contain primary source material that planner must deeply comprehend before any specs are produced. Pass ALL uploaded file paths in the dispatch prompt. Planner produces `comprehension.md` (verification of understanding), `spec.md` (code pipeline), and `test-spec.md` (test pipeline). **For simulation workflows (11, 12)**: planner also produces `sim-spec.md` (simulation pipeline). **If planner raises HOLD with comprehension questions, leader MUST forward them to the user via `AskUserQuestion` and re-dispatch planner with the answers. Iterate until planner confirms FULLY UNDERSTOOD.** Update status to `SPEC_READY`.
-   - b. **Code changes** (source files, algorithms, features, bug fixes): dispatch **builder + tester IN PARALLEL** in the same message. Builder gets `spec.md` only. Tester gets `test-spec.md` only.
-     - **Code + simulation** (new estimator + Monte Carlo study): dispatch **builder + tester + simulator IN PARALLEL** in the same message. Builder gets `spec.md`, tester gets `test-spec.md`, simulator gets `sim-spec.md`. Simulator implements the DGP and simulation harness. Tester validates both unit tests and simulation results.
-     - **Simulation only** (existing estimator, no code changes): dispatch **simulator + tester IN PARALLEL**. Simulator gets `sim-spec.md`, tester gets `test-spec.md`. No builder needed.
+   - b. **Code changes** (source files, algorithms, features, bug fixes): dispatch **builder** first (with `spec.md`). After builder completes and its worktree merges back, dispatch **tester** (with `test-spec.md`) to validate the merged code.
+     - **Code + simulation** (new estimator + Monte Carlo study): dispatch **builder + simulator IN PARALLEL** in the same message. Builder gets `spec.md`, simulator gets `sim-spec.md`. After both complete and merge back, dispatch **tester** (with `test-spec.md`) to validate all merged code. Tester validates both unit tests and simulation results.
+     - **Simulation only** (existing estimator, no code changes): dispatch **simulator** first (with `sim-spec.md`). After simulator completes and merges back, dispatch **tester** (with `test-spec.md`). No builder needed.
      - **Docs-only changes** (quarto books, vignettes, tutorials, README, examples, man pages — NO source code): dispatch **scriber** only (from `spec.md`). Scriber implements the docs AND produces recording artifacts. No builder, no tester — docs don't need testing. After scriber, go directly to reviewer.
    - c. **scriber** — **ALWAYS dispatched** in every non-lightweight workflow. Dispatch with `isolation: "worktree"`. Scriber is the **single owner** of all documentation, logging, and process recording.
-     - **In code workflows (1, 2, 4, 5)**: scriber is dispatched AFTER both builder and tester complete. Reads ALL available run artifacts. Produces `ARCHITECTURE.md`, log entry with process record, and `docs.md`.
-     - **In simulation workflows (11, 12)**: scriber is dispatched AFTER builder (if any), tester, and simulator all complete. Reads ALL available run artifacts including `simulation.md`. Produces `ARCHITECTURE.md`, log entry with process record (including simulation results tables), and `docs.md`.
+     - **In code workflows (1, 2, 4, 5)**: scriber is dispatched AFTER tester completes (which itself runs after builder). Reads ALL available run artifacts. Produces `ARCHITECTURE.md`, log entry with process record, and `docs.md`.
+     - **In simulation workflows (11, 12)**: scriber is dispatched AFTER tester completes (which itself runs after builder and/or simulator). Reads ALL available run artifacts including `simulation.md`. Produces `ARCHITECTURE.md`, log entry with process record (including simulation results tables), and `docs.md`.
      - **In docs-only workflow (3)**: scriber IS the implementer — receives `spec.md` and implements documentation changes. Also produces `ARCHITECTURE.md`, log entry, and `docs.md` in the same dispatch.
      - Update status to `DOCUMENTED` after scriber completes.
      - **Log entry**: Every scriber run MUST produce a log entry in the run directory using the template at `templates/log-entry.md`. The log entry includes a **process record** (complete audit trail of proposals, tests, problems, and resolutions), a **handoff document** (what the next developer needs to know), and a **design note** (key decisions and rationale). The shipper agent later syncs this log entry to the workspace repo's `runs/` directory, and extracts handoff notes into `HANDOFF.md`. Logs do NOT go to the target repo. See `skills/workspace-sync/SKILL.md`.
@@ -99,7 +99,7 @@ Short prompts MUST work. A user message like "Work on https://github.com/foo/bar
 | `SPEC_READY` | `comprehension.md` and `spec.md` exist; `test-spec.md` also exists (except docs-only workflow 3, where it is not produced); `sim-spec.md` also exists for simulation workflows (11, 12) | Read file paths; for workflow 3, only `comprehension.md` + `spec.md` required; for simulation workflows, also verify `sim-spec.md` |
 | `SPEC_READY` | Planner was dispatched via `Agent` tool | Agent tool call must exist in conversation |
 | `PIPELINES_COMPLETE` | `implementation.md` and `audit.md` exist (code workflows only; docs-only workflow 3 skips this state); `simulation.md` also exists for simulation workflows (11, 12) | Read file paths; for simulation workflows, also verify `simulation.md` |
-| `PIPELINES_COMPLETE` | Builder dispatched with `isolation: "worktree"`, tester dispatched (code workflows only); simulator dispatched with `isolation: "worktree"` (simulation workflows only) | Agent tool calls must exist |
+| `PIPELINES_COMPLETE` | Builder dispatched with `isolation: "worktree"`, then tester dispatched after builder completes (code workflows only); simulator dispatched with `isolation: "worktree"` (simulation workflows only), tester dispatched after all writers complete | Agent tool calls must exist |
 | `PIPELINES_COMPLETE` | Pipeline isolation verified (code workflows only) | Builder prompt has no test-spec.md or sim-spec.md; tester prompt has no spec.md or sim-spec.md; simulator prompt has no spec.md or test-spec.md |
 | `PIPELINES_COMPLETE` | Leader did NOT run any validation command directly | Self-check: no Bash calls to R CMD check, pytest, npm test, etc. |
 | `DOCUMENTED` | `ARCHITECTURE.md` exists in target repo root AND run directory; `docs.md` exists in run directory; log entry with process record exists in run directory | Read all file paths; verify log entry contains Process Record section |
@@ -206,11 +206,11 @@ These entries supplement but NEVER override the user's requirements, uploaded ma
 
 ### Dispatch Rules
 
-**Code workflows (1, 2, 4, 5)**: planner → (builder ∥ tester) → scriber → [distiller → ASK USER]? → reviewer → shipper?. Builder + tester MUST be dispatched in the SAME message.
+**Code workflows (1, 2, 4, 5)**: planner → builder → tester → scriber → [distiller → ASK USER]? → reviewer → shipper?. Builder completes first, then tester validates the merged code.
 
-**Simulation + code workflow (11)**: planner → (builder ∥ tester ∥ simulator) → scriber → [distiller → ASK USER]? → reviewer → shipper?. Builder + tester + simulator MUST be dispatched in the SAME message.
+**Simulation + code workflow (11)**: planner → (builder ∥ simulator) → tester → scriber → [distiller → ASK USER]? → reviewer → shipper?. Builder + simulator MUST be dispatched in the SAME message. After both complete, dispatch tester.
 
-**Simulation-only workflow (12)**: planner → (simulator ∥ tester) → scriber → [distiller → ASK USER]? → reviewer → shipper?. Simulator + tester MUST be dispatched in the SAME message. No builder.
+**Simulation-only workflow (12)**: planner → simulator → tester → scriber → [distiller → ASK USER]? → reviewer → shipper?. Simulator completes first, then tester validates the merged code. No builder.
 
 **Docs-only workflow (3)**: planner → scriber → reviewer → shipper?. No builder, no tester. Distiller is typically skipped (docs-only rarely produces noteworthy knowledge).
 
@@ -267,7 +267,7 @@ The base architecture uses two isolated pipelines (code + test). When simulation
                         shipper
 ```
 
-In non-simulation workflows, the simulator branch is absent and the architecture reduces to the standard two-pipeline model (builder + tester).
+In non-simulation workflows, the simulator branch is absent and the architecture reduces to the standard two-pipeline model (builder → tester).
 
 | Layer | Agent | Pipeline | Role | Definition |
 | --- | --- | --- | --- | --- |
@@ -285,7 +285,7 @@ In non-simulation workflows, the simulator branch is absent and the architecture
 
 **Conditional teammates**: builder (code changes only), tester (code changes only — NOT needed for docs-only), simulator (simulation workflows only — workflows 11, 12), distiller (brain mode `"connected"` only — dispatched after scriber when frequency heuristic passes), shipper (ship requested).
 
-**Scriber dual role**: Scriber is ALWAYS mandatory. In code workflows, scriber is the scriber (runs after builder + tester). In docs-only workflows, scriber is ALSO the implementer (replaces builder, receives `spec.md`). No tester is dispatched for docs-only — reviewer provides the quality gate directly.
+**Scriber dual role**: Scriber is ALWAYS mandatory. In code workflows, scriber is the scriber (runs after tester, which itself runs after builder). In docs-only workflows, scriber is ALSO the implementer (replaces builder, receives `spec.md`). No tester is dispatched for docs-only — reviewer provides the quality gate directly.
 
 **Simulator role**: Simulator writes DGP and Monte Carlo harness code from `sim-spec.md`. It is fully isolated from builder and tester — it never sees `spec.md` or `test-spec.md`. Tester validates simulation results using acceptance criteria from `test-spec.md`. See `skills/simulation-study/SKILL.md`.
 
@@ -299,39 +299,39 @@ Each agent's full workflow, allowed reads/writes, and must-not rules are defined
 
 | # | Name | Trigger | Agent Sequence |
 | --- | --- | --- | --- |
-| 1 | Code Change | Code modification (any size) | `leader → planner → [builder ∥ tester] → scriber → [distiller]? → reviewer` |
-| 2 | Code + Ship | Code modification + push | `leader → planner → [builder ∥ tester] → scriber → [distiller]? → reviewer → shipper` |
+| 1 | Code Change | Code modification (any size) | `leader → planner → builder → tester → scriber → [distiller]? → reviewer` |
+| 2 | Code + Ship | Code modification + push | `leader → planner → builder → tester → scriber → [distiller]? → reviewer → shipper` |
 | 3 | Docs Only | Documentation-only changes (no source code) | `leader → planner → scriber → reviewer` |
-| 4 | Issue Patrol | Scan + fix multiple issues | `leader scans → per issue: planner → [builder ∥ tester] → scriber → [distiller]? → reviewer → shipper` |
-| 5 | Single Issue | Fix one named issue | `leader → planner → [builder ∥ tester] → scriber → [distiller]? → reviewer → shipper` |
+| 4 | Issue Patrol | Scan + fix multiple issues | `leader scans → per issue: planner → builder → tester → scriber → [distiller]? → reviewer → shipper` |
+| 5 | Single Issue | Fix one named issue | `leader → planner → builder → tester → scriber → [distiller]? → reviewer → shipper` |
 | 6 | Validation | Run tests only | `leader → tester` |
 | 7 | Ship Only | Push reviewed changes | `leader → reviewer → shipper` |
 | 8 | Review Only | Assess without shipping | `leader → reviewer` |
 | 9 | Scheduled Loop | Recurring execution | `leader → /loop → inner workflow` |
 | 10 | Simplified | Small routine change (user confirms) | `leader → builder → tester → shipper?` |
-| 11 | Simulation Study | New estimator + Monte Carlo evaluation | `leader → planner → [builder ∥ tester ∥ simulator] → scriber → [distiller]? → reviewer → shipper?` |
-| 12 | Simulation Only | Monte Carlo study on existing estimator | `leader → planner → [simulator ∥ tester] → scriber → [distiller]? → reviewer → shipper?` |
+| 11 | Simulation Study | New estimator + Monte Carlo evaluation | `leader → planner → [builder ∥ simulator] → tester → scriber → [distiller]? → reviewer → shipper?` |
+| 12 | Simulation Only | Monte Carlo study on existing estimator | `leader → planner → simulator → tester → scriber → [distiller]? → reviewer → shipper?` |
 
 **Note**: `[distiller]?` = distiller is dispatched ONLY when brain mode is `"connected"` AND the frequency heuristic passes. After distiller, leader MUST ask user for consent before proceeding. See `skills/brain-sync/SKILL.md`.
 
 **Key distinction — code vs docs vs simulation workflows:**
-- **Workflows 1–2** (code): Builder implements source code, tester validates in parallel, then scriber records.
+- **Workflows 1–2** (code): Builder implements source code, then tester validates the merged code, then scriber records.
 - **Workflow 3** (docs-only): Scriber IS the implementer — receives `spec.md` and writes documentation. No builder, no tester. Reviewer provides the quality gate directly.
 - **Workflows 4–5** (issues): Standard code pipeline per issue. Scriber records each fix.
-- **Workflow 11** (simulation + code): Builder implements the estimator, simulator implements the DGP and Monte Carlo harness, tester validates both — all three in parallel. Three-pipeline isolation.
+- **Workflow 11** (simulation + code): Builder implements the estimator and simulator implements the DGP and Monte Carlo harness (in parallel), then tester validates both after merge-back. Three-pipeline isolation.
 - **Workflow 12** (simulation only): Simulator implements the DGP and harness for an existing estimator. No builder needed. Tester validates simulation results.
 
 **Workflow details**: Each workflow's agent cooperation, artifacts, and state transitions are documented in the respective agent definitions (`agents/*.md`) and skills (`skills/*.md`). Key references:
 
-- **Workflows 1–5**: Two-pipeline flow. See `skills/handoff/SKILL.md` for artifact flow between agents.
+- **Workflows 1–5**: Two-pipeline flow (builder then tester, sequential). See `skills/handoff/SKILL.md` for artifact flow between agents.
 - **Workflow 3**: Docs-only — scriber replaces builder as the implementer. Scriber receives `spec.md` (what docs to write), produces documentation changes + recording artifacts (ARCHITECTURE.md, log entry, docs.md). No builder or tester is dispatched. Reviewer reviews directly after scriber. State goes `SPEC_READY` → `DOCUMENTED` (skips `PIPELINES_COMPLETE`).
 - **Workflow 4**: See `skills/issue-patrol/SKILL.md` for patrol phases (scan, triage, fix loop, report).
 - **Workflow 6**: Lightweight — no planner, builder, or reviewer. Tester runs profile validation commands directly. State jumps directly from `PLANNED` to `PIPELINES_COMPLETE` (tester-only).
 - **Workflows 7–8**: Lightweight — skip the full pipeline. These are for already-completed work that needs shipping or review. State model requirements for `SPEC_READY` and `PIPELINES_COMPLETE` are waived; reviewer reads whatever artifacts are available.
 - **Workflow 9**: Leader invokes `/loop` via `Skill` tool. See "Scheduled Loop" below.
 - **Workflow 10**: Simplified — for small, routine changes (≤3 files, no algorithms, no uploaded files). Leader asks user to confirm simplified vs full. Skips planner, scriber, reviewer. Builder uses `request.md` as spec. Tester is the quality gate. State: `PLANNED` → `PIPELINES_COMPLETE` → `REVIEW_PASSED` → `DONE`. See `skills/simplified-workflow/SKILL.md`. If complexity exceeds expectations, leader MUST escalate to full workflow.
-- **Workflow 11**: Simulation Study — new estimator + Monte Carlo evaluation. Planner produces three specs: `spec.md`, `test-spec.md`, `sim-spec.md`. Builder, tester, and simulator dispatch in parallel. Simulator implements DGP + harness from `sim-spec.md` in worktree. Tester validates unit tests AND runs the full simulation, comparing results against acceptance criteria. Three-pipeline isolation. See `skills/simulation-study/SKILL.md`.
-- **Workflow 12**: Simulation Only — Monte Carlo study on an existing estimator. No builder needed. Planner produces `sim-spec.md` + `test-spec.md`. Simulator and tester dispatch in parallel. See `skills/simulation-study/SKILL.md`.
+- **Workflow 11**: Simulation Study — new estimator + Monte Carlo evaluation. Planner produces three specs: `spec.md`, `test-spec.md`, `sim-spec.md`. Builder and simulator dispatch in parallel; after both complete, tester is dispatched to validate all merged code. Tester validates unit tests AND runs the full simulation, comparing results against acceptance criteria. Three-pipeline isolation. See `skills/simulation-study/SKILL.md`.
+- **Workflow 12**: Simulation Only — Monte Carlo study on an existing estimator. No builder needed. Planner produces `sim-spec.md` + `test-spec.md`. Simulator runs first; after it completes, tester is dispatched to validate. See `skills/simulation-study/SKILL.md`.
 
 **Lightweight workflow rule**: Workflows 6, 7, 8, and 10 are exceptions to the "mandatory teammates" rule. They serve specific, limited purposes (validation-only, ship-only, review-only, simplified) and intentionally skip the full two-pipeline flow.
 
@@ -354,8 +354,8 @@ Route semantically from intent. Do **not** require the user to learn trigger phr
 | "loop" / "every Xm" / "monitor every" | 9 (/loop wrapping inner workflow) |
 | formalize math, equations, algorithms | 1 (code pipeline) |
 | "simulate" / "Monte Carlo" / "finite-sample properties" / "DGP" / "small-sample" / "coverage study" | 11 (simulation + code) or 12 (simulation only) |
-| new estimator + simulation evidence | 11 (simulation + code — builder + simulator + tester in parallel) |
-| simulation study on existing estimator | 12 (simulation only — simulator + tester in parallel, no builder) |
+| new estimator + simulation evidence | 11 (simulation + code — [builder ∥ simulator] → tester) |
+| simulation study on existing estimator | 12 (simulation only — simulator → tester, no builder) |
 | small routine change (typo, config, bump, lint fix) | 10 (simplified — ask user to confirm) |
 
 **Routing rule — simplified vs full**: Before committing to workflow 1–5, leader evaluates smallness criteria (see `skills/simplified-workflow/SKILL.md`). If ALL criteria are met, leader asks the user via `AskUserQuestion` to choose simplified or full. If the user declines or leader is uncertain, use the standard workflow. Leader MUST NOT silently downgrade to simplified.
@@ -489,7 +489,7 @@ For non-trivial requests, you MUST continue through the selected workflow withou
 - **Surgical scope.** Each run modifies only what the request requires.
 - **Clean target repos.** Workflow logs, process records, and handoff documents live in the workspace repo — never the target repo. `ARCHITECTURE.md` is the one exception: it lives in the target repo root so users can see the system architecture. Target repos contain only code + `ARCHITECTURE.md` + essential user-facing docs.
 - **One runtime, one location.** All runtime state lives in `.repos/workspace/<repo-name>/`. No separate `.statsclaw/` directory — the workspace repo IS the runtime store.
-- **Parallel when possible.** Builder and tester are ALWAYS dispatched in parallel. In simulation workflows, builder, tester, and simulator are ALL dispatched in parallel.
+- **Writers parallel, tester after.** In simulation workflows, builder and simulator are dispatched in parallel. Tester is ALWAYS dispatched after all writing teammates (builder, simulator) complete, so it validates the fully merged code.
 - **Tolerance integrity is absolute.** Tester MUST NEVER relax tolerances, thresholds, or acceptance criteria to make a failing test pass. The only valid response to a genuine failure is BLOCK. Reviewer cross-audits every tolerance against test-spec.md.
 
 ---

@@ -31,10 +31,10 @@ Leader MUST accept short, informal prompts and route them to the correct workflo
 
 | User says (any language) | Detected intent | Skill / Workflow |
 | --- | --- | --- |
-| "fix [issue/bug/test]" / "repair" / code change | Code change | Workflow 1 or 2 (planner → builder ∥ tester → scriber → reviewer) |
+| "fix [issue/bug/test]" / "repair" / code change | Code change | Workflow 1 or 2 (planner → builder → tester → scriber → reviewer) |
 | "simulate" / "Monte Carlo" / "DGP" / "finite-sample" / "small-sample" / "coverage study" / "bias" / "RMSE" | Simulation study | Workflow 11 (+ new estimator) or 12 (existing estimator) |
-| new estimator + simulation evidence | Code + Simulation | Workflow 11 (planner → builder ∥ tester ∥ simulator → scriber → reviewer) |
-| simulation study on existing estimator | Simulation only | Workflow 12 (planner → simulator ∥ tester → scriber → reviewer) |
+| new estimator + simulation evidence | Code + Simulation | Workflow 11 (planner → [builder ∥ simulator] → tester → scriber → reviewer) |
+| simulation study on existing estimator | Simulation only | Workflow 12 (planner → simulator → tester → scriber → reviewer) |
 | "update docs" / "edit quarto book" / "fix README" / "write vignette" / docs-only | Docs only | Workflow 3 (planner → scriber → reviewer) — NO builder, NO tester |
 | "patrol [repo] issues" / "check issues" / "fix bugs in [repo]" / "auto-check issues" | Issue patrol | `skills/issue-patrol/SKILL.md` |
 | "monitor [repo]" / "watch issues" / "keep checking" | Recurring patrol | Issue patrol with loop |

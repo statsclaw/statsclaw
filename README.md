@@ -61,7 +61,7 @@ The **code**, **test**, and **simulation** pipelines are fully isolated — they
 
 - **Planner is always mandatory** — it bridges all pipelines
 - **Builder handles code, scriber handles docs, simulator handles Monte Carlo studies** — for docs-only requests, scriber replaces builder as implementer
-- **Builder, tester, and simulator run in parallel** (simulation workflows) — each with its own isolated spec
+- **Builder and simulator run in parallel** (simulation workflows), then **tester validates the merged result** — each pipeline has its own isolated spec
 - **Pipeline isolation is enforced** — each pipeline never sees another's spec
 - **Adversarial verification** — if all pipelines converge independently, confidence is high
 
@@ -99,10 +99,10 @@ StatsClaw will auto-detect the language, select a workflow, and start working. I
 ## Workflow
 
 ```text
-Code:            leader → planner → [builder ∥ tester] → scriber → [distiller]? → reviewer → shipper?
+Code:            leader → planner → builder → tester → scriber → [distiller]? → reviewer → shipper?
 Docs-only:       leader → planner → scriber → reviewer → shipper?
-Simulation+Code: leader → planner → [builder ∥ tester ∥ simulator] → scriber → [distiller]? → reviewer → shipper?
-Simulation-only: leader → planner → [simulator ∥ tester] → scriber → [distiller]? → reviewer → shipper?
+Simulation+Code: leader → planner → [builder ∥ simulator] → tester → scriber → [distiller]? → reviewer → shipper?
+Simulation-only: leader → planner → simulator → tester → scriber → [distiller]? → reviewer → shipper?
 ```
 
 States: `CREDENTIALS_VERIFIED → NEW → PLANNED → SPEC_READY → PIPELINES_COMPLETE → DOCUMENTED → [KNOWLEDGE_EXTRACTED]? → REVIEW_PASSED → READY_TO_SHIP → DONE`
