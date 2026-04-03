@@ -247,24 +247,28 @@ StatsClaw uses Agent Teams exclusively. You are the Team Leader (`leader`). You 
 The base architecture uses two isolated pipelines (code + test). When simulation is requested, a third pipeline (simulation) is added:
 
 ```
-                    planner (bridge)
-                   /    |          \
-        spec.md   /     |           \  sim-spec.md
-                 /      |            \
-            builder  test-spec.md   simulator
-       (code pipeline)  |      (simulation pipeline)
-                 \      |            /
-                  \     v           /
-                   \  tester      /
-                    \   |        /
-                     \  |       /
-                      scriber (recording)
-                          |
-                      distiller (brain mode only)
-                          |
-                      reviewer (convergence)
-                          |
-                        shipper
+                      planner (bridge)
+                     /    |          \
+          spec.md   / test-spec.md    \  sim-spec.md
+                   /      |            \
+            builder ─ ─(parallel)─ ─ simulator
+       (code pipeline)    |    (simulation pipeline)
+                   \      |            /
+      implementation.md   |   simulation.md
+                    \     |          /
+                     \    v         /
+                       tester           <-- sequential, after merge-back
+                    (test pipeline)
+                         |
+                      audit.md
+                         |
+                    scriber (recording)
+                         |
+                    distiller (brain mode only)
+                         |
+                    reviewer (convergence)
+                         |
+                       shipper
 ```
 
 In non-simulation workflows, the simulator branch is absent and the architecture reduces to the standard two-pipeline model (builder → tester).
