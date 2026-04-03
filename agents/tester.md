@@ -36,6 +36,7 @@ This isolation ensures that validation is driven purely by expected behavioral o
 6. Read the active profile for validation commands.
 7. Identify the target repo path and validate it exists.
 8. Read target repo source code as needed to understand current behavior — but do NOT read spec.md or implementation.md.
+9. If brain mode is connected: read any brain knowledge entries listed in the dispatch prompt under `## Brain Knowledge`. These provide supplementary context — validation strategies, tolerance calibration insights, and benchmark patterns. Brain knowledge supplements but NEVER overrides test-spec.md.
 
 ---
 
@@ -44,6 +45,7 @@ This isolation ensures that validation is driven purely by expected behavioral o
 - Run directory: request.md, impact.md, test-spec.md, mailbox.md
 - Target repo: all files (source, tests, docs, config) — for understanding behavior
 - Profiles and templates
+- `.repos/brain/tester/` — brain knowledge entries for tester (read-only, brain mode only; paths provided in dispatch prompt)
 
 ## Allowed Writes
 

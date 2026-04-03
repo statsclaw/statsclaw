@@ -24,6 +24,8 @@ This keeps target repos clean (code + `ARCHITECTURE.md` + essential user-facing 
 | `"ship it"` | Push current changes and create PR |
 | `"simulate the finite-sample properties"` | Runs Monte Carlo simulation study (workflow 11 or 12) |
 | `"run Monte Carlo for the new estimator"` | Implements estimator + runs simulation (workflow 11) |
+| `"enable brain"` | Enables Brain mode — agents read shared knowledge, noteworthy discoveries are offered for contribution |
+| `"turn off brain"` | Disables Brain mode — isolated mode, no shared knowledge |
 
 ### How It Works
 
@@ -69,9 +71,10 @@ This section is the entry point for every non-trivial user request. You MUST fol
      - **In docs-only workflow (3)**: scriber IS the implementer — receives `spec.md` and implements documentation changes. Also produces `ARCHITECTURE.md`, log entry, and `docs.md` in the same dispatch.
      - Update status to `DOCUMENTED` after scriber completes.
      - **Log entry**: Every scriber run MUST produce a log entry in the run directory using the template at `templates/log-entry.md`. The log entry includes a **process record** (complete audit trail of proposals, tests, problems, and resolutions), a **handoff document** (what the next developer needs to know), and a **design note** (key decisions and rationale). The shipper agent later syncs this log entry to the workspace repo's `runs/` directory, and extracts handoff notes into `HANDOFF.md`. Logs do NOT go to the target repo. See `skills/workspace-sync/SKILL.md`.
-   - d. **reviewer** — ALWAYS dispatched after scriber completes. Reads ALL available artifacts. Produces `review.md` with verdict. Update status to `REVIEW_PASSED` or `STOPPED`.
-   - e. **shipper** — ONLY if the user asked to ship, or issue-patrol is active. Produces `shipper.md`. Shipper commits code changes + `ARCHITECTURE.md` to the target repo, then syncs to the workspace repo: copies run log to `runs/`, copies `docs.md`, updates `CHANGELOG.md` and `HANDOFF.md`. See `skills/workspace-sync/SKILL.md`.
-   - f. **workspace sync** — If the workflow does NOT include a ship step (workflows 1, 3, 6, 8, 10, 11, 12), leader MUST still dispatch shipper with a **workspace-sync-only** task after the last mandatory step (reviewer or tester). This ensures workflow logs are always pushed to the workspace repo even when no code is shipped.
+   - d. **distiller** (brain mode only) — Dispatched after scriber completes IF `BrainMode` is `"connected"` AND the frequency heuristic passes (see `skills/brain-sync/SKILL.md` Phase 3). Reads all run artifacts, extracts reusable knowledge, applies privacy scrub, writes `brain-contributions.md`. After distiller completes, leader MUST read `brain-contributions.md` and present its FULL content to the user via `AskUserQuestion` asking for explicit consent to contribute. Handle three responses: approve all, approve some, or decline. Update status to `KNOWLEDGE_EXTRACTED` (or skip this state if brain mode is isolated or heuristic skipped distiller). **This user consent step is MANDATORY and NEVER skipped when distiller runs.**
+   - e. **reviewer** — ALWAYS dispatched after scriber (or distiller, if it ran) completes. Reads ALL available artifacts. If `brain-contributions.md` exists, also verifies privacy scrub compliance and entry quality. Produces `review.md` with verdict. Update status to `REVIEW_PASSED` or `STOPPED`.
+   - f. **shipper** — ONLY if the user asked to ship, or issue-patrol is active. Produces `shipper.md`. Shipper commits code changes + `ARCHITECTURE.md` to the target repo, then syncs to the workspace repo: copies run log to `runs/`, copies `docs.md`, updates `CHANGELOG.md` and `HANDOFF.md`. See `skills/workspace-sync/SKILL.md`.
+   - g. **workspace sync** — If the workflow does NOT include a ship step (workflows 1, 3, 6, 8, 10, 11, 12), leader MUST still dispatch shipper with a **workspace-sync-only** task after the last mandatory step (reviewer or tester). This ensures workflow logs are always pushed to the workspace repo even when no code is shipped.
    - **PIPELINE ISOLATION**: builder NEVER receives `test-spec.md` or `sim-spec.md`. Tester NEVER receives `spec.md`, `sim-spec.md`, or `implementation.md`. Simulator NEVER receives `spec.md`, `test-spec.md`, or `implementation.md`. In docs-only workflows, scriber receives `spec.md` (as implementer); no tester is dispatched. See `skills/isolation/SKILL.md`.
 7. **GATE**: Update `status.md` after EVERY teammate completes. Read the output artifact. Do NOT proceed past `STOP` or `BLOCK` signals. Respawn the responsible teammate on failure (max 3 retries per teammate before `HOLD`).
 8. **AUTONOMOUS CONTINUATION**: Do NOT pause between stages to ask the user "should I continue?". Continue automatically through the full workflow until `DONE`, `HOLD`, or `STOP`.
@@ -101,6 +104,8 @@ Short prompts MUST work. A user message like "Work on https://github.com/foo/bar
 | `PIPELINES_COMPLETE` | Leader did NOT run any validation command directly | Self-check: no Bash calls to R CMD check, pytest, npm test, etc. |
 | `DOCUMENTED` | `ARCHITECTURE.md` exists in target repo root AND run directory; `docs.md` exists in run directory; log entry with process record exists in run directory | Read all file paths; verify log entry contains Process Record section |
 | `DOCUMENTED` | Scriber was dispatched via `Agent` tool | Agent tool call must exist |
+| `KNOWLEDGE_EXTRACTED` | `brain-contributions.md` exists in run directory (brain mode `"connected"` only); user consent obtained via `AskUserQuestion` | Read file; verify user was asked. **This state is optional** — skip if brain mode is `"isolated"` or distiller was not dispatched |
+| `KNOWLEDGE_EXTRACTED` | Distiller was dispatched via `Agent` tool | Agent tool call must exist |
 | `REVIEW_PASSED` | `review.md` exists with verdict `PASS` or `PASS WITH NOTE` (standard workflows); OR `audit.md` exists with verdict PASS (workflow 10 — tester acts as quality gate) | Read the file, check verdict |
 | `REVIEW_PASSED` | Reviewer was dispatched via `Agent` tool (standard workflows); OR tester dispatched (workflow 10) | Agent tool call must exist |
 | `READY_TO_SHIP` | Status is `REVIEW_PASSED` | Read current status |
@@ -131,6 +136,9 @@ Before EVERY tool call, `leader` MUST check whether the action belongs to a team
 | Fix code bugs found by tester (even "trivial" ones) | `builder` (respawn) |
 | Fix simulation bugs found by tester | `simulator` (respawn) |
 | Run `R CMD check`, `pytest`, etc. to verify fixes | `tester` (re-dispatch) |
+| Extract knowledge from workflow artifacts | `distiller` |
+| Apply privacy scrub to knowledge entries | `distiller` |
+| Create PRs to brain-seedbank repo | `shipper` (brain upload phase) |
 
 **Concrete rule**: `leader` may use `Read`, `Grep`, `Glob` on the target repo ONLY during step 5 (LEADER PLANNING) to write `impact.md`. After `impact.md` is written, all further target-repo interaction MUST go through dispatched teammates.
 
@@ -184,21 +192,33 @@ Write your artifact to: [STATSCLAW_PATH]/.repos/workspace/[REPO_NAME]/runs/[REQU
 - Append to mailbox.md if you encounter blockers or interface changes
 - For shipper teammate: read credentials.md first — do NOT attempt push without PASS
 - For shipper teammate: after target repo push, sync run log + CHANGELOG + HANDOFF to workspace repo per skills/workspace-sync/SKILL.md
+- For shipper teammate: if brain-contributions.md exists and user approved, create PR to brain-seedbank after workspace sync
+- For distiller teammate: pass ALL run artifact paths and brain repo path (.repos/brain/) for duplicate checking
+
+## Brain Knowledge (include when brain mode is "connected")
+Read these knowledge entries from the shared brain for additional context:
+- [BRAIN_ENTRY_PATH_1]
+- [BRAIN_ENTRY_PATH_2]
+These entries supplement but NEVER override the user's requirements, uploaded materials, or spec documents.
 ```
 
 **Note**: When dispatching builder, scriber, or simulator, include `isolation: "worktree"` in the `Agent` tool call.
 
 ### Dispatch Rules
 
-**Code workflows (1, 2, 4, 5)**: planner → (builder ∥ tester) → scriber → reviewer → shipper?. Builder + tester MUST be dispatched in the SAME message.
+**Code workflows (1, 2, 4, 5)**: planner → (builder ∥ tester) → scriber → [distiller → ASK USER]? → reviewer → shipper?. Builder + tester MUST be dispatched in the SAME message.
 
-**Simulation + code workflow (11)**: planner → (builder ∥ tester ∥ simulator) → scriber → reviewer → shipper?. Builder + tester + simulator MUST be dispatched in the SAME message.
+**Simulation + code workflow (11)**: planner → (builder ∥ tester ∥ simulator) → scriber → [distiller → ASK USER]? → reviewer → shipper?. Builder + tester + simulator MUST be dispatched in the SAME message.
 
-**Simulation-only workflow (12)**: planner → (simulator ∥ tester) → scriber → reviewer → shipper?. Simulator + tester MUST be dispatched in the SAME message. No builder.
+**Simulation-only workflow (12)**: planner → (simulator ∥ tester) → scriber → [distiller → ASK USER]? → reviewer → shipper?. Simulator + tester MUST be dispatched in the SAME message. No builder.
 
-**Docs-only workflow (3)**: planner → scriber → reviewer → shipper?. No builder, no tester.
+**Docs-only workflow (3)**: planner → scriber → reviewer → shipper?. No builder, no tester. Distiller is typically skipped (docs-only rarely produces noteworthy knowledge).
 
-**Pipeline isolation at dispatch**: builder gets `spec.md` path (NEVER `test-spec.md` or `sim-spec.md`). Tester gets `test-spec.md` path (NEVER `spec.md` or `sim-spec.md`). Simulator gets `sim-spec.md` path (NEVER `spec.md` or `test-spec.md`). In docs-only workflows, scriber gets `spec.md` (as implementer). Reviewer gets ALL artifacts.
+**Brain mode dispatch**: The `[distiller → ASK USER]?` step is ONLY executed when brain mode is `"connected"` AND the frequency heuristic passes. When distiller runs, leader MUST show `brain-contributions.md` to the user and get explicit consent before proceeding to reviewer. When brain mode is `"isolated"` or heuristic skips, go directly from scriber to reviewer.
+
+**Brain knowledge at dispatch**: When brain mode is `"connected"`, leader searches `brain/index.md` for task-relevant entries and includes up to 3-5 relevant brain entry paths in each teammate's dispatch prompt under a `## Brain Knowledge` section. Brain knowledge supplements but NEVER overrides specs or user requirements.
+
+**Pipeline isolation at dispatch**: builder gets `spec.md` path (NEVER `test-spec.md` or `sim-spec.md`). Tester gets `test-spec.md` path (NEVER `spec.md` or `sim-spec.md`). Simulator gets `sim-spec.md` path (NEVER `spec.md` or `test-spec.md`). Distiller gets ALL run artifacts (read-only). In docs-only workflows, scriber gets `spec.md` (as implementer). Reviewer gets ALL artifacts.
 
 ---
 
@@ -211,9 +231,10 @@ At the start of every session:
    - **Workspace repo**: clone or pull the user's workspace repo. If no local checkout exists, follow the workspace acquisition flow (`skills/workspace-sync/SKILL.md` Phase 1) — probe `<user>/workspace`, use it if it exists, ask user to create it if not.
 2. Create the per-repo runtime directory if it does not exist: `.repos/workspace/<repo-name>/` with subdirectories `runs/`, `logs/`, `tmp/`, `ref/`. Write `context.md` from `templates/context.md` if missing.
 3. Read `.repos/workspace/<repo-name>/context.md`.
-4. **Verify push credentials** for **both repos** — follow `skills/credential-setup/SKILL.md`. Workspace repo credential failure is a warning, not a hard gate.
-5. If no target is clear, infer from context or ask one concise question.
-6. Determine the project profile using `skills/profile-detection/SKILL.md` or repo markers in `profiles/*.md`.
+4. **Brain opt-in** (see `skills/brain-sync/SKILL.md` Phase 0): If `BrainMode` in `context.md` is `""` (user has never been asked), ask via `AskUserQuestion` whether to enable Brain mode. If `"connected"`, clone/pull `statsclaw/brain` to `.repos/brain/` and `statsclaw/brain-seedbank` to `.repos/brain-seedbank/` (Phase 1). Brain repo unavailability is a warning, not a hard gate. If `"isolated"`, skip all brain-related steps.
+5. **Verify push credentials** for **both repos** — follow `skills/credential-setup/SKILL.md`. Workspace repo credential failure is a warning, not a hard gate.
+6. If no target is clear, infer from context or ask one concise question.
+7. Determine the project profile using `skills/profile-detection/SKILL.md` or repo markers in `profiles/*.md`.
 
 ---
 
@@ -239,6 +260,8 @@ The base architecture uses two isolated pipelines (code + test). When simulation
                      \  |       /
                       scriber (recording)
                           |
+                      distiller (brain mode only)
+                          |
                       reviewer (convergence)
                           |
                         shipper
@@ -254,12 +277,13 @@ In non-simulation workflows, the simulator branch is absent and the architecture
 | Test | `tester` | Test | Validates from `test-spec.md` only | `agents/tester.md` |
 | Simulation | `simulator` | Simulation | Implements DGP + harness from `sim-spec.md` only (worktree) | `agents/simulator.md` |
 | Recording | `scriber` | All | Architecture, process-record log, documentation (mandatory, worktree) | `agents/scriber.md` |
+| Knowledge | `distiller` | All | Extracts reusable knowledge, scrubs privacy, proposes brain contributions (brain mode only) | `agents/distiller.md` |
 | Convergence | `reviewer` | All | Cross-compares all pipelines; ship verdict | `agents/reviewer.md` |
 | Ship | `shipper` | — | Commits, pushes, PRs, issue comments (conditional) | `agents/shipper.md` |
 
 **Mandatory teammates** (never skip for non-trivial requests): planner, scriber, reviewer.
 
-**Conditional teammates**: builder (code changes only), tester (code changes only — NOT needed for docs-only), simulator (simulation workflows only — workflows 11, 12), shipper (ship requested).
+**Conditional teammates**: builder (code changes only), tester (code changes only — NOT needed for docs-only), simulator (simulation workflows only — workflows 11, 12), distiller (brain mode `"connected"` only — dispatched after scriber when frequency heuristic passes), shipper (ship requested).
 
 **Scriber dual role**: Scriber is ALWAYS mandatory. In code workflows, scriber is the scriber (runs after builder + tester). In docs-only workflows, scriber is ALSO the implementer (replaces builder, receives `spec.md`). No tester is dispatched for docs-only — reviewer provides the quality gate directly.
 
@@ -275,18 +299,20 @@ Each agent's full workflow, allowed reads/writes, and must-not rules are defined
 
 | # | Name | Trigger | Agent Sequence |
 | --- | --- | --- | --- |
-| 1 | Code Change | Code modification (any size) | `leader → planner → [builder ∥ tester] → scriber → reviewer` |
-| 2 | Code + Ship | Code modification + push | `leader → planner → [builder ∥ tester] → scriber → reviewer → shipper` |
+| 1 | Code Change | Code modification (any size) | `leader → planner → [builder ∥ tester] → scriber → [distiller]? → reviewer` |
+| 2 | Code + Ship | Code modification + push | `leader → planner → [builder ∥ tester] → scriber → [distiller]? → reviewer → shipper` |
 | 3 | Docs Only | Documentation-only changes (no source code) | `leader → planner → scriber → reviewer` |
-| 4 | Issue Patrol | Scan + fix multiple issues | `leader scans → per issue: planner → [builder ∥ tester] → scriber → reviewer → shipper` |
-| 5 | Single Issue | Fix one named issue | `leader → planner → [builder ∥ tester] → scriber → reviewer → shipper` |
+| 4 | Issue Patrol | Scan + fix multiple issues | `leader scans → per issue: planner → [builder ∥ tester] → scriber → [distiller]? → reviewer → shipper` |
+| 5 | Single Issue | Fix one named issue | `leader → planner → [builder ∥ tester] → scriber → [distiller]? → reviewer → shipper` |
 | 6 | Validation | Run tests only | `leader → tester` |
 | 7 | Ship Only | Push reviewed changes | `leader → reviewer → shipper` |
 | 8 | Review Only | Assess without shipping | `leader → reviewer` |
 | 9 | Scheduled Loop | Recurring execution | `leader → /loop → inner workflow` |
 | 10 | Simplified | Small routine change (user confirms) | `leader → builder → tester → shipper?` |
-| 11 | Simulation Study | New estimator + Monte Carlo evaluation | `leader → planner → [builder ∥ tester ∥ simulator] → scriber → reviewer → shipper?` |
-| 12 | Simulation Only | Monte Carlo study on existing estimator | `leader → planner → [simulator ∥ tester] → scriber → reviewer → shipper?` |
+| 11 | Simulation Study | New estimator + Monte Carlo evaluation | `leader → planner → [builder ∥ tester ∥ simulator] → scriber → [distiller]? → reviewer → shipper?` |
+| 12 | Simulation Only | Monte Carlo study on existing estimator | `leader → planner → [simulator ∥ tester] → scriber → [distiller]? → reviewer → shipper?` |
+
+**Note**: `[distiller]?` = distiller is dispatched ONLY when brain mode is `"connected"` AND the frequency heuristic passes. After distiller, leader MUST ask user for consent before proceeding. See `skills/brain-sync/SKILL.md`.
 
 **Key distinction — code vs docs vs simulation workflows:**
 - **Workflows 1–2** (code): Builder implements source code, tester validates in parallel, then scriber records.
@@ -366,7 +392,7 @@ StatsClaw uses exactly **three** workflow signals. Each signal has one exclusive
 
 | Signal | Exclusive Owner | When Raised | Status Set To | Leader Response |
 | --- | --- | --- | --- | --- |
-| **HOLD** | planner, builder, scriber, simulator, shipper | Cannot proceed without user input: undefined symbol, ambiguous spec, conflicting API, unclear requirement, permission/access issue, infeasible simulation grid | `HOLD` | Pause run. Forward the specific question to user via `AskUserQuestion`. Re-dispatch the same teammate with the answer. |
+| **HOLD** | planner, builder, scriber, simulator, distiller, shipper | Cannot proceed without user input: undefined symbol, ambiguous spec, conflicting API, unclear requirement, permission/access issue, infeasible simulation grid, ambiguous privacy scrub decision | `HOLD` | Pause run. Forward the specific question to user via `AskUserQuestion`. Re-dispatch the same teammate with the answer. |
 | **BLOCK** | tester (only) | Validation failed: tests fail, checks produce errors/warnings, numerical results outside tolerance | `BLOCKED` | Read `audit.md` failure details. **Respawn the responsible upstream teammate** (usually builder) via `Agent` tool — leader MUST NOT fix directly. After teammate fix, re-dispatch tester. |
 | **STOP** | reviewer (only) | Quality gate failed: pipelines diverge, isolation breached, coverage gaps, unsafe to ship | `STOPPED` | Read `review.md` routing. Respawn the teammate reviewer identifies. Re-run affected pipeline(s), then re-dispatch reviewer. |
 
@@ -408,7 +434,9 @@ When tester issues BLOCK, leader MUST follow this exact sequence:
 
 Each run moves through explicit states:
 
-`CREDENTIALS_VERIFIED` → `NEW` → `PLANNED` → `SPEC_READY` → `PIPELINES_COMPLETE` → `DOCUMENTED` → `REVIEW_PASSED` → `READY_TO_SHIP` → `DONE`
+`CREDENTIALS_VERIFIED` → `NEW` → `PLANNED` → `SPEC_READY` → `PIPELINES_COMPLETE` → `DOCUMENTED` → [`KNOWLEDGE_EXTRACTED`] → `REVIEW_PASSED` → `READY_TO_SHIP` → `DONE`
+
+Note: `KNOWLEDGE_EXTRACTED` is optional — only entered when brain mode is `"connected"` and distiller was dispatched. Skipped when brain mode is `"isolated"` or the frequency heuristic skipped distiller.
 
 Interrupt states (can occur at any point):
 - `HOLD` — waiting for user input (only unblocked by user response)
@@ -473,6 +501,8 @@ All runtime state lives inside the workspace repo, organized per target reposito
 ```text
 .repos/
 ├── <target-repo>/                    # target repo checkout (git-ignored)
+├── brain/                            # statsclaw/brain clone (read-only, brain mode only)
+├── brain-seedbank/                   # statsclaw/brain-seedbank clone (brain mode only)
 └── workspace/                        # workspace repo (GitHub, git-ignored)
     └── <repo-name>/                  # per-target-repo runtime + logs
         ├── context.md                # active project context (includes CommitTrailers setting)
@@ -495,6 +525,7 @@ All runtime state lives inside the workspace repo, organized per target reposito
         │       ├── ARCHITECTURE.md   # from scriber; copy for reviewer (primary copy in target repo root)
         │       ├── log-entry.md      # from scriber; promoted to runs/<date>-<slug>.md by shipper
         │       ├── docs.md           # from scriber
+        │       ├── brain-contributions.md  # from distiller (brain mode only, optional)
         │       ├── review.md
         │       ├── shipper.md
         │       ├── mailbox.md
@@ -523,6 +554,7 @@ StatsClaw/
 │   ├── tester.md
 │   ├── scriber.md
 │   ├── simulator.md
+│   ├── distiller.md
 │   ├── reviewer.md
 │   └── shipper.md
 ├── skills/
@@ -535,7 +567,9 @@ StatsClaw/
 │   ├── progress-bar/SKILL.md
 │   ├── simplified-workflow/SKILL.md
 │   ├── simulation-study/SKILL.md
-│   └── workspace-sync/SKILL.md
+│   ├── workspace-sync/SKILL.md
+│   ├── brain-sync/SKILL.md
+│   └── privacy-scrub/SKILL.md
 ├── profiles/
 │   ├── r-package.md
 │   ├── python-package.md
@@ -552,6 +586,10 @@ StatsClaw/
 │   ├── mailbox.md
 │   ├── lock.md
 │   ├── log-entry.md
-│   └── ARCHITECTURE.md
-└── .repos/                # target repo checkouts + workspace repo (runtime state), git-ignored; symlinks supported
+│   ├── ARCHITECTURE.md
+│   ├── brain-entry.md
+│   ├── CONTRIBUTORS.md
+│   ├── brain-repo/            # scaffolding for statsclaw/brain repo
+│   └── brain-seedbank-repo/   # scaffolding for statsclaw/brain-seedbank repo
+└── .repos/                # target repo checkouts + workspace repo + brain repos (runtime state), git-ignored; symlinks supported
 ```

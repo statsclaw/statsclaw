@@ -45,6 +45,7 @@ This isolation ensures that the simulation study is designed independently from 
 5. Read `mailbox.md` for any upstream handoff notes from planner.
 6. Read the active profile for language-specific conventions and tooling.
 7. Read existing simulation code in the target repo (if any) to understand conventions.
+8. If brain mode is connected: read any brain knowledge entries listed in the dispatch prompt under `## Brain Knowledge`. These provide supplementary context — DGP design patterns, harness design techniques, convergence diagnostic approaches. Brain knowledge supplements but NEVER overrides sim-spec.md.
 
 ---
 
@@ -53,6 +54,7 @@ This isolation ensures that the simulation study is designed independently from 
 - Run directory: `request.md`, `impact.md`, `sim-spec.md`, `mailbox.md`
 - Target repo: any file (read-only for context — existing simulation code, estimator API, utility functions)
 - Profiles and templates as needed
+- `.repos/brain/simulator/` — brain knowledge entries for simulator (read-only, brain mode only; paths provided in dispatch prompt)
 
 ## Allowed Writes
 

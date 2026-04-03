@@ -32,7 +32,7 @@ echo ""
 # 2. Agent completeness
 # ─────────────────────────────────────────────────────
 echo "▶ Checking agent definitions..."
-EXPECTED_AGENTS="leader planner builder tester scriber simulator reviewer shipper"
+EXPECTED_AGENTS="leader planner builder tester scriber simulator distiller reviewer shipper"
 for agent in $EXPECTED_AGENTS; do
   if [ -f "agents/${agent}.md" ]; then
     info "agents/${agent}.md"
@@ -70,7 +70,7 @@ echo ""
 # 4. Template completeness
 # ─────────────────────────────────────────────────────
 echo "▶ Checking template files..."
-EXPECTED_TEMPLATES="context status credentials mailbox lock log-entry ARCHITECTURE"
+EXPECTED_TEMPLATES="context status credentials mailbox lock log-entry ARCHITECTURE brain-entry CONTRIBUTORS"
 for tmpl in $EXPECTED_TEMPLATES; do
   if [ -f "templates/${tmpl}.md" ]; then
     info "templates/${tmpl}.md"

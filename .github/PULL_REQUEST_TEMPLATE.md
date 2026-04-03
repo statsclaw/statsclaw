@@ -13,6 +13,7 @@
 - [ ] New language profile
 - [ ] New skill
 - [ ] Documentation
+- [ ] Brain system (knowledge sharing, distiller, privacy scrub)
 - [ ] Other: <!-- describe -->
 
 ## Checklist

@@ -9,7 +9,7 @@ Commits pushed by the shipper agent include a `Co-authored-by` trailer that cred
 Every commit to the **target repository** includes:
 
 ```
-Co-authored-by: StatsClaw <statsclaw@users.noreply.github.com>
+Co-authored-by: StatsClaw <273270867+StatsClaw-Shipper@users.noreply.github.com>
 ```
 
 The user remains the primary author (determined by git config `user.name` / `user.email`). The trailer is appended after the commit body, separated by a blank line.
@@ -28,7 +28,7 @@ CommitTrailers: "statsclaw"   # co-author trailers appended to commits; set to "
 
 | Value | Behavior |
 | --- | --- |
-| `"statsclaw"` (default) | Append `Co-authored-by: StatsClaw <statsclaw@users.noreply.github.com>` |
+| `"statsclaw"` (default) | Append `Co-authored-by: StatsClaw <273270867+StatsClaw-Shipper@users.noreply.github.com>` |
 | `""` | No trailer — commits attributed to user only |
 
 To disable, edit `context.md` in the workspace repo and set `CommitTrailers: ""`.
