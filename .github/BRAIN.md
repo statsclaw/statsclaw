@@ -77,6 +77,9 @@ A: Yes. Say "turn off brain" at any time. Your `BrainMode` will be set to `"isol
 **Q: Can I remove a contribution I already made?**
 A: Open an issue on `statsclaw/brain-seedbank` requesting removal. Admin will handle it.
 
+**Q: How do I contribute knowledge manually?**
+A: Use the `/contribute` command at any time during a session. It summarizes what you learned — what worked, what required manual intervention, and what domain-specific patterns emerged — and offers to submit a structured report to `statsclaw/brain-seedbank`. You always review and approve before anything is shared. See `skills/contribute/SKILL.md`.
+
 **Q: Does Brain mode slow down my workflow?**
 A: Minimally. Reading adds a few seconds (brain repo pull). Contributing happens at the end of the workflow and only when noteworthy knowledge was produced.
 
@@ -153,6 +156,16 @@ Distiller is NOT dispatched on every workflow. Leader evaluates:
 - Documentation-only workflow
 - Entirely mechanical change (rename, refactor)
 - Simplified workflow (workflow 10)
+
+### The `/contribute` Command
+
+Users can invoke `/contribute` at any time to explicitly trigger knowledge extraction and contribution. This is the **user-invocable entry point** for brain contributions — it bypasses the automatic frequency heuristic (since the user has explicitly signaled intent to share) but applies the same quality gate, privacy scrub, and mandatory user consent.
+
+**Flow**: `/contribute` → leader gathers session artifacts → distiller extracts knowledge → leader presents to user → user approves → shipper creates PR to brain-seedbank
+
+**Trigger phrases**: `/contribute`, `"contribute"`, `"share what I learned"`, `"submit lessons"`, `"add to brain"`
+
+See `skills/contribute/SKILL.md` for the full specification.
 
 ### Brain Sync Lifecycle
 
@@ -235,3 +248,4 @@ Each entry follows the `templates/brain-entry.md` template with metadata comment
 | `templates/CONTRIBUTORS.md` | Badge leaderboard template |
 | `templates/brain-repo/` | Scaffolding for statsclaw/brain |
 | `templates/brain-seedbank-repo/` | Scaffolding for statsclaw/brain-seedbank |
+| `skills/contribute/SKILL.md` | User-invocable `/contribute` command |
