@@ -152,6 +152,9 @@ read Correia (2016) and add network visualization to panelView
 
 # Documentation
 update the documentation for v2.0
+
+# Contribute knowledge to the shared brain
+/contribute
 ```
 
 ---
@@ -274,7 +277,7 @@ StatsClaw has a shared knowledge system where techniques discovered during workf
 **How it works:**
 
 1. **Read** — Your agents automatically access relevant knowledge entries from [`statsclaw/brain`](https://github.com/statsclaw/brain)
-2. **Contribute** — After noteworthy workflows, the distiller agent extracts reusable knowledge. You review everything and approve or decline — nothing is shared without your explicit consent
+2. **Contribute** — After noteworthy workflows, the distiller agent extracts reusable knowledge. You review everything and approve or decline — nothing is shared without your explicit consent. You can also run the built-in `/contribute` command at any time to summarize what you learned — what worked, what required manual intervention, and what domain-specific patterns emerged — and submit it as a structured report
 3. **Earn badges** — Accepted contributions earn virtual badges on the [Contributors leaderboard](https://github.com/statsclaw/brain/blob/main/CONTRIBUTORS.md)
 
 **Privacy guarantee:** All contributions are automatically scrubbed of repo names, file paths, usernames, proprietary code, and any identifying information. Only generic, reusable knowledge is shared.
