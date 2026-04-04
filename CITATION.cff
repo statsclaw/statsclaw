@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "If you use StatsClaw, please cite it as below."
+type: article
+title: "StatsClaw: An AI-Collaboration Workflow for Statistical Software Development"
+authors:
+  - family-names: "Qin"
+    given-names: "Tianzhu"
+    affiliation: "University of Cambridge"
+  - family-names: "Xu"
+    given-names: "Yiqing"
+    affiliation: "Stanford University"
+year: 2025
+url: "https://bit.ly/statsclaw"
