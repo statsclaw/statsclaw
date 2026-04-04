@@ -41,11 +41,16 @@ See `index.md` for a searchable index of all entries.
 
 **Do NOT create PRs directly to this repo.** Contributions flow through [statsclaw/brain-seedbank](https://github.com/statsclaw/brain-seedbank):
 
-1. Use StatsClaw with Brain mode enabled
-2. After noteworthy workflows, the distiller agent extracts knowledge
-3. You review and approve the extracted entries
-4. Your contribution is submitted as a PR to `statsclaw/brain-seedbank`
-5. Admin reviews, then transfers accepted entries here
+**Automatic** — Use StatsClaw with Brain mode enabled. After noteworthy workflows, the distiller agent extracts knowledge automatically.
+
+**Manual** — Run the `/contribute` command at any time during a session. It summarizes what you learned — what worked, what required manual intervention, and what domain-specific patterns emerged — and submits a structured report.
+
+Either way:
+
+1. The distiller agent extracts reusable knowledge
+2. You review and approve the extracted entries — nothing is shared without your explicit consent
+3. Your contribution is submitted as a PR to `statsclaw/brain-seedbank`
+4. Admin reviews, then transfers accepted entries here
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for quality standards.
 
