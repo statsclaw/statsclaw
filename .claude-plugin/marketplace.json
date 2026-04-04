@@ -1,0 +1,34 @@
+{
+  "name": "statsclaw",
+  "owner": {
+    "name": "StatsClaw"
+  },
+  "metadata": {
+    "description": "AI agent teams framework for statistical package development — build, test, simulate, document, and ship across R, Python, Stata, TypeScript, Go, Rust, C, and C++",
+    "version": "0.2.0"
+  },
+  "plugins": [
+    {
+      "name": "statsclaw-skills",
+      "description": "Workflow protocols for credential verification, pipeline isolation, inter-agent communication, issue patrol, simulation studies, brain knowledge sync, and privacy scrubbing",
+      "source": "./skills/",
+      "strict": false,
+      "skills": [
+        "./attribution",
+        "./brain-sync",
+        "./contribute",
+        "./credential-setup",
+        "./handoff",
+        "./isolation",
+        "./issue-patrol",
+        "./mailbox",
+        "./privacy-scrub",
+        "./profile-detection",
+        "./progress-bar",
+        "./simplified-workflow",
+        "./simulation-study",
+        "./workspace-sync"
+      ]
+    }
+  ]
+}
