@@ -75,9 +75,15 @@ Tried StatsClaw on your research? We'd love to hear about it:
 
 ### 5. Contribute Knowledge to the Brain
 
-StatsClaw has a shared knowledge system where techniques, methods, and patterns discovered during workflows are extracted and shared with all users. When you use StatsClaw with Brain mode enabled:
+StatsClaw has a shared knowledge system where techniques, methods, and patterns discovered during workflows are extracted and shared with all users. You can contribute in two ways:
 
-1. After noteworthy workflows, the **distiller agent** extracts reusable knowledge
+**Automatic** — When you use StatsClaw with Brain mode enabled, after noteworthy workflows the **distiller agent** automatically extracts reusable knowledge and asks for your consent.
+
+**Manual** — Run the built-in `/contribute` command at any time during a session. It summarizes what you learned — what worked, what required manual intervention, and what domain-specific patterns emerged — into a structured report.
+
+Either way, the flow is the same:
+
+1. The distiller agent extracts reusable knowledge from your session
 2. You review the extracted entries and **approve or decline** — nothing is shared without your explicit consent
 3. Approved entries are submitted as a PR to [`statsclaw/brain-seedbank`](https://github.com/statsclaw/brain-seedbank)
 4. Admin reviews and transfers accepted entries to [`statsclaw/brain`](https://github.com/statsclaw/brain)

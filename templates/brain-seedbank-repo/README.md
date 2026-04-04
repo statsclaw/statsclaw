@@ -17,21 +17,27 @@ The contribution staging repo for [StatsClaw Brain](https://github.com/statsclaw
 ## How It Works
 
 ```
-Your StatsClaw workflow
-        │
-        ▼
-  Distiller agent extracts knowledge
-        │
-        ▼
-  You review and approve (mandatory)
-        │
-        ▼
+Your StatsClaw workflow          OR          /contribute command
+        │                                        │
+        ▼                                        ▼
+  Distiller agent extracts knowledge    Distiller summarizes session lessons
+        │                                        │
+        └────────────┬───────────────────────────┘
+                     ▼
+        You review and approve (mandatory)
+                     │
+                     ▼
   PR created here (brain-seedbank)  ──→  Admin reviews  ──→  statsclaw/brain
         │                                                          │
         ▼                                                          ▼
   Public, transparent                                    Curated knowledge
   (everyone can see who contributed what)                (agents read from here)
 ```
+
+### Two Ways to Contribute
+
+1. **Automatic** — After noteworthy workflows, StatsClaw automatically extracts knowledge and asks for your consent
+2. **Manual** — Run `/contribute` at any time to summarize what you learned during your session — what worked, what required manual intervention, and what domain-specific patterns emerged — and submit it as a structured report
 
 ## Privacy Guarantees
 
