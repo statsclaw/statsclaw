@@ -44,6 +44,7 @@ Leader MUST accept short, informal prompts and route them to the correct workflo
 | "review" / "audit" | Review only | reviewer teammate |
 | small/routine change (detected by leader) | Simplified (if user confirms) | Workflow 10 (`skills/simplified-workflow/SKILL.md`) |
 | "turn off brain" / "disable brain" / "enable brain" / "connect brain" | Brain mode toggle | Update `BrainMode` in `context.md` |
+| `/contribute` / "contribute" / "share what I learned" / "submit lessons" / "add to brain" | Brain contribution | `skills/contribute/SKILL.md` |
 
 ### Parameter Extraction
 

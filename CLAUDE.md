@@ -26,6 +26,7 @@ This keeps target repos clean (code + `ARCHITECTURE.md` + essential user-facing 
 | `"run Monte Carlo for the new estimator"` | Implements estimator + runs simulation (workflow 11) |
 | `"enable brain"` | Enables Brain mode — agents read shared knowledge, noteworthy discoveries are offered for contribution |
 | `"turn off brain"` | Disables Brain mode — isolated mode, no shared knowledge |
+| `/contribute` | Summarizes lessons learned during the session, extracts reusable knowledge, and submits to the shared brain (with user consent) |
 
 ### How It Works
 
@@ -315,6 +316,7 @@ Each agent's full workflow, allowed reads/writes, and must-not rules are defined
 | 10 | Simplified | Small routine change (user confirms) | `leader → builder → tester → shipper?` |
 | 11 | Simulation Study | New estimator + Monte Carlo evaluation | `leader → planner → [builder ∥ simulator] → tester → scriber → [distiller]? → reviewer → shipper?` |
 | 12 | Simulation Only | Monte Carlo study on existing estimator | `leader → planner → simulator → tester → scriber → [distiller]? → reviewer → shipper?` |
+| 13 | Contribute | User-invoked knowledge contribution (`/contribute`) | `leader → distiller → ASK USER → shipper (brain upload only)` |
 
 **Note**: `[distiller]?` = distiller is dispatched ONLY when brain mode is `"connected"` AND the frequency heuristic passes. After distiller, leader MUST ask user for consent before proceeding. See `skills/brain-sync/SKILL.md`.
 
@@ -336,8 +338,9 @@ Each agent's full workflow, allowed reads/writes, and must-not rules are defined
 - **Workflow 10**: Simplified — for small, routine changes (≤3 files, no algorithms, no uploaded files). Leader asks user to confirm simplified vs full. Skips planner, scriber, reviewer. Builder uses `request.md` as spec. Tester is the quality gate. State: `PLANNED` → `PIPELINES_COMPLETE` → `REVIEW_PASSED` → `DONE`. See `skills/simplified-workflow/SKILL.md`. If complexity exceeds expectations, leader MUST escalate to full workflow.
 - **Workflow 11**: Simulation Study — new estimator + Monte Carlo evaluation. Planner produces three specs: `spec.md`, `test-spec.md`, `sim-spec.md`. Builder and simulator dispatch in parallel; after both complete, tester is dispatched to validate all merged code. Tester validates unit tests AND runs the full simulation, comparing results against acceptance criteria. Three-pipeline isolation. See `skills/simulation-study/SKILL.md`.
 - **Workflow 12**: Simulation Only — Monte Carlo study on an existing estimator. No builder needed. Planner produces `sim-spec.md` + `test-spec.md`. Simulator runs first; after it completes, tester is dispatched to validate. See `skills/simulation-study/SKILL.md`.
+- **Workflow 13**: Contribute — User-invoked knowledge contribution via `/contribute`. Lightweight: leader gathers session artifacts, dispatches distiller to extract knowledge, presents entries to user for consent, then dispatches shipper for brain-seedbank PR. No planner, builder, tester, scriber, or reviewer. See `skills/contribute/SKILL.md`.
 
-**Lightweight workflow rule**: Workflows 6, 7, 8, and 10 are exceptions to the "mandatory teammates" rule. They serve specific, limited purposes (validation-only, ship-only, review-only, simplified) and intentionally skip the full two-pipeline flow.
+**Lightweight workflow rule**: Workflows 6, 7, 8, 10, and 13 are exceptions to the "mandatory teammates" rule. They serve specific, limited purposes (validation-only, ship-only, review-only, simplified) and intentionally skip the full two-pipeline flow.
 
 ---
 
@@ -361,6 +364,7 @@ Route semantically from intent. Do **not** require the user to learn trigger phr
 | new estimator + simulation evidence | 11 (simulation + code — [builder ∥ simulator] → tester) |
 | simulation study on existing estimator | 12 (simulation only — simulator → tester, no builder) |
 | small routine change (typo, config, bump, lint fix) | 10 (simplified — ask user to confirm) |
+| `/contribute` / "contribute" / "share what I learned" / "submit lessons" / "add to brain" | 13 (contribute — `skills/contribute/SKILL.md`) |
 
 **Routing rule — simplified vs full**: Before committing to workflow 1–5, leader evaluates smallness criteria (see `skills/simplified-workflow/SKILL.md`). If ALL criteria are met, leader asks the user via `AskUserQuestion` to choose simplified or full. If the user declines or leader is uncertain, use the standard workflow. Leader MUST NOT silently downgrade to simplified.
 
@@ -573,7 +577,8 @@ StatsClaw/
 │   ├── simulation-study/SKILL.md
 │   ├── workspace-sync/SKILL.md
 │   ├── brain-sync/SKILL.md
-│   └── privacy-scrub/SKILL.md
+│   ├── privacy-scrub/SKILL.md
+│   └── contribute/SKILL.md
 ├── profiles/
 │   ├── r-package.md
 │   ├── python-package.md
