@@ -319,6 +319,7 @@ BibTeX:
   title={StatsClaw: An AI-Collaboration Workflow for Statistical Software Development},
   author={Qin, Tianzhu and Xu, Yiqing},
   year={2026},
+  howpublished = {Mimeo, Stanford University},
   url={https://bit.ly/statsclaw}
 }
 ```
