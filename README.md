@@ -310,15 +310,15 @@ Brain mode is optional — you choose at session start. See [Brain System Docume
 
 If you use StatsClaw in your research or software development, please cite our paper:
 
-> Qin, Tianzhu and Yiqing Xu. 2025. "[StatsClaw: An AI-Collaboration Workflow for Statistical Software Development](https://bit.ly/statsclaw)."
+> Qin, Tianzhu and Yiqing Xu. 2026. "[StatsClaw: An AI-Collaboration Workflow for Statistical Software Development](https://bit.ly/statsclaw)."
 
 BibTeX:
 
 ```bibtex
-@article{qinxu2025statsclaw,
+@misc{qinxu2026statsclaw,
   title={StatsClaw: An AI-Collaboration Workflow for Statistical Software Development},
   author={Qin, Tianzhu and Xu, Yiqing},
-  year={2025},
+  year={2026},
   url={https://bit.ly/statsclaw}
 }
 ```
