@@ -30,3 +30,5 @@ vignettes/*_files/
 # Build artifacts
 check/
 .claude/
+.env
+notes/

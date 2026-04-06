@@ -103,13 +103,14 @@ StatsClaw will auto-detect the language, select a workflow, and start working. I
 ## Workflow
 
 ```text
-Code:            leader → planner → builder → tester → scriber → [distiller]? → reviewer → shipper?
-Docs-only:       leader → planner → scriber → reviewer → shipper?
-Simulation+Code: leader → planner → [builder ∥ simulator] → tester → scriber → [distiller]? → reviewer → shipper?
-Simulation-only: leader → planner → simulator → tester → scriber → [distiller]? → reviewer → shipper?
+Code:              leader → planner → builder → tester → scriber → [distiller]? → reviewer → shipper?
+Docs-only:         leader → planner → scriber → reviewer → shipper?
+Simulation+Code:   leader → planner → [builder ∥ simulator] → tester → scriber → [distiller]? → reviewer → shipper?
+Simulation-only:   leader → planner → simulator → tester → scriber → [distiller]? → reviewer → shipper?
+Paper-to-Package:  leader → paper-ingestion → planner → builder → tester → scriber → [distiller]? → reviewer → shipper?
 ```
 
-States: `CREDENTIALS_VERIFIED → NEW → PLANNED → SPEC_READY → PIPELINES_COMPLETE → DOCUMENTED → [KNOWLEDGE_EXTRACTED]? → REVIEW_PASSED → READY_TO_SHIP → DONE`
+States: `CREDENTIALS_VERIFIED → NEW → PLANNED → [PAPER_PARSED]? → SPEC_READY → PIPELINES_COMPLETE → DOCUMENTED → [KNOWLEDGE_EXTRACTED]? → REVIEW_PASSED → READY_TO_SHIP → DONE`
 
 Signals: `HOLD` (ambiguous, ask user), `BLOCK` (validation failed), `STOP` (unsafe to ship)
 
@@ -123,6 +124,7 @@ Signals: `HOLD` (ambiguous, ask user), `BLOCK` (validation failed), `STOP` (unsa
 | **Cross-language translation** | Handles R/Python idiom differences | May miss subtle numerical edge cases without careful review |
 | **Testing & validation** | Independent test pipeline catches bugs tests miss | Empirical verification, not formal proofs |
 | **Monte Carlo studies** | Automates simulation harness and reporting | Researcher must design meaningful DGPs and metrics |
+| **Paper-to-Package** | Parses PDF papers via MinerU API, extracts estimators/algorithms/simulation designs, generates specs | Requires researcher confirmation of extracted content; OCR quality varies |
 | **Paper-driven features** | Reads methodology papers to design new functionality | Extracts concepts, not full estimator implementations |
 | **Bug fixing** | Adversarial architecture helps find hidden bugs | Complex domain bugs still need human insight |
 | **Documentation** | Generates Quarto books, API docs | Needs researcher review for accuracy |
@@ -178,7 +180,7 @@ See the [workspace example](https://github.com/statsclaw/example-workspace) for 
 
 - `CLAUDE.md` — orchestration policy (the authoritative reference)
 - `agents/` — agent definitions (leader, planner, builder, tester, simulator, scriber, distiller, reviewer, shipper)
-- `skills/` — shared protocol skills (credential-setup, isolation, handoff, mailbox, issue-patrol, profile-detection, brain-sync, privacy-scrub)
+- `skills/` — shared protocol skills (credential-setup, isolation, handoff, mailbox, issue-patrol, profile-detection, brain-sync, privacy-scrub, paper-ingestion)
 - `profiles/` — language-specific execution rules (R, Python, Julia, TypeScript, Stata, Go, Rust, C, C++)
 - `templates/` — runtime artifact templates and repo scaffolding (brain-repo, brain-seedbank-repo)
 
@@ -211,6 +213,7 @@ All runtime state lives inside the workspace repo, organized per target reposito
         │       ├── spec.md           # code pipeline input (from planner)
         │       ├── test-spec.md      # test pipeline input (from planner)
         │       ├── sim-spec.md       # simulation pipeline input (from planner, workflows 11/12)
+        │       ├── paper-elements.json  # parsed paper elements (from paper-ingestion, workflow 14)
         │       ├── implementation.md # code pipeline output (from builder)
         │       ├── simulation.md     # simulation pipeline output (from simulator, workflows 11/12)
         │       ├── audit.md          # test pipeline output (from tester)
@@ -235,7 +238,7 @@ StatsClaw/
 ├── CLAUDE.md           # orchestration policy
 ├── README.md
 ├── agents/             # agent definitions (9 agents including distiller)
-├── skills/             # shared protocol skills (13 skills including brain-sync, privacy-scrub)
+├── skills/             # shared protocol skills (15 skills including brain-sync, privacy-scrub, paper-ingestion)
 ├── profiles/           # language execution rules (9 languages)
 ├── templates/          # runtime artifact templates + repo scaffolding (brain-repo, brain-seedbank-repo)
 └── .repos/             # target repo checkouts + workspace + brain repos (runtime state, git-ignored)

@@ -390,3 +390,78 @@ Primary artifacts:
 - `sim-spec.md` in the run directory (for simulation pipeline / simulator — simulation workflows 11, 12 only)
 
 Secondary: append to `mailbox.md` with handoff summaries for all pipelines.
+
+---
+
+## Paper Ingestion Mode (Workflow 14)
+
+When leader dispatches planner with a `paper-elements.json` path, planner enters Paper Ingestion Mode. This mode replaces the standard user-prompt-based analysis with structured extraction from a parsed academic paper.
+
+### Activation
+
+Planner detects Paper Ingestion Mode when the dispatch prompt includes a path to `paper-elements.json`. This file is produced by `skills/paper-ingestion/` scripts (MinerU API output, post-processed).
+
+### Modified Workflow
+
+**Step 0 (Comprehension)** is extended:
+
+#### 0a-paper. Read Paper Elements
+
+1. Read `paper-elements.json` completely — equations, tables, algorithms, text blocks, figures
+2. For each display equation (`interline_equation`): read the LaTeX and its surrounding context
+3. For each table: read the caption and HTML structure — identify if it contains simulation parameters or results
+4. For each detected algorithm: read the raw text and linked equation references
+5. For each text block: scan for estimator definitions, theorem statements, assumptions, DGP descriptions
+
+#### 0b-paper. Semantic Entity Recognition
+
+Identify and categorize the following entities from the paper elements:
+
+| Entity Type | Source Elements | What to Extract |
+| --- | --- | --- |
+| `estimator_definition` | equations + context | Name, LaTeX definition, key properties |
+| `theorem` | text + equations | Statement, conditions, implications |
+| `assumption` | text blocks | Formal statement, testability |
+| `algorithm` | algorithm blocks + equations | Steps, I/O, convergence criteria |
+| `dgp` | text + equations + tables | Model structure, parameters, distributions |
+| `simulation_params` | tables + text | Sample sizes, replications, DGP variants, metrics |
+| `data_structure` | text | Panel/cross-section/time-series, dimensions |
+
+#### 0c-paper. Comprehension Self-Test (Paper-Specific)
+
+In addition to the standard self-test questions, answer:
+
+7. **Can I identify the primary estimator(s) this paper proposes?** Name them and write their definitions.
+8. **Can I describe the computational algorithm without looking at the paper?** Write it step by step.
+9. **Does this paper contain a Monte Carlo section?** If yes, describe the DGP and key parameters.
+10. **What would the function signature look like for the main estimator?** Write it.
+
+#### 0d-paper. HOLD Is Mandatory
+
+In Paper Ingestion Mode, planner MUST raise HOLD after the first comprehension pass, regardless of confidence level. This is because:
+
+- PDF parsing may introduce LaTeX errors that need user verification
+- Algorithm blocks may be incompletely detected
+- The user should confirm the identified estimator(s) before spec generation
+
+The HOLD message should include:
+
+1. Summary of identified estimator(s) with their LaTeX definitions
+2. Summary of identified algorithm steps
+3. Whether a Monte Carlo section was detected (triggers sim-spec.md)
+4. Any symbols or concepts that are ambiguous
+5. Specific questions about anything unclear
+
+#### Paper-Specific Spec Generation
+
+After HOLD confirmation, proceed with standard Steps 1-8 but with these modifications:
+
+- **spec.md**: Algorithm steps come from the paper's algorithm blocks + equation definitions, not from user prose
+- **test-spec.md**: If the paper has Monte Carlo results, include expected numerical benchmarks from the paper's tables as cross-reference tests
+- **sim-spec.md**: If the paper has a Monte Carlo section, extract DGP and parameters directly from the paper's simulation design. This triggers workflow 14 to include simulator (parallel with builder)
+
+### Write Surface (Paper Ingestion Mode)
+
+Same as standard planner write surface, plus:
+
+- `comprehension.md` MUST use the `templates/paper-comprehension.md` template
