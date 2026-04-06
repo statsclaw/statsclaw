@@ -21,11 +21,11 @@ StatsClaw is building toward a world where statisticians and econometricians can
 
 ## Phase 2: Paper-to-Package Pipeline
 
-- [ ] PDF/LaTeX paper ingestion — extract algorithms, theorems, estimators
+- [x] PDF/LaTeX paper ingestion — extract algorithms, theorems, estimators (MinerU API integration, tested on 4 papers with 100% LaTeX compilability)
 - [ ] Formula-to-code translation with mathematical verification
 - [ ] Auto-generate unit tests from paper's simulation section
 - [ ] Auto-generate vignettes/tutorials from paper's examples
-- [ ] Support for common paper formats (arXiv, NBER, journal PDFs)
+- [x] Support for common paper formats (arXiv, NBER, journal PDFs)
 
 ## Phase 3: Interactive Specification
 

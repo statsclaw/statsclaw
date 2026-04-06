@@ -24,6 +24,7 @@ This keeps target repos clean (code + `ARCHITECTURE.md` + essential user-facing 
 | `"ship it"` | Push current changes and create PR |
 | `"simulate the finite-sample properties"` | Runs Monte Carlo simulation study (workflow 11 or 12) |
 | `"run Monte Carlo for the new estimator"` | Implements estimator + runs simulation (workflow 11) |
+| `"build a package from this paper"` + PDF | Parses PDF, extracts estimator, generates spec, builds package (workflow 14) |
 | `"enable brain"` | Enables Brain mode — agents read shared knowledge, noteworthy discoveries are offered for contribution |
 | `"turn off brain"` | Disables Brain mode — isolated mode, no shared knowledge |
 | `/contribute` | Summarizes lessons learned during the session, extracts reusable knowledge, and submits to the shared brain (with user consent) |
@@ -97,7 +98,8 @@ Short prompts MUST work. A user message like "Work on https://github.com/foo/bar
 | `CREDENTIALS_VERIFIED` | Write access to **target repo** confirmed | `git push --dry-run` succeeded **in the target repo checkout** during step 4 (not in StatsClaw or any other repo) |
 | `CREDENTIALS_VERIFIED` | Workspace repo access checked (warning, not hard gate) | `credentials.md` notes workspace repo status: PASS, FAIL (with user warning), or SKIP |
 | `PLANNED` | `request.md` and `impact.md` exist and are non-empty | Read the files |
-| `SPEC_READY` | `comprehension.md` and `spec.md` exist; `test-spec.md` also exists (except docs-only workflow 3, where it is not produced); `sim-spec.md` also exists for simulation workflows (11, 12) | Read file paths; for workflow 3, only `comprehension.md` + `spec.md` required; for simulation workflows, also verify `sim-spec.md` |
+| `PAPER_PARSED` | `paper-elements.json` exists in run directory with ≥1 equation or table (workflow 14 only; skipped for other workflows) | Read file, verify non-empty extraction |
+| `SPEC_READY` | `comprehension.md` and `spec.md` exist; `test-spec.md` also exists (except docs-only workflow 3, where it is not produced); `sim-spec.md` also exists for simulation workflows (11, 12, 14 with Monte Carlo) | Read file paths; for workflow 3, only `comprehension.md` + `spec.md` required; for simulation workflows, also verify `sim-spec.md` |
 | `SPEC_READY` | Planner was dispatched via `Agent` tool | Agent tool call must exist in conversation |
 | `PIPELINES_COMPLETE` | `implementation.md` and `audit.md` exist (code workflows only; docs-only workflow 3 skips this state); `simulation.md` also exists for simulation workflows (11, 12) | Read file paths; for simulation workflows, also verify `simulation.md` |
 | `PIPELINES_COMPLETE` | Builder dispatched with `isolation: "worktree"`, then tester dispatched after builder completes (code workflows only); simulator dispatched with `isolation: "worktree"` (simulation workflows only), tester dispatched after all writers complete | Agent tool calls must exist |
@@ -317,6 +319,7 @@ Each agent's full workflow, allowed reads/writes, and must-not rules are defined
 | 11 | Simulation Study | New estimator + Monte Carlo evaluation | `leader → planner → [builder ∥ simulator] → tester → scriber → [distiller]? → reviewer → shipper?` |
 | 12 | Simulation Only | Monte Carlo study on existing estimator | `leader → planner → simulator → tester → scriber → [distiller]? → reviewer → shipper?` |
 | 13 | Contribute | User-invoked knowledge contribution (`/contribute`) | `leader → distiller → ASK USER → shipper (brain upload only)` |
+| 14 | Paper-to-Package | PDF paper → parse → extract → build package | `leader → paper-ingestion → planner (paper mode) → builder → tester → scriber → [distiller]? → reviewer → shipper?` |
 
 **Note**: `[distiller]?` = distiller is dispatched ONLY when brain mode is `"connected"` AND the frequency heuristic passes. After distiller, leader MUST ask user for consent before proceeding. See `skills/brain-sync/SKILL.md`.
 
@@ -339,6 +342,7 @@ Each agent's full workflow, allowed reads/writes, and must-not rules are defined
 - **Workflow 11**: Simulation Study — new estimator + Monte Carlo evaluation. Planner produces three specs: `spec.md`, `test-spec.md`, `sim-spec.md`. Builder and simulator dispatch in parallel; after both complete, tester is dispatched to validate all merged code. Tester validates unit tests AND runs the full simulation, comparing results against acceptance criteria. Three-pipeline isolation. See `skills/simulation-study/SKILL.md`.
 - **Workflow 12**: Simulation Only — Monte Carlo study on an existing estimator. No builder needed. Planner produces `sim-spec.md` + `test-spec.md`. Simulator runs first; after it completes, tester is dispatched to validate. See `skills/simulation-study/SKILL.md`.
 - **Workflow 13**: Contribute — User-invoked knowledge contribution via `/contribute`. Lightweight: leader gathers session artifacts, dispatches distiller to extract knowledge, presents entries to user for consent, then dispatches shipper for brain-seedbank PR. No planner, builder, tester, scriber, or reviewer. See `skills/contribute/SKILL.md`.
+- **Workflow 14**: Paper-to-Package — PDF academic paper → parse via MinerU API → extract elements (equations, tables, algorithms) → planner comprehends paper and generates specs → standard build/test pipeline. Leader runs `skills/paper-ingestion/` scripts to produce `paper-elements.json`, then dispatches planner in Paper Ingestion Mode. Planner MUST HOLD to confirm comprehension with the user. State adds `PAPER_PARSED` between `PLANNED` and `SPEC_READY`. If the paper contains a Monte Carlo section, planner also produces `sim-spec.md` and the workflow includes simulator (parallel with builder). See `skills/paper-ingestion/SKILL.md`.
 
 **Lightweight workflow rule**: Workflows 6, 7, 8, 10, and 13 are exceptions to the "mandatory teammates" rule. They serve specific, limited purposes (validation-only, ship-only, review-only, simplified) and intentionally skip the full two-pipeline flow.
 
@@ -365,12 +369,15 @@ Route semantically from intent. Do **not** require the user to learn trigger phr
 | simulation study on existing estimator | 12 (simulation only — simulator → tester, no builder) |
 | small routine change (typo, config, bump, lint fix) | 10 (simplified — ask user to confirm) |
 | `/contribute` / "contribute" / "share what I learned" / "submit lessons" / "add to brain" | 13 (contribute — `skills/contribute/SKILL.md`) |
+| upload PDF + "build package" / "ingest paper" / "parse this paper" / "paper to package" | 14 (paper-to-package — `skills/paper-ingestion/SKILL.md`) |
 
 **Routing rule — simplified vs full**: Before committing to workflow 1–5, leader evaluates smallness criteria (see `skills/simplified-workflow/SKILL.md`). If ALL criteria are met, leader asks the user via `AskUserQuestion` to choose simplified or full. If the user declines or leader is uncertain, use the standard workflow. Leader MUST NOT silently downgrade to simplified.
 
 **Routing rule — code vs docs**: If the request touches ONLY documentation files (`.Rd`, `.md`, `.qmd`, `.Rmd`, vignettes, tutorials, `pkgdown`, `_quarto.yml`, man pages, README) and NO source code (`.R`, `.py`, `.ts`, `.go`, `.rs`, `.ado`), use workflow 3 (docs-only — no builder, no tester). If the request touches any source code, use workflow 1 or 2 even if docs are also needed — scriber handles docs in the recording phase.
 
 **Routing rule — simulation**: If the user's intent includes Monte Carlo simulation, finite-sample evaluation, DGP design, or any phrase indicating simulation study (see `skills/simulation-study/SKILL.md`), use workflow 11 (if new estimator code is also needed) or workflow 12 (if the estimator already exists). If the request is purely code implementation without simulation, use workflow 1 or 2. Simulation workflows ALWAYS include planner, simulator, tester, scriber, and reviewer.
+
+**Routing rule — paper-to-package**: If the user uploads a PDF academic paper (or provides a path/URL to one) AND expresses intent to build a package, extract estimators, or "ingest" the paper, use workflow 14. Leader runs the paper-ingestion skill scripts to parse the PDF via MinerU API before dispatching planner. If the paper contains a Monte Carlo section, planner produces `sim-spec.md` and the workflow includes simulator. Workflow 14 ALWAYS includes paper-ingestion, planner (paper mode), builder, tester, scriber, and reviewer.
 
 Routing is semantic. Leader interprets intent from natural language in any language.
 
@@ -442,7 +449,9 @@ When tester issues BLOCK, leader MUST follow this exact sequence:
 
 Each run moves through explicit states:
 
-`CREDENTIALS_VERIFIED` → `NEW` → `PLANNED` → `SPEC_READY` → `PIPELINES_COMPLETE` → `DOCUMENTED` → [`KNOWLEDGE_EXTRACTED`] → `REVIEW_PASSED` → `READY_TO_SHIP` → `DONE`
+`CREDENTIALS_VERIFIED` → `NEW` → `PLANNED` → [`PAPER_PARSED`] → `SPEC_READY` → `PIPELINES_COMPLETE` → `DOCUMENTED` → [`KNOWLEDGE_EXTRACTED`] → `REVIEW_PASSED` → `READY_TO_SHIP` → `DONE`
+
+Note: `PAPER_PARSED` is optional — only entered in workflow 14 (Paper-to-Package) after MinerU API parsing completes and `paper-elements.json` is written. Skipped for all other workflows.
 
 Note: `KNOWLEDGE_EXTRACTED` is optional — only entered when brain mode is `"connected"` and distiller was dispatched. Skipped when brain mode is `"isolated"` or the frequency heuristic skipped distiller.
 
@@ -533,6 +542,7 @@ All runtime state lives inside the workspace repo, organized per target reposito
         │       ├── ARCHITECTURE.md   # from scriber; copy for reviewer (primary copy in target repo root)
         │       ├── log-entry.md      # from scriber; promoted to runs/<date>-<slug>.md by shipper
         │       ├── docs.md           # from scriber
+        │       ├── paper-elements.json  # from paper-ingestion skill (workflow 14 only)
         │       ├── brain-contributions.md  # from distiller (brain mode only, optional)
         │       ├── review.md
         │       ├── shipper.md
@@ -578,7 +588,8 @@ StatsClaw/
 │   ├── workspace-sync/SKILL.md
 │   ├── brain-sync/SKILL.md
 │   ├── privacy-scrub/SKILL.md
-│   └── contribute/SKILL.md
+│   ├── contribute/SKILL.md
+│   └── paper-ingestion/SKILL.md
 ├── profiles/
 │   ├── r-package.md
 │   ├── python-package.md
@@ -599,6 +610,7 @@ StatsClaw/
 │   ├── brain-entry.md
 │   ├── CONTRIBUTORS.md
 │   ├── brain-repo/            # scaffolding for statsclaw/brain repo
-│   └── brain-seedbank-repo/   # scaffolding for statsclaw/brain-seedbank repo
+│   ├── brain-seedbank-repo/   # scaffolding for statsclaw/brain-seedbank repo
+│   └── paper-comprehension.md # template for paper ingestion comprehension
 └── .repos/                # target repo checkouts + workspace repo + brain repos (runtime state), git-ignored; symlinks supported
 ```

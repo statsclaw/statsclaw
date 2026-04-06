@@ -207,3 +207,38 @@ Provide clear, actionable error messages:
 | Token expired | "GitHub token is expired or revoked. Please generate a new one at https://github.com/settings/tokens" |
 | Insufficient scope | "Token lacks required permissions. Needs: repo, issues. Please regenerate with correct scopes." |
 | SSH key rejected | "SSH key not authorized for this repository. Please add your key at https://github.com/settings/keys" |
+
+---
+
+## MinerU API Token (Workflow 14 Only)
+
+When workflow 14 (Paper-to-Package) is active, leader MUST also verify MinerU API token availability. This check is **separate** from GitHub credential verification and only runs when a PDF paper is being ingested.
+
+### Detection Sequence
+
+1. **Environment variable**: `MINERU_API_TOKEN`
+2. **`.env` file**: key `MINERU_API_TOKEN` or `mineru_api` — search current directory, then up to 5 parent directories
+3. **Ask user**: "MinerU API token required for PDF parsing. Get one at https://mineru.net (free: 2000 pages/day)."
+
+### Verification
+
+```bash
+python skills/paper-ingestion/scripts/parse_paper.py --check-token
+```
+
+### Recording
+
+Add to `credentials.md`:
+
+```markdown
+## MinerU API
+MinerU Token Source: <env / .env / user-provided>
+MinerU Token Valid: <PASS / FAIL>
+Timestamp: <YYYY-MM-DD HH:MM>
+```
+
+### Scope
+
+- MinerU token check is **NOT a hard gate** for non-paper workflows
+- Only workflow 14 requires a valid MinerU token
+- If MinerU token is missing during a non-paper workflow, skip silently
