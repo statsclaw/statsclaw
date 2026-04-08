@@ -77,7 +77,7 @@ This section is the entry point for every non-trivial user request. You MUST fol
    - f. **shipper** — ONLY if the user asked to ship, or issue-patrol is active. Produces `shipper.md`. Shipper commits code changes + `ARCHITECTURE.md` to the target repo, then syncs to the workspace repo: copies run log to `runs/`, copies `docs.md`, updates `CHANGELOG.md` and `HANDOFF.md`. See `skills/workspace-sync/SKILL.md`.
    - g. **workspace sync** — If the workflow does NOT include a ship step (workflows 1, 3, 6, 8, 10, 11, 12), leader MUST still dispatch shipper with a **workspace-sync-only** task after the last mandatory step (reviewer or tester). This ensures workflow logs are always pushed to the workspace repo even when no code is shipped.
    - **PIPELINE ISOLATION**: builder NEVER receives `test-spec.md` or `sim-spec.md`. Tester NEVER receives `spec.md`, `sim-spec.md`, or `implementation.md`. Simulator NEVER receives `spec.md`, `test-spec.md`, or `implementation.md`. In docs-only workflows, scriber receives `spec.md` (as implementer); no tester is dispatched. See `skills/isolation/SKILL.md`.
-7. **GATE**: Update `status.md` after EVERY teammate completes. Read the output artifact. Do NOT proceed past `STOP` or `BLOCK` signals. Respawn the responsible teammate on failure (max 3 retries per teammate before `HOLD`).
+7. **GATE**: Update `status.md` after EVERY teammate completes. Read the output artifact. Do NOT proceed past `STOP` or `BLOCK` signals. Respawn the responsible teammate on failure (max 3 retries per teammate before `HOLD`). **For writing teammates (builder, simulator, scriber) that ran with `isolation: "worktree"`: verify merge-back succeeded** by running `git log --oneline -3` or `git diff --stat` in the target repo to confirm changes are present. If changes are missing, the teammate likely failed to commit within the worktree — raise HOLD and alert the user. See `skills/isolation/SKILL.md` § Worktree Merge-Back.
 8. **AUTONOMOUS CONTINUATION**: Do NOT pause between stages to ask the user "should I continue?". Continue automatically through the full workflow until `DONE`, `HOLD`, or `STOP`.
 9. **PROGRESS BAR**: After EVERY `status.md` update, output a visual progress bar to the user. See `skills/progress-bar/SKILL.md` for format. This is mandatory — users must always know what stage the workflow is in.
 
@@ -191,6 +191,7 @@ Write your artifact to: [STATSCLAW_PATH]/.repos/workspace/[REPO_NAME]/runs/[REQU
 - Only modify files within your assigned write surface
 - Do NOT modify status.md — leader will update it
 - Append to mailbox.md if you encounter blockers or interface changes
+- **For writing teammates (builder, simulator, scriber): you MUST `git add` and `git commit` all your changes locally within the worktree BEFORE your agent completes. If you do not commit, the worktree cleanup will permanently discard all your work. Do NOT push — only commit locally. See the "Before Completing" step in your agent definition.**
 - For shipper teammate: read credentials.md first — do NOT attempt push without PASS
 - For shipper teammate: after target repo push, sync run log + CHANGELOG + HANDOFF to workspace repo per skills/workspace-sync/SKILL.md
 - For shipper teammate: if brain-contributions.md exists and user approved, create PR to brain-seedbank after workspace sync

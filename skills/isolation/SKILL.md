@@ -97,13 +97,27 @@ Leader is responsible for ensuring non-overlapping surfaces before dispatch. If 
 
 ## Worktree Merge-Back
 
+### Critical: Writing teammates MUST commit before completing
+
+**The Agent tool only merges back committed changes.** If a writing teammate (builder, simulator, scriber) leaves uncommitted changes in the worktree, those changes are **permanently lost** when the worktree is cleaned up. There is no recovery.
+
+Every writing teammate's agent definition includes a mandatory "Before Completing" step that requires:
+1. `git add <files>` — stage all created/modified files
+2. `git commit -m "<role>: <summary>"` — commit locally within the worktree
+3. Do NOT push — shipper handles remote operations
+
+This is a **local worktree commit**, not the final target-branch commit. Shipper creates the final commit later.
+
+### Merge-back sequence
+
 After a writing teammate completes in its worktree:
 
 1. **Leader reads the output artifact** to confirm the teammate succeeded (no HOLD or BLOCK).
 2. **Leader verifies the write surface** — only expected files were modified.
-3. **Changes from the worktree are merged back** into the main checkout. The Agent tool handles this automatically when the worktree teammate returns.
-4. If merge conflicts arise (e.g., two writing teammates were dispatched in parallel on non-overlapping surfaces but git detects structural conflicts), leader must resolve them before dispatching the next downstream teammate.
-5. After merge-back, the worktree is no longer active. Subsequent teammates (tester, reviewer) operate on the merged main checkout.
+3. **Changes from the worktree are merged back** into the main checkout. The Agent tool handles this automatically when the worktree teammate returns — but only for **committed** changes.
+4. **Leader verifies merge-back succeeded**: run `git log --oneline -3` and/or `git diff --stat` in the target repo to confirm the writing teammate's changes are present in the main checkout. If changes are missing, raise HOLD and alert the user — do NOT silently proceed.
+5. If merge conflicts arise (e.g., two writing teammates were dispatched in parallel on non-overlapping surfaces but git detects structural conflicts), leader must resolve them before dispatching the next downstream teammate.
+6. After merge-back, the worktree is no longer active. Subsequent teammates (tester, reviewer) operate on the merged main checkout.
 
 **Important for two-pipeline architecture**: Tester is always dispatched AFTER all writing teammates' worktrees merge back, so it validates the actual merged code — but it does so using test-spec.md scenarios, not knowledge of what builder or simulator changed.
 
