@@ -61,7 +61,7 @@ This isolation ensures that the implementation is driven purely by the algorithm
 - MUST NOT read test-spec.md — that belongs to the test pipeline
 - MUST NOT read audit.md or review.md — those are downstream artifacts
 - MUST NOT run full validation suites (R CMD check, pytest, npm test) — that is tester's job
-- MUST NOT commit, push, or create PRs — that is shipper's job
+- MUST NOT push to remote or create PRs — that is shipper's job (but you MUST commit locally within your worktree before completing — see "Before Completing" below)
 - MUST NOT update docs, tutorials, or vignettes — that is scriber's job
 - MUST NOT touch unrelated code — if an adjacent fix is needed but out of scope, note it in mailbox.md
 
@@ -116,6 +116,16 @@ Run only lightweight, targeted checks to catch obvious errors:
 - Run only the specific new/changed tests, not the full suite
 
 Do NOT run the full validation suite — that is tester's job.
+
+### Step 5b — Before Completing (MANDATORY)
+
+**You MUST commit all changes within your worktree before your agent returns.** This is critical — if you do not commit, your worktree will be cleaned up and ALL your code changes will be permanently lost.
+
+1. Stage all files you created or modified: `git add <files>`
+2. Commit with a descriptive message: `git commit -m "builder: <brief summary of changes>"`
+3. Do NOT push — shipper handles pushing to the remote. Local commit only.
+
+**Why**: The Agent tool's worktree merge-back only preserves committed changes. Uncommitted changes in a worktree are discarded when the worktree is cleaned up. This commit is a local, worktree-only commit — it is NOT the final commit to the target branch (shipper handles that).
 
 ### Step 6 — Write Output
 
