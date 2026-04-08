@@ -24,6 +24,13 @@ ALGORITHM_HEADER_RE = re.compile(
     r"^\s*algorithm\s+\d+", re.IGNORECASE
 )
 
+# Theorem-like headers — blocks starting with these are NOT algorithms
+THEOREM_HEADER_RE = re.compile(
+    r"^\s*(?:proposition|theorem|lemma|corollary|definition|proof|remark"
+    r"|claim|example|assumption|conjecture|fact|observation)\s+\d*",
+    re.IGNORECASE,
+)
+
 IO_KEYWORDS = {"input:", "output:", "return:", "require:", "ensure:"}
 
 PSEUDOCODE_KEYWORDS = {
@@ -32,9 +39,17 @@ PSEUDOCODE_KEYWORDS = {
 }
 
 EQUATION_REF_RE = re.compile(
-    r"(?:Eq\.?\s*\(?(\d+)\)?|equation\s*\(?(\d+)\)?|\((\d+)\))",
+    r"(?:"
+    r"Eq\.?\s*\(?(\d+(?:\.\d+)*)\)?"           # Eq. 4.6 or Eq (4.6)
+    r"|equation\s*\(?(\d+(?:\.\d+)*)\)?"        # equation 4.6
+    r"|\((\d+(?:\.\d+)+)\)"                      # (4.6) — decimal required
+    r"|\((\d+)\)"                                 # (3) — simple integer
+    r"|\(([A-Z]\.\d+(?:\.\d+)*)\)"               # (A.3) — appendix style
+    r")",
     re.IGNORECASE,
 )
+
+TAG_RE = re.compile(r"\\tag\s*\{([^}]+)\}")
 
 NUMBERED_STEP_RE = re.compile(r"^\s*(\d+)[.)]\s+\S")
 
@@ -76,6 +91,10 @@ def is_algorithm_block(text: str) -> bool:
     # Strong signal: explicit "Algorithm N" header
     if _has_algorithm_header(text):
         return True
+    # Negative signal: theorem-like header — NOT an algorithm
+    first_line = text.strip().split("\n")[0] if text.strip() else ""
+    if THEOREM_HEADER_RE.match(first_line):
+        return False
     # Strong signal: I/O declarations (common in pseudocode, rare in prose)
     if _has_io_declarations(text):
         return True
@@ -92,13 +111,96 @@ def is_algorithm_block(text: str) -> bool:
 
 
 def extract_equation_refs(text: str) -> list[str]:
-    """Extract equation reference numbers from text."""
+    """Extract equation reference numbers from text.
+
+    Supports simple integers (3), section numbers (4.6), and
+    appendix references (A.3).
+    """
     refs = []
     for match in EQUATION_REF_RE.finditer(text):
-        num = match.group(1) or match.group(2) or match.group(3)
+        num = (match.group(1) or match.group(2) or match.group(3)
+               or match.group(4) or match.group(5))
         if num:
             refs.append(num)
     return refs
+
+
+def _extract_paper_number(latex: str) -> str:
+    r"""Extract the equation number from \tag{} in LaTeX, if present."""
+    match = TAG_RE.search(latex)
+    if match:
+        return match.group(1).strip()
+    return ""
+
+
+def _parse_algorithm_structure(text: str) -> dict:
+    """Parse algorithm text into structured components.
+
+    Extracts title, I/O declarations, numbered steps, and control flow.
+    """
+    lines = text.strip().split("\n")
+
+    # Title: first line if it matches "Algorithm N" pattern
+    title = ""
+    if lines and ALGORITHM_HEADER_RE.match(lines[0].strip()):
+        title = lines[0].strip()
+
+    # I/O declarations (scan first 10 lines)
+    inputs = []
+    outputs = []
+    for line in lines[:10]:
+        stripped = line.strip()
+        lower = stripped.lower()
+        if lower.startswith(("input:", "require:")):
+            inputs.append(stripped)
+        elif lower.startswith(("output:", "return:", "ensure:")):
+            outputs.append(stripped)
+
+    # Numbered steps — handle both line-per-step and inline numbering
+    steps = []
+    # First try: one step per line
+    for line in lines:
+        match = NUMBERED_STEP_RE.match(line)
+        if match:
+            step_text = line.strip()
+            words = set(re.findall(r"\b\w+\b", line.lower()))
+            step_kw = sorted(words & PSEUDOCODE_KEYWORDS)
+            steps.append({
+                "num": int(match.group(1)),
+                "text": step_text,
+                "control_flow": step_kw,
+            })
+    # Fallback: split inline numbering like "1) Draw... 2) Compute..."
+    if not steps:
+        inline_parts = re.split(r"(?:^|\s)(\d+)\)\s+", text)
+        # inline_parts: ['prefix', '1', 'step1 text', '2', 'step2 text', ...]
+        i = 1
+        while i + 1 < len(inline_parts):
+            num = int(inline_parts[i])
+            step_text = inline_parts[i + 1].strip()
+            # Truncate to first sentence or 200 chars
+            if len(step_text) > 200:
+                step_text = step_text[:200] + "..."
+            words = set(re.findall(r"\b\w+\b", step_text.lower()))
+            step_kw = sorted(words & PSEUDOCODE_KEYWORDS)
+            steps.append({
+                "num": num,
+                "text": f"{num}) {step_text}",
+                "control_flow": step_kw,
+            })
+            i += 2
+
+    # Overall control flow keywords
+    all_words = set(re.findall(r"\b\w+\b", text.lower()))
+    control_flow = sorted(all_words & PSEUDOCODE_KEYWORDS)
+
+    return {
+        "title": title,
+        "input_declarations": inputs,
+        "output_declarations": outputs,
+        "steps": steps,
+        "control_flow": control_flow,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -242,6 +344,7 @@ def extract_elements(
                 "type": "interline_equation",
                 "latex": latex,
                 "page": page,
+                "paper_number": _extract_paper_number(latex),
                 "context_before": _get_context(idx, flat_items, "before"),
                 "context_after": _get_context(idx, flat_items, "after"),
             })
@@ -254,6 +357,7 @@ def extract_elements(
                 "type": "inline_equation",
                 "latex": latex,
                 "page": page,
+                "paper_number": _extract_paper_number(latex),
                 "context_before": _get_context(idx, flat_items, "before"),
                 "context_after": _get_context(idx, flat_items, "after"),
             })
@@ -336,6 +440,7 @@ def extract_elements(
                             "type": "inline_equation",
                             "latex": latex,
                             "page": page,
+                            "paper_number": _extract_paper_number(latex),
                             "context_before": "",
                             "context_after": "",
                         })
@@ -343,20 +448,18 @@ def extract_elements(
             # Check if this text block is actually an algorithm
             if is_algorithm_block(content):
                 alg_counter += 1
-                eq_refs = extract_equation_refs(content)
-                linked_eqs = []
-                for ref_num in eq_refs:
-                    ref_int = int(ref_num)
-                    if 1 <= ref_int <= len(equations):
-                        linked_eqs.append(equations[ref_int - 1]["id"])
-
+                structure = _parse_algorithm_structure(content)
                 algorithms.append({
                     "id": f"alg_{alg_counter:03d}",
-                    "title": content.strip().split("\n")[0][:100],
+                    "title": structure["title"] or content.strip().split("\n")[0][:100],
                     "raw_text": content.strip(),
                     "page": page,
                     "has_inputs_outputs": _has_io_declarations(content),
-                    "referenced_equations": linked_eqs,
+                    "input_declarations": structure["input_declarations"],
+                    "output_declarations": structure["output_declarations"],
+                    "steps": structure["steps"],
+                    "control_flow": structure["control_flow"],
+                    "referenced_equations": [],  # filled in post-processing
                 })
             else:
                 txt_counter += 1
@@ -379,6 +482,36 @@ def extract_elements(
                     "page": page,
                     "section_hint": "",
                 })
+
+    # --- Post-processing: Algorithm ↔ Equation cross-referencing ---
+    # Build lookup: paper_number → eq_id (from \tag{})
+    eq_number_map: dict[str, str] = {}
+    for eq in equations:
+        pn = eq.get("paper_number", "")
+        if pn and pn not in eq_number_map:
+            eq_number_map[pn] = eq["id"]
+
+    # Also build sequential index for fallback (1-indexed, interline only)
+    eq_seq_map: dict[str, str] = {}
+    seq_num = 0
+    for eq in equations:
+        if eq["type"] == "interline_equation":
+            seq_num += 1
+            eq_seq_map[str(seq_num)] = eq["id"]
+
+    for alg in algorithms:
+        eq_refs = extract_equation_refs(alg["raw_text"])
+        linked: list[str] = []
+        for ref in eq_refs:
+            if ref in eq_number_map:
+                linked.append(eq_number_map[ref])
+            elif ref in eq_seq_map:
+                linked.append(eq_seq_map[ref])
+        # Deduplicate while preserving order
+        seen: set[str] = set()
+        alg["referenced_equations"] = [
+            x for x in linked if not (x in seen or seen.add(x))
+        ]
 
     # Count equation types
     inline_count = sum(1 for eq in equations if eq["type"] == "inline_equation")

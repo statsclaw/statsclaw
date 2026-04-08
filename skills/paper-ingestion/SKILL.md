@@ -32,19 +32,45 @@ A short prompt like `"build a package from this paper"` with an attached PDF is 
 
 ## Prerequisites
 
+### Parse Method Selection
+
+**Default: Direct PDF reading.** Claude reads the PDF natively and enters Paper Ingestion Mode. MinerU is an optional enhancement for scanned PDFs or equation-dense papers.
+
+| Condition | Behavior |
+| --- | --- |
+| User didn't specify method | Default to **Direct PDF** — skip MinerU, planner reads PDF directly |
+| User prompt says "use MinerU" / "parse with MinerU" | Use **MinerU API** (requires token) |
+| User prompt says "use local MinerU" | Use **Local MinerU** |
+| Scanned PDF detected (no selectable text) | Recommend MinerU, present options |
+
+**When MinerU is requested but token is missing:**
+
+> MinerU requested but API token not found. Choose a parse method:
+>
+> **A. MinerU API** — Online parsing via mineru.net (best for scanned PDFs and complex equations; requires token + network). Get a free token at https://mineru.net
+> **B. Local MinerU** — Use locally installed MinerU (no network needed; requires local deployment)
+> **C. Read PDF directly** — Claude reads the PDF natively (default; works for most born-digital PDFs)
+
+**When to recommend MinerU** (leader suggests but does not force):
+- Scanned PDF (no embedded text layer)
+- Paper > 80 pages with dense equations
+- User requests highest equation fidelity
+
+When using Direct PDF mode, leader skips `PAPER_PARSED` state and dispatches planner directly with the PDF path. Leader notes in `request.md`: "Parse method: direct PDF reading (no MinerU)."
+
 ### MinerU API Token
 
-This skill requires a MinerU API token from <https://mineru.net>.
+When using MinerU API (option A), a token from <https://mineru.net> is required.
 
 **Detection sequence** (follows the same priority pattern as `skills/credential-setup/SKILL.md`):
 
 1. **Environment variable**: `MINERU_API_TOKEN`
 2. **`.env` file**: key `MINERU_API_TOKEN` or `mineru_api` (doc2md compatible) — search current directory, then up to 5 parent directories
-3. **Ask user**: Prompt via `AskUserQuestion` with instructions to obtain a token
+3. **HOLD**: present parse method options (see above)
 
 **Free tier**: 2000 pages/day at high priority. Sufficient for most single-paper workflows.
 
-**Token verification**: Before parsing, the script validates the token with a lightweight API call. If invalid or expired, report clearly and stop.
+**Token verification**: Before parsing, the script validates the token with a lightweight API call. If invalid or expired, report clearly and HOLD with parse method options.
 
 ### File Requirements
 
@@ -169,6 +195,7 @@ The extraction script transforms MinerU's `content_list_v2.json` (page-grouped f
       "type": "interline_equation",
       "latex": "\\hat{\\alpha}_1 = Y_{1t} - \\sum_{j=2}^{J+1} w_j^* Y_{jt}",
       "page": 5,
+      "paper_number": "2.1",
       "context_before": "The synthetic control estimator is defined as...",
       "context_after": "where $w_j^*$ are the optimal weights..."
     }
@@ -190,6 +217,13 @@ The extraction script transforms MinerU's `content_list_v2.json` (page-grouped f
       "raw_text": "Step 1: Select donor pool...\nStep 2: Solve optimization...",
       "page": 7,
       "has_inputs_outputs": true,
+      "input_declarations": ["Input: panel data Y, covariates X"],
+      "output_declarations": ["Output: synthetic control weights w*"],
+      "steps": [
+        {"num": 1, "text": "1. Select donor pool...", "control_flow": []},
+        {"num": 2, "text": "2. Solve optimization...", "control_flow": ["for"]}
+      ],
+      "control_flow": ["for", "repeat"],
       "referenced_equations": ["eq_001", "eq_003"]
     }
   ],
@@ -235,16 +269,31 @@ A text block is reclassified as an algorithm if ANY of:
 3. **Pseudocode density**: contains >= 5 pseudocode keywords (`for`, `while`, `if`, `then`, `else`, `repeat`, `until`, `do`, `end`, `return`) AND text is < 200 words (filters out long prose paragraphs that merely discuss algorithms)
 4. **Numbered steps with control flow**: has >= 3 numbered lines (e.g., "1.", "2.") AND contains at least one control flow keyword AND text is < 200 words
 
+**Negative filter**: blocks starting with theorem-like headers (Proposition, Theorem, Lemma, Corollary, Definition, Proof, Remark, Claim, Example, Assumption) are excluded even if pseudocode keywords match — mathematical prose often contains "if", "then", "for" naturally.
+
+### Algorithm Structure Parsing
+
+For each detected algorithm, the script extracts structured components:
+
+- **`input_declarations`**: lines starting with "Input:", "Require:" (first 10 lines)
+- **`output_declarations`**: lines starting with "Output:", "Return:", "Ensure:" (first 10 lines)
+- **`steps`**: numbered steps (line-per-step or inline `1)... 2)...` format), each with control flow keywords
+- **`control_flow`**: all pseudocode keywords found in the algorithm text
+
 ### Equation Cross-Referencing
 
+Equations store a `paper_number` field extracted from `\tag{N}` in their LaTeX (e.g., `\tag{4.6}` → `paper_number: "4.6"`).
+
 For each detected algorithm, the script scans for equation references:
-- Pattern: `(N)`, `Eq. N`, `equation N`, `Eq. (N)` where N is a number
-- Matched references are linked to entries in `equations[]` by page proximity
+
+- **Pattern**: `(N.M)`, `(N)`, `Eq. N.M`, `equation N`, `(A.3)` — supports section-numbered and appendix-style references
+- **Primary matching**: reference string matched against `paper_number` field of all equations
+- **Fallback matching**: simple integer references matched against sequential interline equation index (1-indexed)
 
 ### Quality Notes
 
 - **Expected true positive rate**: >= 80% for standard algorithm environments
-- **Expected false positive rate**: <= 10%
+- **Expected false positive rate**: <= 5% (improved with theorem-header negative filter)
 - Algorithm detection is best-effort; planner's semantic understanding compensates for missed blocks
 
 ---
@@ -253,15 +302,32 @@ For each detected algorithm, the script scans for equation references:
 
 | Error | Script Behavior | Leader Action |
 | --- | --- | --- |
-| Token missing | Exit with code 1 + message | Ask user for token via `AskUserQuestion` |
-| Token invalid/expired | Exit with code 2 + message | Ask user to regenerate at mineru.net |
+| Token missing | Exit with code 1 + message | **HOLD with parse method options** (see Parse Method Selection above) |
+| Token invalid/expired | Exit with code 2 + message | **HOLD with parse method options** — token exists but invalid |
 | File too large (> 200MB) | Exit with code 3 + message | Report to user, suggest splitting |
 | File too many pages (> 600) | Exit with code 4 + message | Report to user, suggest page range |
-| API timeout (> 10 min) | Exit with code 5 + message | Retry once; if still fails, HOLD |
+| API timeout (> 10 min) | Exit with code 5 + message | Retry once; if still fails, **HOLD with fallback options** |
 | Parse failure (API error) | Exit with code 6 + API error | Report to user, suggest alternative format |
 | Empty extraction (0 equations + 0 tables) | Exit with code 7 + warning | Warn user: "No mathematical content detected — is this the right paper?" |
-| Daily quota exceeded | Exit with code 8 + message | Suggest waiting or using local MinerU |
-| Network error | Exit with code 9 + message | Check connectivity, retry once |
+| Daily quota exceeded | Exit with code 8 + message | **HOLD with fallback options** |
+| Network error | Exit with code 9 + message | Retry once; if still fails, **HOLD with fallback options** |
+
+### Fallback Protocol
+
+When MinerU API is unavailable (exit codes 5, 8, 9 after retry), leader **MUST NOT silently skip paper-ingestion**. Leader MUST HOLD and present fallback options:
+
+> **MinerU API unavailable**: [reason]. How would you like to proceed?
+>
+> **A. Retry** — Try the MinerU API again (network may have recovered)
+> **B. Local MinerU** — Use locally installed MinerU (no network needed)
+> **C. Read PDF directly** — Claude reads PDF natively (no structured extraction; equation precision may be lower)
+> **D. Wait and retry later** — Save current state, resume when ready
+
+**Rules**:
+- Leader MUST NOT proceed without user's explicit choice
+- If user chooses **B**, leader skips `PAPER_PARSED` state and dispatches planner directly with the PDF path (planner reads PDF natively instead of `paper-elements.json`)
+- If user chooses **B**, leader MUST note in `request.md`: "MinerU skipped — direct PDF reading mode. Equation extraction quality may be lower."
+- If user chooses **D**, leader sets status to `HOLD` and stops
 
 ---
 
