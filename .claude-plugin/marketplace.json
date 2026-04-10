@@ -12,7 +12,7 @@
     {
       "name": "statsclaw",
       "description": "Multi-agent workflow framework for statistical package development across R, Python, Stata, TypeScript, Go, Rust, C, and C++",
-      "source": "."
+      "source": "./"
     }
   ]
 }
