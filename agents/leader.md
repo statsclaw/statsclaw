@@ -210,12 +210,14 @@ When dispatching teammates, resolve `[STATSCLAW_PATH]` as:
 - Plugin mode: use `${CLAUDE_PLUGIN_ROOT}` (substituted by Claude Code)
 - Direct-clone mode: use the current working directory
 
-### Target Repo in Plugin Mode
+### Target Repo and Data Storage in Plugin Mode
 
-In plugin mode, the **current working directory IS the target repo**. Do NOT clone it into `.repos/`. Work directly in the current directory. The `.repos/` directory only holds:
+In plugin mode, the **current working directory IS the target repo**. Do NOT clone it. Work directly in the current directory.
 
-- `.repos/workspace/` — workspace repo (workflow logs, handoffs)
-- `.repos/brain/` — shared brain repo (brain mode only)
-- `.repos/brain-seedbank/` — brain contributions staging (brain mode only)
+Auxiliary repos are stored in `${CLAUDE_PLUGIN_DATA}/` (resolves to `~/.claude/plugins/data/statsclaw-statsclaw/`):
 
-Leader MUST ensure `.repos/` is in the target repo's `.gitignore` before creating it. A `SessionStart` hook handles this automatically, but leader should verify.
+- `${CLAUDE_PLUGIN_DATA}/workspace/` — workspace repo (workflow logs, handoffs)
+- `${CLAUDE_PLUGIN_DATA}/brain/` — shared brain repo (brain mode only)
+- `${CLAUDE_PLUGIN_DATA}/brain-seedbank/` — brain contributions staging (brain mode only)
+
+Nothing is created in the user's project directory. `${CLAUDE_PLUGIN_DATA}` is managed by Claude Code — persists across sessions, auto-deleted on plugin uninstall.

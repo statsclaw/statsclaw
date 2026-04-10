@@ -53,15 +53,13 @@ This section is the entry point for every non-trivial user request. You MUST fol
 
 1. **SETUP**: Acquire the workspace repo (see step 2). Read `.repos/workspace/<repo-name>/context.md`. If it does not exist, create the runtime structure first (see Session Startup below). Read the active package context.
 2. **ACQUIRE REPOS**: Acquire BOTH the target repo AND the workspace repo upfront. Both must be local before any work begins.
-   - **Target repo (plugin mode)**: When running as an installed plugin, the **current working directory IS the target repo**. Do NOT clone it into `.repos/`. Work directly in the current directory. The `.repos/` directory is only for the workspace repo and brain repos.
+   - **Target repo (plugin mode)**: When running as an installed plugin, the **current working directory IS the target repo**. Do NOT clone it. Work directly in the current directory. Auxiliary repos (workspace, brain) are stored in `${CLAUDE_PLUGIN_DATA}/` — nothing is created in the user's project directory.
    - **Target repo (clone mode)**: Clone or locate under `.repos/` (e.g., `.repos/fect/`). If a checkout already exists, `git pull` to get latest. If not, `git clone`. Symlinks into `.repos/` are supported — some users keep repos elsewhere and symlink them in; StatsClaw follows symlinks transparently.
-   - **Workspace repo**: If `.repos/workspace` already exists locally, `git pull origin main`. If not, follow the workspace acquisition flow in `skills/workspace-sync/SKILL.md` Phase 1:
-     - Detect the user's GitHub username. Probe `<user>/workspace` on GitHub.
-     - If it **does not exist**: ask the user whether to create it, use a different name, or skip.
-     - If it **already exists**: clone and use it directly.
-     - If creation fails, **warn the user explicitly** and record the workspace repo status in `request.md`.
-   - After acquiring the workspace repo, create the per-repo runtime directory: `.repos/workspace/<repo-name>/` with subdirectories `runs/`, `logs/`, `tmp/`, `ref/`. Write `context.md` from `templates/context.md` if it does not exist.
-   - The `.repos/` directory is git-ignored. In plugin mode, leader MUST ensure `.repos/` is listed in the target repo's `.gitignore` — if not, append it. This prevents runtime artifacts from being committed to the user's repository.
+   - **Workspace repo (plugin mode)**: Stored at `${CLAUDE_PLUGIN_DATA}/workspace/`. If it already exists locally, `git pull origin main`. If not, follow the workspace acquisition flow in `skills/workspace-sync/SKILL.md` Phase 1.
+   - **Workspace repo (clone mode)**: Stored at `.repos/workspace/`. Same acquisition flow as above.
+   - Workspace acquisition flow: Detect the user's GitHub username. Probe `<user>/workspace` on GitHub. If it does not exist, ask the user whether to create it, use a different name, or skip. If it already exists, clone and use it directly. If creation fails, warn the user explicitly and record the workspace repo status in `request.md`.
+   - After acquiring the workspace repo, create the per-repo runtime directory: `<workspace-path>/<repo-name>/` with subdirectories `runs/`, `logs/`, `tmp/`, `ref/`. Write `context.md` from `templates/context.md` if it does not exist.
+   - In clone mode, the `.repos/` directory is git-ignored — repos are never committed to StatsClaw. In plugin mode, `${CLAUDE_PLUGIN_DATA}/` is managed by Claude Code and automatically cleaned up on plugin uninstall.
    - If target repo acquisition fails, set state to `HOLD` in `status.md` and ask the user. Do NOT proceed without a local checkout.
 3. **CREATE RUN**: Generate a request ID. Create `.repos/workspace/<repo-name>/runs/<request-id>/`. Write `request.md` (scope, acceptance criteria, target repo identity, workspace repo status). Write `status.md` with state `NEW`.
 4. **VERIFY CREDENTIALS**: Follow `skills/credential-setup/SKILL.md` for the full auto-detection sequence (GITHUB_TOKEN → gh auth → SSH → credential helper → ask user). Verify push access to **both** the target repo and the workspace repo. Write `credentials.md` to the run directory. Update `status.md` to `CREDENTIALS_VERIFIED`.
@@ -236,14 +234,14 @@ These entries supplement but NEVER override the user's requirements, uploaded ma
 
 At the start of every session:
 
-1. **Detect mode**: If `${CLAUDE_PLUGIN_ROOT}` is set, you are in **plugin mode** — the current working directory is the target repo. If not, you are in **clone mode** — the target repo must be cloned into `.repos/`.
+1. **Detect mode**: If `${CLAUDE_PLUGIN_ROOT}` is set, you are in **plugin mode** — the current working directory is the target repo, and auxiliary repos go into `${CLAUDE_PLUGIN_DATA}/`. If not, you are in **clone mode** — all repos go into `.repos/`.
 2. **Acquire repos**:
-   - **Plugin mode**: The current working directory IS the target repo. Do NOT clone it. Ensure `.repos/` is in the target repo's `.gitignore` (append if missing). Only the workspace repo and brain repos go into `.repos/`.
+   - **Plugin mode**: The current working directory IS the target repo. Do NOT clone it. Workspace and brain repos go into `${CLAUDE_PLUGIN_DATA}/` (persistent, auto-cleaned on uninstall, nothing in the user's project).
    - **Clone mode**: If the user message includes a target repo path or GitHub URL, clone or pull into `.repos/`. Symlinks supported.
-   - **Workspace repo** (both modes): clone or pull the user's workspace repo into `.repos/workspace/`. If no local checkout exists, follow the workspace acquisition flow (`skills/workspace-sync/SKILL.md` Phase 1) — probe `<user>/workspace`, use it if it exists, ask user to create it if not.
+   - **Workspace repo**: In plugin mode, clone/pull into `${CLAUDE_PLUGIN_DATA}/workspace/`. In clone mode, clone/pull into `.repos/workspace/`. If no local checkout exists, follow the workspace acquisition flow (`skills/workspace-sync/SKILL.md` Phase 1) — probe `<user>/workspace`, use it if it exists, ask user to create it if not.
 3. Create the per-repo runtime directory if it does not exist: `.repos/workspace/<repo-name>/` with subdirectories `runs/`, `logs/`, `tmp/`, `ref/`. Write `context.md` from `templates/context.md` if missing.
 4. Read `.repos/workspace/<repo-name>/context.md`.
-5. **Brain opt-in** (see `skills/brain-sync/SKILL.md` Phase 0): If `BrainMode` in `context.md` is `""` (user has never been asked), ask via `AskUserQuestion` whether to enable Brain mode. If `"connected"`, clone/pull `statsclaw/brain` to `.repos/brain/` and `statsclaw/brain-seedbank` to `.repos/brain-seedbank/` (Phase 1). Brain repo unavailability is a warning, not a hard gate. If `"isolated"`, skip all brain-related steps.
+5. **Brain opt-in** (see `skills/brain-sync/SKILL.md` Phase 0): If `BrainMode` in `context.md` is `""` (user has never been asked), ask via `AskUserQuestion` whether to enable Brain mode. If `"connected"`, clone/pull `statsclaw/brain` and `statsclaw/brain-seedbank` into the repos directory (`.repos/` in clone mode, `${CLAUDE_PLUGIN_DATA}/` in plugin mode). Brain repo unavailability is a warning, not a hard gate. If `"isolated"`, skip all brain-related steps.
 6. **Verify push credentials** for **both repos** — follow `skills/credential-setup/SKILL.md`. Workspace repo credential failure is a warning, not a hard gate.
 7. If no target is clear, infer from context or ask one concise question. In plugin mode, the target is the current working directory by default.
 8. Determine the project profile using `skills/profile-detection/SKILL.md` or repo markers in `profiles/*.md`.
