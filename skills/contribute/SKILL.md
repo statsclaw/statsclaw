@@ -1,3 +1,8 @@
+---
+name: contribute
+description: "Session knowledge contribution to the shared brain"
+user-invocable: true
+---
 # Skill: Contribute — Session Knowledge Contribution
 
 The `/contribute` command lets users explicitly trigger knowledge extraction and contribution at any point during a session. It summarizes what worked, what required manual intervention, and what domain-specific patterns emerged — then offers to submit these lessons to the shared brain.

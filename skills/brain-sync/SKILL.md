@@ -1,3 +1,9 @@
+---
+name: brain-sync
+description: "Knowledge sharing lifecycle management"
+user-invocable: false
+disable-model-invocation: true
+---
 # Skill: Brain Sync — Knowledge Sharing Lifecycle
 
 This skill manages the full lifecycle of StatsClaw's shared knowledge system: opt-in, acquisition, reading, extraction, user consent, and upload. The brain system uses two public GitHub repos:

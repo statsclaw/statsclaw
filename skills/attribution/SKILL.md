@@ -1,3 +1,9 @@
+---
+name: attribution
+description: "Commit co-author trailer management"
+user-invocable: false
+disable-model-invocation: true
+---
 # Shared Skill: Attribution — Commit Co-Author Trailers
 
 Commits pushed by the shipper agent include a `Co-authored-by` trailer that credits both the user and StatsClaw. This follows the standard Git trailer convention recognized by GitHub, which displays co-authors on the commit page.
