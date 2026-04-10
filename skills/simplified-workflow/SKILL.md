@@ -1,3 +1,9 @@
+---
+name: simplified-workflow
+description: "Lightweight workflow for small routine changes"
+user-invocable: false
+disable-model-invocation: true
+---
 # Skill: Simplified Workflow (Workflow 10)
 
 A lightweight workflow for small, well-understood changes where the full two-pipeline architecture adds overhead without proportional safety benefit.

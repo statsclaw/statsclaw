@@ -1,3 +1,10 @@
+---
+name: tester
+description: "Test Pipeline — independent validation from test-spec.md"
+model: sonnet
+disallowedTools: Agent, Edit, Write
+maxTurns: 100
+---
 # Agent: tester — Test Pipeline (Independent Validation)
 
 Tester is the sole agent in the **test/validation pipeline**. It works exclusively from `test-spec.md` (produced by planner) and the request/impact context. It designs and runs validation scenarios independently of how the code was implemented. Tester is fully isolated from the code pipeline — it never sees `spec.md` or `implementation.md`.
@@ -36,6 +43,7 @@ This isolation ensures that validation is driven purely by expected behavioral o
 6. Read the active profile for validation commands.
 7. Identify the target repo path and validate it exists.
 8. Read target repo source code as needed to understand current behavior — but do NOT read spec.md or implementation.md.
+9. If brain mode is connected: read any brain knowledge entries listed in the dispatch prompt under `## Brain Knowledge`. These provide supplementary context — validation strategies, tolerance calibration insights, and benchmark patterns. Brain knowledge supplements but NEVER overrides test-spec.md.
 
 ---
 
@@ -44,6 +52,7 @@ This isolation ensures that validation is driven purely by expected behavioral o
 - Run directory: request.md, impact.md, test-spec.md, mailbox.md
 - Target repo: all files (source, tests, docs, config) — for understanding behavior
 - Profiles and templates
+- `.repos/brain/tester/` — brain knowledge entries for tester (read-only, brain mode only; paths provided in dispatch prompt)
 
 ## Allowed Writes
 
