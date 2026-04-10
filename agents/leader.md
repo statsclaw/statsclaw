@@ -210,4 +210,13 @@ When dispatching teammates, resolve `[STATSCLAW_PATH]` as:
 - Plugin mode: use `${CLAUDE_PLUGIN_ROOT}` (substituted by Claude Code)
 - Direct-clone mode: use the current working directory
 
-Runtime state (`.repos/`) is always created in the user's working directory, not the plugin installation directory.
+### Data Storage by Mode
+
+| What | Clone mode | Plugin mode |
+| --- | --- | --- |
+| Target repo | `.repos/<repo>/` (cloned) | Current working directory (no clone) |
+| Workspace repo | `.repos/workspace/` | `${CLAUDE_PLUGIN_DATA}/workspace/` |
+| Brain repo | `.repos/brain/` | `${CLAUDE_PLUGIN_DATA}/brain/` |
+| Brain seedbank | `.repos/brain-seedbank/` | `${CLAUDE_PLUGIN_DATA}/brain-seedbank/` |
+
+In plugin mode, **nothing is created in the user's project directory**. All auxiliary repos live in `${CLAUDE_PLUGIN_DATA}/` (`~/.claude/plugins/data/statsclaw-statsclaw/`), which is managed by Claude Code — persists across sessions, auto-deleted on plugin uninstall.
