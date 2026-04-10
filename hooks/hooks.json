@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f .gitignore ] && ! grep -qx '.repos/' .gitignore 2>/dev/null; then echo '.repos/' >> .gitignore && echo 'Added .repos/ to .gitignore'; elif [ ! -f .gitignore ]; then echo '.repos/' > .gitignore && echo 'Created .gitignore with .repos/'; fi"
+          }
+        ]
+      }
+    ]
+  }
+}

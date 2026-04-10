@@ -210,4 +210,12 @@ When dispatching teammates, resolve `[STATSCLAW_PATH]` as:
 - Plugin mode: use `${CLAUDE_PLUGIN_ROOT}` (substituted by Claude Code)
 - Direct-clone mode: use the current working directory
 
-Runtime state (`.repos/`) is always created in the user's working directory, not the plugin installation directory.
+### Target Repo in Plugin Mode
+
+In plugin mode, the **current working directory IS the target repo**. Do NOT clone it into `.repos/`. Work directly in the current directory. The `.repos/` directory only holds:
+
+- `.repos/workspace/` — workspace repo (workflow logs, handoffs)
+- `.repos/brain/` — shared brain repo (brain mode only)
+- `.repos/brain-seedbank/` — brain contributions staging (brain mode only)
+
+Leader MUST ensure `.repos/` is in the target repo's `.gitignore` before creating it. A `SessionStart` hook handles this automatically, but leader should verify.
