@@ -1,3 +1,9 @@
+---
+name: isolation
+description: "Two-pipeline isolation protocol (worktree and information-level)"
+user-invocable: false
+disable-model-invocation: true
+---
 # Shared Skill: Two-Pipeline Isolation Protocol
 
 This protocol governs how teammates are isolated from each other in the two-pipeline architecture. There are two levels of isolation: **worktree isolation** (filesystem-level) and **pipeline isolation** (information-level).

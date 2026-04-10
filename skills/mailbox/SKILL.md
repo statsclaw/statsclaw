@@ -1,3 +1,9 @@
+---
+name: mailbox
+description: "Inter-agent mailbox communication protocol"
+user-invocable: false
+disable-model-invocation: true
+---
 # Shared Skill: Mailbox Communication Protocol
 
 This protocol governs how teammates communicate with each other and with leader through the shared mailbox during a run.

@@ -1,3 +1,9 @@
+---
+name: handoff
+description: "Artifact handoff protocol for two-pipeline architecture"
+user-invocable: false
+disable-model-invocation: true
+---
 # Shared Skill: Handoff Protocol (Two-Pipeline Architecture)
 
 This protocol governs how work products pass between teammates, mediated by leader, in the two-pipeline architecture.
