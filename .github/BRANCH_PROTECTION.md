@@ -21,17 +21,17 @@ happens here
 | Branch | Purpose | Protection |
 | --- | --- | --- |
 | `main` | Production-ready. Every commit is a tested, stable version of the framework. Only receives merges from `dev` via reviewed PRs. | Fully protected |
-| `dev` | Active development. All changes land here first — features, fixes, docs, CI. Direct pushes allowed. | CI must pass |
+| `dev` | Active development. All changes land here first — features, fixes, docs, CI. PRs required. | PR + CI must pass |
 
 ### Flow
 
-1. All development work happens on `dev` (direct push or local branches merged into `dev`)
+1. All development work happens on branches merged into `dev` via reviewed PRs
 2. When `dev` is stable, create a PR from `dev` → `main`
 3. PR requires: CI pass + 1 approval
 4. Squash merge into `main`
 5. Tag releases from `main`
 
-No other long-lived branches. No `feature/*`, `fix/*`, or personal branches on remote — keep it clean.
+No other long-lived branches. Feature branches are merged into `dev` via PRs, then deleted.
 
 ---
 
@@ -51,11 +51,13 @@ No other long-lived branches. No `feature/*`, `fix/*`, or personal branches on r
 | Allow force pushes | **No** | Never |
 | Allow deletions | **No** | Protect main |
 
-### `dev` Branch (Permissive)
+### `dev` Branch (Protected)
 
 | Rule | Setting | Rationale |
 | --- | --- | --- |
-| Require pull request | **No** | Direct pushes allowed for fast iteration |
+| Require pull request | **Yes** | All changes go through review |
+| Required approvals | **1** | Every change is reviewed |
+| Dismiss stale reviews on push | **Yes** | New pushes require re-review |
 | Require status checks to pass | **Yes** | CI catches breakage early |
 | Required status checks | `Validate structure`, `Lint Markdown`, `Validate YAML` | Same checks as main |
 | Allow force pushes | **No** | Protect shared history |
