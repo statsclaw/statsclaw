@@ -1,3 +1,9 @@
+---
+name: privacy-scrub
+description: "PII removal for brain knowledge contributions"
+user-invocable: false
+disable-model-invocation: true
+---
 # Skill: Privacy Scrub — PII Removal for Brain Contributions
 
 This skill defines the mandatory privacy scrubbing protocol applied to all knowledge entries before they are proposed for contribution to the shared brain. The distiller agent applies these rules when extracting knowledge; the reviewer agent verifies compliance.

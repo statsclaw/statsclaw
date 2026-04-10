@@ -1,3 +1,9 @@
+---
+name: simulation-study
+description: "Monte Carlo simulation study protocol"
+user-invocable: false
+disable-model-invocation: true
+---
 # Skill: Simulation Study — Monte Carlo Evaluation of Estimator Properties
 
 This skill enables StatsClaw to automatically design and execute Monte Carlo simulation studies that evaluate the finite-sample properties of statistical estimators. Given a DGP (Data Generating Process) specification and an estimator, it produces simulation code, runs the study, and reports results on consistency, bias, RMSE, coverage, size, and power.
