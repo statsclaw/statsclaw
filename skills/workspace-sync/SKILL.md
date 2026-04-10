@@ -1,3 +1,9 @@
+---
+name: workspace-sync
+description: "Centralized workflow log repository sync"
+user-invocable: false
+disable-model-invocation: true
+---
 # Shared Skill: Workspace Sync — Centralized Workflow Log Repository
 
 All workflow-generated logs, process records, handoff documents, reference materials, **and runtime state** are stored in a dedicated **workspace repository** on GitHub. The user chooses the repo name (e.g., `[username]/workspace`) and tells StatsClaw which repo to use. Each target repository gets its own folder inside the workspace repo, which serves as both the runtime state directory during workflows and the permanent log archive after shipping. This keeps target repositories clean — only code and essential documentation live in the target repo.

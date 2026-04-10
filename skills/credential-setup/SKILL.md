@@ -1,3 +1,9 @@
+---
+name: credential-setup
+description: "Automatic GitHub credential detection and verification"
+user-invocable: false
+disable-model-invocation: true
+---
 # Shared Skill: Credential Setup — Automatic GitHub Authentication
 
 This skill automates GitHub credential detection and configuration so users never need to manually set up PATs or SSH keys before running a workflow.

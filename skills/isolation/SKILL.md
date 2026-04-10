@@ -1,3 +1,9 @@
+---
+name: isolation
+description: "Two-pipeline isolation protocol (worktree and information-level)"
+user-invocable: false
+disable-model-invocation: true
+---
 # Shared Skill: Two-Pipeline Isolation Protocol
 
 This protocol governs how teammates are isolated from each other in the two-pipeline architecture. There are two levels of isolation: **worktree isolation** (filesystem-level) and **pipeline isolation** (information-level).
@@ -65,17 +71,15 @@ Do **not** use worktree isolation for non-writing teammates:
 - **planner** (produces spec artifacts, does not modify target repo files)
 - **shipper** (interacts with the remote via git/gh commands on the main checkout)
 
-### Tester Timing: Dispatch vs Execution
+### Tester Timing: Sequential After Writers
 
-Builder and tester are dispatched **in the same message** (parallel dispatch), but their execution has a natural ordering:
+Tester is dispatched **after all writing teammates (builder, simulator) complete and merge back**. This ensures tester always validates the fully merged code:
 
-1. **Parallel phase**: Both agents start concurrently. Builder implements code in its worktree. Tester parses `test-spec.md`, designs validation scenarios, and prepares test scripts.
-2. **Merge-back**: Builder's worktree merges back into the main checkout when it completes.
-3. **Validation phase**: Tester runs its validation commands on the **merged checkout** containing builder's changes.
+1. **Writing phase**: Builder (and simulator, in simulation workflows) implement code in their worktrees. In simulation workflows, builder and simulator run in parallel.
+2. **Merge-back**: Writing teammates' worktrees merge back into the main checkout when they complete.
+3. **Validation phase**: Leader dispatches tester. Tester runs its validation commands on the **merged checkout** containing all new code.
 
-In practice, the Agent tool manages this: tester's validation commands execute against whichever state the checkout is in. If builder completes first (typical), tester validates the new code. If tester's validation commands run before builder merges, they validate the pre-change code — any new-feature tests will fail, and tester will report a BLOCK that leader resolves by re-dispatching tester after merge.
-
-The key principle: **dispatch is parallel, validation targets the merged result.** Leader should re-dispatch tester if its initial run preceded builder's merge-back.
+The key principle: **writers finish first, tester validates the merged result.** This eliminates the race condition where tester might validate pre-change code.
 
 ---
 
@@ -99,15 +103,29 @@ Leader is responsible for ensuring non-overlapping surfaces before dispatch. If 
 
 ## Worktree Merge-Back
 
+### Critical: Writing teammates MUST commit before completing
+
+**The Agent tool only merges back committed changes.** If a writing teammate (builder, simulator, scriber) leaves uncommitted changes in the worktree, those changes are **permanently lost** when the worktree is cleaned up. There is no recovery.
+
+Every writing teammate's agent definition includes a mandatory "Before Completing" step that requires:
+1. `git add <files>` — stage all created/modified files
+2. `git commit -m "<role>: <summary>"` — commit locally within the worktree
+3. Do NOT push — shipper handles remote operations
+
+This is a **local worktree commit**, not the final target-branch commit. Shipper creates the final commit later.
+
+### Merge-back sequence
+
 After a writing teammate completes in its worktree:
 
 1. **Leader reads the output artifact** to confirm the teammate succeeded (no HOLD or BLOCK).
 2. **Leader verifies the write surface** — only expected files were modified.
-3. **Changes from the worktree are merged back** into the main checkout. The Agent tool handles this automatically when the worktree teammate returns.
-4. If merge conflicts arise (e.g., two writing teammates were dispatched in parallel on non-overlapping surfaces but git detects structural conflicts), leader must resolve them before dispatching the next downstream teammate.
-5. After merge-back, the worktree is no longer active. Subsequent teammates (tester, reviewer) operate on the merged main checkout.
+3. **Changes from the worktree are merged back** into the main checkout. The Agent tool handles this automatically when the worktree teammate returns — but only for **committed** changes.
+4. **Leader verifies merge-back succeeded**: run `git log --oneline -3` and/or `git diff --stat` in the target repo to confirm the writing teammate's changes are present in the main checkout. If changes are missing, raise HOLD and alert the user — do NOT silently proceed.
+5. If merge conflicts arise (e.g., two writing teammates were dispatched in parallel on non-overlapping surfaces but git detects structural conflicts), leader must resolve them before dispatching the next downstream teammate.
+6. After merge-back, the worktree is no longer active. Subsequent teammates (tester, reviewer) operate on the merged main checkout.
 
-**Important for two-pipeline architecture**: Tester runs AFTER builder's worktree merges back, so it validates the actual merged code — but it does so using test-spec.md scenarios, not knowledge of what builder changed.
+**Important for two-pipeline architecture**: Tester is always dispatched AFTER all writing teammates' worktrees merge back, so it validates the actual merged code — but it does so using test-spec.md scenarios, not knowledge of what builder or simulator changed.
 
 ---
 

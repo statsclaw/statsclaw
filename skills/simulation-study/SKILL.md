@@ -1,3 +1,9 @@
+---
+name: simulation-study
+description: "Monte Carlo simulation study protocol"
+user-invocable: false
+disable-model-invocation: true
+---
 # Skill: Simulation Study — Monte Carlo Evaluation of Estimator Properties
 
 This skill enables StatsClaw to automatically design and execute Monte Carlo simulation studies that evaluate the finite-sample properties of statistical estimators. Given a DGP (Data Generating Process) specification and an estimator, it produces simulation code, runs the study, and reports results on consistency, bias, RMSE, coverage, size, and power.
@@ -39,14 +45,14 @@ A short prompt like `"simulate the finite-sample properties of the new estimator
 
 **Agent Sequence**:
 ```
-leader → planner → [builder ∥ tester ∥ simulator] → scriber → reviewer → shipper?
+leader → planner → [builder ∥ simulator] → tester → scriber → reviewer → shipper?
 ```
 
 **What happens**:
 1. Planner produces THREE specs: `spec.md` (estimator implementation), `test-spec.md` (unit tests + simulation validation), `sim-spec.md` (DGP + scenario grid + metrics)
-2. Builder implements the estimator from `spec.md` (in worktree)
-3. Simulator implements the DGP and simulation harness from `sim-spec.md` (in worktree)
-4. Tester validates both: runs unit tests from `test-spec.md` AND executes the full simulation, comparing results against acceptance criteria
+2. Builder implements the estimator from `spec.md` (in worktree) — runs in parallel with simulator
+3. Simulator implements the DGP and simulation harness from `sim-spec.md` (in worktree) — runs in parallel with builder
+4. After both builder and simulator complete and merge back, tester validates the fully merged code: runs unit tests from `test-spec.md` AND executes the full simulation, comparing results against acceptance criteria
 5. Scriber records everything including simulation results tables
 6. Reviewer cross-compares all three pipelines
 
@@ -56,13 +62,13 @@ leader → planner → [builder ∥ tester ∥ simulator] → scriber → review
 
 **Agent Sequence**:
 ```
-leader → planner → [simulator ∥ tester] → scriber → reviewer → shipper?
+leader → planner → simulator → tester → scriber → reviewer → shipper?
 ```
 
 **What happens**:
 1. Planner produces TWO specs: `sim-spec.md` (DGP + scenarios) and `test-spec.md` (simulation validation criteria)
 2. Simulator implements the DGP and harness from `sim-spec.md` (in worktree)
-3. Tester executes the full simulation and validates from `test-spec.md`
+3. After simulator completes and merges back, tester executes the full simulation and validates from `test-spec.md`
 4. Scriber records results
 5. Reviewer reviews
 
@@ -73,7 +79,7 @@ No builder is dispatched since the estimator already exists.
 Simulation can also be **added to** standard code workflows (1, 2, 4, 5) when the user's request includes simulation intent. In that case:
 
 - Planner produces all three specs
-- Builder, tester, AND simulator are dispatched in parallel
+- Builder AND simulator are dispatched in parallel; after both complete, tester is dispatched
 - The rest of the pipeline proceeds normally with the additional `simulation.md` artifact
 
 ---
@@ -183,30 +189,34 @@ RNG type: Mersenne-Twister (R) / numpy.random.default_rng (Python)
 When simulation is active, the two-pipeline architecture extends to three pipelines:
 
 ```
-                    planner (bridge)
-                   /    |          \
-        spec.md   /     |           \  sim-spec.md
-                 /      |            \
-            builder  test-spec.md   simulator
-       (code pipeline)  |      (simulation pipeline)
-                 \      |            /
-                  \     v           /
-                   \  tester      /
-                    \   |        /
-                     \  |       /
-                      scriber (recording)
-                          |
-                      reviewer (convergence)
-                          |
-                        shipper
+                      planner (bridge)
+                     /    |          \
+          spec.md   / test-spec.md    \  sim-spec.md
+                   /      |            \
+            builder ─ ─(parallel)─ ─ simulator
+       (code pipeline)    |    (simulation pipeline)
+                   \      |            /
+      implementation.md   |   simulation.md
+                    \     |          /
+                     \    v         /
+                       tester           <-- sequential, after merge-back
+                    (test pipeline)
+                         |
+                      audit.md
+                         |
+                    scriber (recording)
+                         |
+                    reviewer (convergence)
+                         |
+                       shipper
 ```
 
 **Key properties**:
-1. Builder, simulator, and tester are dispatched in PARALLEL (all three in the same message)
+1. Builder and simulator are dispatched in PARALLEL (both in the same message). Tester is dispatched AFTER both complete and merge back.
 2. Builder receives ONLY `spec.md`
 3. Simulator receives ONLY `sim-spec.md`
 4. Tester receives ONLY `test-spec.md` (which includes simulation validation criteria)
-5. Tester runs AFTER builder and simulator merge back — it validates both the unit tests AND the simulation results
+5. Tester validates the fully merged code — both the unit tests AND the simulation results
 6. Pipeline isolation is maintained across all three pipelines
 
 ---

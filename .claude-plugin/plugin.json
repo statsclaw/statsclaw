@@ -1,0 +1,11 @@
+{
+  "name": "statsclaw",
+  "version": "1.0.0",
+  "description": "Multi-agent workflow framework for building, testing, and shipping statistical software packages",
+  "author": {
+    "name": "StatsClaw"
+  },
+  "repository": "https://github.com/statsclaw/statsclaw",
+  "license": "MIT",
+  "keywords": ["statistics", "agents", "workflow", "R", "Python"]
+}
