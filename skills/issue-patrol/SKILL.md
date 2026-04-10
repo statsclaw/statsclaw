@@ -1,3 +1,9 @@
+---
+name: issue-patrol
+description: "Automated GitHub issue scanning, triage, and fix loop"
+user-invocable: false
+disable-model-invocation: true
+---
 # Shared Skill: Issue Patrol — Automated GitHub Issue Monitor
 
 This skill enables StatsClaw to automatically scan open GitHub issues in a target repository, triage them, fix bugs, push fixes, and reply to issues — all from a simple user prompt.

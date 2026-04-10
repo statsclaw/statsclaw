@@ -1,3 +1,9 @@
+---
+name: profile-detection
+description: "Automatic language profile selection for target repositories"
+user-invocable: false
+disable-model-invocation: true
+---
 # Shared Skill: Profile Detection — Automatic Language Profile Selection
 
 This skill determines the correct language profile for a target repository by inspecting file markers.

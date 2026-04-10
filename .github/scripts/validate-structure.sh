@@ -19,7 +19,7 @@ echo ""
 # 1. Required top-level files
 # ─────────────────────────────────────────────────────
 echo "▶ Checking required top-level files..."
-for f in CLAUDE.md README.md CONTRIBUTING.md ROADMAP.md .gitignore; do
+for f in CLAUDE.md README.md CONTRIBUTING.md ROADMAP.md .gitignore settings.json; do
   if [ -f "$f" ]; then
     info "$f exists"
   else
@@ -169,6 +169,41 @@ if [ "$PROFILE_COUNT" -ge 1 ]; then
 else
   error "No profiles found in profiles/"
 fi
+echo ""
+
+# ─────────────────────────────────────────────────────
+# 11. Plugin infrastructure
+# ─────────────────────────────────────────────────────
+echo "▶ Checking plugin infrastructure..."
+for f in .claude-plugin/plugin.json .claude-plugin/marketplace.json; do
+  if [ -f "$f" ]; then
+    info "$f exists"
+  else
+    error "Missing plugin file: $f"
+  fi
+done
+echo ""
+
+# ─────────────────────────────────────────────────────
+# 12. YAML frontmatter in agents and skills
+# ─────────────────────────────────────────────────────
+echo "▶ Checking YAML frontmatter..."
+for agent in agents/*.md; do
+  [ -f "$agent" ] || continue
+  if head -1 "$agent" | grep -q '^---$'; then
+    info "$agent has frontmatter"
+  else
+    warn "$agent missing YAML frontmatter"
+  fi
+done
+for skill in skills/*/SKILL.md; do
+  [ -f "$skill" ] || continue
+  if head -1 "$skill" | grep -q '^---$'; then
+    info "$skill has frontmatter"
+  else
+    warn "$skill missing YAML frontmatter"
+  fi
+done
 echo ""
 
 # ─────────────────────────────────────────────────────

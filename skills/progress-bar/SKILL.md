@@ -1,3 +1,9 @@
+---
+name: progress-bar
+description: "Visual workflow progress indicator for users"
+user-invocable: false
+disable-model-invocation: true
+---
 # Skill: Progress Bar
 
 Renders a visual progress bar to the user showing the current workflow state. Leader MUST call this after every `status.md` update to keep the user informed.
