@@ -34,10 +34,11 @@ Check the target repository root for the following files. Match the first profil
 | 2 | `pyproject.toml` or `setup.py` or `setup.cfg` | `src/` or `*/__init__.py`, `tests/` | `profiles/python-package.md` |
 | 3 | `package.json` + `tsconfig.json` | `src/`, `*.ts` files | `profiles/typescript-package.md` |
 | 4 | `go.mod` | `*.go` files, `cmd/`, `internal/` | `profiles/go-module.md` |
-| 5 | `Cargo.toml` | `src/lib.rs` or `src/main.rs`, `tests/` | `profiles/rust-crate.md` |
-| 6 | `CMakeLists.txt` or `Makefile` or `meson.build` + `*.cpp`/`*.cc`/`*.cxx` | `*.hpp`/`*.hxx`, `tests/` | `profiles/cpp-library.md` |
-| 7 | `CMakeLists.txt` or `Makefile` or `meson.build` + `*.c` (no C++ sources) | `*.h`, `tests/` | `profiles/c-library.md` |
-| 8 | `*.ado` or `*.do` files | `*.sthlp` files | `profiles/stata-project.md` |
+| 5 | `Project.toml` (with `name` and `uuid` fields) | `src/`, `test/` | `profiles/julia-package.md` |
+| 6 | `Cargo.toml` | `src/lib.rs` or `src/main.rs`, `tests/` | `profiles/rust-crate.md` |
+| 7 | `CMakeLists.txt` or `Makefile` or `meson.build` + `*.cpp`/`*.cc`/`*.cxx` | `*.hpp`/`*.hxx`, `tests/` | `profiles/cpp-library.md` |
+| 8 | `CMakeLists.txt` or `Makefile` or `meson.build` + `*.c` (no C++ sources) | `*.h`, `tests/` | `profiles/c-library.md` |
+| 9 | `*.ado` or `*.do` files | `*.sthlp` files | `profiles/stata-project.md` |
 
 ### Step 3 — Disambiguation
 

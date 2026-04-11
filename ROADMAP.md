@@ -10,7 +10,7 @@ StatsClaw is building toward a world where statisticians and econometricians can
 
 - [x] Multi-pipeline agent architecture (leader, planner, builder, tester, scriber, reviewer, shipper)
 - [x] Pipeline isolation (code / test / simulation never see each other's specs)
-- [x] 8 language profiles (R, Python, TypeScript, Stata, Go, Rust, C, C++)
+- [x] 9 language profiles (R, Python, Julia, TypeScript, Stata, Go, Rust, C, C++)
 - [x] Workspace repo for runtime state and audit trails
 - [x] Issue patrol — scan and auto-fix GitHub issues
 - [x] Simulation study workflows (Monte Carlo, DGP, coverage)
