@@ -1,0 +1,39 @@
+name: Sync main to dev
+
+on:
+  push:
+    branches: [main]
+
+# Allow only one sync run at a time
+concurrency:
+  group: sync-main-to-dev
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Merge main into dev
+    runs-on: ubuntu-latest
+    # Skip if the pushing actor is the sync bot itself (avoid loops)
+    if: github.actor != 'github-actions[bot]'
+    steps:
+      - name: Checkout dev
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+          token: ${{ secrets.SYNC_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "statsclaw-sync-bot"
+          git config user.email "sync-bot@statsclaw.noreply"
+
+      - name: Merge main into dev
+        run: |
+          git fetch origin main
+          if git merge-base --is-ancestor origin/main HEAD; then
+            echo "dev already contains main. Nothing to sync."
+            exit 0
+          fi
+          git merge origin/main --no-ff -m "chore: auto-sync main to dev [skip ci]"
+          git push origin dev
