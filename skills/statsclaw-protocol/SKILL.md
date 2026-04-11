@@ -599,6 +599,7 @@ StatsClaw/
 ├── profiles/
 │   ├── r-package.md
 │   ├── python-package.md
+│   ├── julia-package.md
 │   ├── typescript-package.md
 │   ├── stata-project.md
 │   ├── go-module.md

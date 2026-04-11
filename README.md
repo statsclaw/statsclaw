@@ -73,10 +73,10 @@ The **code**, **test**, and **simulation** pipelines are fully isolated — they
 
 ## Supported Languages
 
-| R | Python | Stata | TypeScript | Go | Rust | C | C++ |
-|:-:|:------:|:-----:|:----------:|:--:|:----:|:-:|:---:|
+| R | Python | Julia | Stata | TypeScript | Go | Rust | C | C++ |
+|:-:|:------:|:-----:|:-----:|:----------:|:--:|:----:|:-:|:---:|
 
-More languages coming — [Julia is next](https://github.com/statsclaw/statsclaw/issues/3)! Want another? [Let us know](https://github.com/statsclaw/statsclaw/issues/new?template=feature-request.yml).
+Want another language? [Let us know](https://github.com/statsclaw/statsclaw/issues/new?template=feature-request.yml).
 
 ---
 
@@ -179,7 +179,7 @@ See the [workspace example](https://github.com/statsclaw/example-workspace) for 
 - `CLAUDE.md` — orchestration policy (the authoritative reference)
 - `agents/` — agent definitions (leader, planner, builder, tester, simulator, scriber, distiller, reviewer, shipper)
 - `skills/` — shared protocol skills (credential-setup, isolation, handoff, mailbox, issue-patrol, profile-detection, brain-sync, privacy-scrub)
-- `profiles/` — language-specific execution rules (R, Python, TypeScript, Stata, Go, Rust, C, C++)
+- `profiles/` — language-specific execution rules (R, Python, Julia, TypeScript, Stata, Go, Rust, C, C++)
 - `templates/` — runtime artifact templates and repo scaffolding (brain-repo, brain-seedbank-repo)
 
 Agent Teams is enabled at the project level through `.claude/settings.json`.
@@ -236,7 +236,7 @@ StatsClaw/
 ├── README.md
 ├── agents/             # agent definitions (9 agents including distiller)
 ├── skills/             # shared protocol skills (13 skills including brain-sync, privacy-scrub)
-├── profiles/           # language execution rules (8 languages)
+├── profiles/           # language execution rules (9 languages)
 ├── templates/          # runtime artifact templates + repo scaffolding (brain-repo, brain-seedbank-repo)
 └── .repos/             # target repo checkouts + workspace + brain repos (runtime state, git-ignored)
 ```
