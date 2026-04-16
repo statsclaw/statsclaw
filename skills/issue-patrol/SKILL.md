@@ -1,28 +1,21 @@
 ---
 name: issue-patrol
-description: "Automated GitHub issue scanning, triage, and fix loop"
+description: "Scans open GitHub issues via gh issue list, triages them by severity (crashes > test failures > warnings > minor bugs), and runs the full StatsClaw pipeline (planner → builder → tester → reviewer → shipper) to fix each actionable bug — pushing PRs and commenting on issues automatically. Use when the user says 'patrol issues,' 'auto-fix bugs,' or wants automated issue monitoring on a repository."
 user-invocable: false
 disable-model-invocation: true
 ---
-# Shared Skill: Issue Patrol — Automated GitHub Issue Monitor
+# Skill: Issue Patrol — Automated GitHub Issue Monitor
 
-This skill enables StatsClaw to automatically scan open GitHub issues in a target repository, triage them, fix bugs, push fixes, and reply to issues — all from a simple user prompt.
+Scans open GitHub issues in a target repository, triages them by severity, and runs the full StatsClaw pipeline (planner → builder → tester → reviewer → shipper) for each actionable bug — pushing fix PRs and commenting on issues automatically.
 
----
+## When to Use
 
-## Trigger Phrases
+Activate when the user wants automated issue scanning and fixing (leader routes semantically — exact wording not required):
 
-Any of the following user intents activate this skill. **Exact wording is NOT required** — leader routes semantically:
-
-- "Monitor issues on [repo]"
-- "Check issues and fix bugs in [repo]"
-- "Patrol [repo] issues"
-- "Auto-fix issues in [repo]"
+- "Patrol [repo] issues" or "auto-fix issues in [repo]"
+- "Check issues and fix bugs" or "monitor issues on [repo]"
 - "Watch [repo] for bugs and fix them"
-- "Auto-check [repo] issues and fix them"
-- "Periodically check [repo] issues"
-
-A short prompt like `"patrol fect issues on cfe"` is sufficient.
+- Any intent involving scanning, triaging, and auto-fixing GitHub issues
 
 ---
 

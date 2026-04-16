@@ -1,29 +1,21 @@
 ---
 name: simulation-study
-description: "Monte Carlo simulation study protocol"
+description: "Designs and executes Monte Carlo simulation studies evaluating finite-sample properties (bias, RMSE, coverage, size, power) of statistical estimators. Dispatches builder and simulator in parallel from independent specs, then validates results via tester against acceptance criteria. Use when the user requests simulation evidence, finite-sample evaluation, or Monte Carlo experiments for new or existing estimators."
 user-invocable: false
 disable-model-invocation: true
 ---
 # Skill: Simulation Study — Monte Carlo Evaluation of Estimator Properties
 
-This skill enables StatsClaw to automatically design and execute Monte Carlo simulation studies that evaluate the finite-sample properties of statistical estimators. Given a DGP (Data Generating Process) specification and an estimator, it produces simulation code, runs the study, and reports results on consistency, bias, RMSE, coverage, size, and power.
+Designs and executes Monte Carlo simulation studies that evaluate finite-sample properties of statistical estimators. Given a DGP specification and an estimator, produces simulation code via an isolated simulator agent, runs the study through the tester, and reports results on consistency, bias, RMSE, coverage, size, and power.
 
----
+## When to Use
 
-## Trigger Phrases
+Activate when the user's intent involves any of the following (leader routes semantically — exact wording not required):
 
-Any of the following user intents activate this skill. **Exact wording is NOT required** — leader routes semantically:
-
-- "Run a simulation study for this estimator"
-- "Study the finite-sample properties of [estimator]"
-- "Monte Carlo simulation for [method]"
-- "Check consistency/coverage/bias of [estimator]"
-- "Simulate DGP and evaluate [estimator]"
-- "Run Monte Carlo experiments"
-- "What are the small-sample properties?"
-- "Evaluate estimator performance via simulation"
-
-A short prompt like `"simulate the finite-sample properties of the new estimator"` is sufficient.
+- Running a simulation study or Monte Carlo experiments for an estimator
+- Evaluating finite-sample properties, small-sample behavior, or convergence rates
+- Checking consistency, coverage, bias, RMSE, size, or power of an estimator
+- Designing a DGP and evaluating estimator performance against it
 
 ---
 

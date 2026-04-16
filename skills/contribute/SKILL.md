@@ -1,32 +1,20 @@
 ---
 name: contribute
-description: "Session knowledge contribution to the shared brain"
+description: "Extracts reusable knowledge (methods, patterns, validation strategies) from completed workflow sessions and submits them to the shared brain repository via a consent-gated PR to statsclaw/brain-seedbank. Use when the user invokes /contribute, says 'share what I learned,' or wants to batch-contribute insights from recent sessions."
 user-invocable: true
 ---
 # Skill: Contribute — Session Knowledge Contribution
 
-The `/contribute` command lets users explicitly trigger knowledge extraction and contribution at any point during a session. It summarizes what worked, what required manual intervention, and what domain-specific patterns emerged — then offers to submit these lessons to the shared brain.
+Extracts reusable knowledge from completed workflows — mathematical methods, coding patterns, validation strategies — and submits them to the shared brain via a consent-gated PR to `statsclaw/brain-seedbank`. The user always reviews and approves entries before anything is shared.
 
-This is the **user-invocable entry point** for brain contributions. While the standard workflow dispatches distiller automatically after noteworthy workflows (brain-sync Phase 3), `/contribute` gives users direct control: they can invoke it whenever they want to share what they've learned.
-
----
-
-## Trigger Phrases
-
-| User says | Detected intent |
-| --- | --- |
-| `/contribute` | Direct skill invocation |
-| `"contribute"` / `"contribute to brain"` / `"share what I learned"` | Natural language trigger |
-| `"submit lessons"` / `"share knowledge"` / `"add to brain"` | Natural language trigger |
-| `"summarize lessons"` / `"what did we learn"` + intent to share | Natural language trigger |
-
----
+This is the **user-invocable entry point** for brain contributions. While the standard workflow dispatches distiller automatically after noteworthy workflows (brain-sync Phase 3), `/contribute` gives users direct control to share knowledge at any time.
 
 ## When to Use
 
-- **After completing a workflow** — the user wants to contribute knowledge from the current or recent session
-- **Mid-session** — the user has accumulated insights across multiple runs and wants to batch-contribute
-- **Standalone** — no active workflow required; the user may invoke `/contribute` purely to share knowledge from their experience
+- After completing a workflow — contribute knowledge from the current or recent session
+- Mid-session — batch-contribute insights accumulated across multiple runs
+- Standalone — share knowledge from experience without an active workflow
+- When the user says `/contribute`, `"share what I learned"`, `"submit lessons"`, or `"add to brain"`
 
 ---
 

@@ -1,14 +1,12 @@
 ---
 name: progress-bar
-description: "Visual workflow progress indicator for users"
+description: "Renders a Unicode progress bar showing the current workflow state (credentials → plan → specs → build/test → docs → review → ship) after every status.md update. Supports full, docs-only, simulation, lightweight, and simplified pipeline variants with interrupt indicators for HOLD, BLOCK, and STOP signals. Use when the leader agent transitions workflow state and needs to display progress to the user."
 user-invocable: false
 disable-model-invocation: true
 ---
 # Skill: Progress Bar
 
-Renders a visual progress bar to the user showing the current workflow state. Leader MUST call this after every `status.md` update to keep the user informed.
-
----
+Renders a Unicode progress bar after every `status.md` update showing which workflow stages are complete, active, or pending. Supports all pipeline variants (full, docs-only, simulation, lightweight, simplified) and displays interrupt states (HOLD, BLOCK, STOP) with distinct symbols.
 
 ## When to Display
 

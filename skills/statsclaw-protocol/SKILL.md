@@ -1,13 +1,13 @@
 ---
 name: statsclaw-protocol
-description: "Core orchestration protocol for StatsClaw agent teams framework"
+description: "Orchestrates multi-agent workflows (plan → build → test → document → review → ship) for code changes, simulation studies, and documentation across any language. Manages credential verification, pipeline isolation, state transitions, and signal handling (HOLD/BLOCK/STOP) with hard-gated preconditions. Use when the leader agent needs to execute the mandatory execution protocol for any non-trivial user request."
 user-invocable: false
 disable-model-invocation: true
 ---
 
 # StatsClaw — Agent Teams Framework for Claude Code
 
-StatsClaw is a reusable workflow framework for building, validating, documenting, reviewing, and externalizing code changes with Claude Code across multiple languages. The repository contains the framework only: orchestration rules, agent definitions, templates, profiles, and docs.
+Orchestrates multi-agent workflows for building, validating, documenting, reviewing, and shipping code changes with Claude Code across multiple languages. The leader agent dispatches specialist teammates (planner, builder, tester, simulator, scriber, distiller, reviewer, shipper) through isolated pipelines with hard-gated state transitions. The repository contains the framework only: orchestration rules, agent definitions, templates, profiles, and docs.
 
 StatsClaw does **not** version user runtime state. All request state, project contexts, generated specs, shared task lists, mailboxes, locks, and run artifacts live inside the **workspace repository** under `.repos/workspace/<repo-name>/`. The workspace repo is a user-specified GitHub repository (e.g., `[username]/workspace`) that serves as both the runtime state directory and the permanent log archive. There is no separate `.statsclaw/` directory.
 
