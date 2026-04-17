@@ -266,10 +266,17 @@ A text block is reclassified as an algorithm if ANY of:
 
 1. **Keyword header**: starts with "Algorithm [N]" (case-insensitive, with optional colon or period)
 2. **I/O declarations**: contains "Input:", "Output:", "Return:", or "Require:" within the first 3 lines
-3. **Pseudocode density**: contains >= 5 pseudocode keywords (`for`, `while`, `if`, `then`, `else`, `repeat`, `until`, `do`, `end`, `return`) AND text is < 200 words (filters out long prose paragraphs that merely discuss algorithms)
+3. **Multi-signal scoring** (keyword density + structural evidence): keyword density alone is never sufficient. A scoring system combines:
+   - **Pseudocode density** >= 5 keywords: +2 points; >= 3: +1 point
+   - **Line-per-statement format** (>= 4 lines, median length < 80 chars, >= 60% of lines under 100 chars): +2 points
+   - **Assignment operators** (`←`, `:=`, `\leftarrow`, `<-`): +2 points
+   - **Keyword-at-line-start ratio** >= 0.25 (requires >= 3 lines): +2 points
+   - A block is classified as an algorithm if score >= 4 AND word count < 200
 4. **Numbered steps with control flow**: has >= 3 numbered lines (e.g., "1.", "2.") AND contains at least one control flow keyword AND text is < 200 words
 
 **Negative filter**: blocks starting with theorem-like headers (Proposition, Theorem, Lemma, Corollary, Definition, Proof, Remark, Claim, Example, Assumption) are excluded even if pseudocode keywords match — mathematical prose often contains "if", "then", "for" naturally.
+
+**Why scoring?** Academic prose naturally uses pseudocode keywords ("for each unit, if the treatment indicator..., then compute..., while this estimator..."). Keyword count alone produces false positives. The scoring system requires structural evidence (vertical formatting, assignment operators, keywords at line starts) that distinguishes real pseudocode from prose.
 
 ### Algorithm Structure Parsing
 

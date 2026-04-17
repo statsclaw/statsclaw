@@ -12,6 +12,7 @@ Usage:
 import argparse
 import json
 import re
+import statistics
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -81,12 +82,71 @@ def _has_numbered_steps_with_control(text: str) -> bool:
     return numbered >= 3 and has_control
 
 
+ASSIGNMENT_OP_RE = re.compile(
+    r"(?:"
+    r"\u2190"                                         # ← (unicode left arrow)
+    r"|:="                                            # := (Pascal/pseudocode)
+    r"|\\leftarrow"                                   # \leftarrow (LaTeX)
+    r"|^\s*(?:\d+[.)]\s+)?[a-zA-Z_]\w*\s*<-"         # var <- val (R-style)
+    r")",
+    re.MULTILINE,
+)
+
+KEYWORD_LINE_START_RE = re.compile(
+    r"^\s*(?:\d+[.)]\s+)?(?:for|while|if|then|else|repeat|until|do|end|return"
+    r"|foreach|loop|break|continue)\b",
+    re.IGNORECASE,
+)
+
+
+def _has_line_per_statement(text: str) -> bool:
+    """Check if text has a multi-line, statement-per-line structure.
+
+    Real pseudocode is vertically formatted with short lines.
+    Prose flows in long paragraphs.
+    """
+    lines = [line for line in text.strip().split("\n") if line.strip()]
+    if len(lines) < 4:
+        return False
+    lengths = [len(line) for line in lines]
+    median_len = statistics.median(lengths)
+    if median_len >= 80:
+        return False
+    short_lines = sum(1 for length in lengths if length < 100)
+    return short_lines / len(lines) >= 0.6
+
+
+def _has_assignment_operators(text: str) -> bool:
+    """Check for assignment-like operators (definitive pseudocode markers)."""
+    return bool(ASSIGNMENT_OP_RE.search(text))
+
+
+def _keyword_line_start_ratio(text: str) -> float:
+    """Fraction of non-blank lines starting with a pseudocode keyword.
+
+    In pseudocode, keywords appear at line starts (after optional indentation
+    or step numbers). In prose, they are embedded mid-sentence.
+
+    Returns 0.0 for texts with fewer than 3 non-blank lines, since the
+    ratio is only meaningful for multi-line, statement-per-line text.
+    """
+    lines = [line for line in text.strip().split("\n") if line.strip()]
+    if len(lines) < 3:
+        return 0.0
+    keyword_starts = sum(1 for line in lines if KEYWORD_LINE_START_RE.match(line))
+    return keyword_starts / len(lines)
+
+
 def is_algorithm_block(text: str) -> bool:
     """Determine if a text block is likely an algorithm/pseudocode block.
 
     Tuned to minimize false positives on academic prose. A paragraph
     that merely *discusses* algorithms (e.g., "if one restricts...")
     should NOT be classified as an algorithm block.
+
+    Uses a multi-signal scoring system: keyword density alone is never
+    sufficient — structural evidence (line-per-statement format,
+    assignment operators, keywords at line starts) is required.
     """
     # Strong signal: explicit "Algorithm N" header
     if _has_algorithm_header(text):
@@ -98,15 +158,34 @@ def is_algorithm_block(text: str) -> bool:
     # Strong signal: I/O declarations (common in pseudocode, rare in prose)
     if _has_io_declarations(text):
         return True
-    # Require HIGH pseudocode density AND short text (real algorithms are
-    # concise; long paragraphs with a few keywords are just prose)
-    density = _pseudocode_density(text)
+
     word_count = len(text.split())
-    if density >= 5 and word_count < 200:
+    if word_count >= 200:
+        return False
+
+    # Multi-signal scoring: keyword density + structural evidence
+    density = _pseudocode_density(text)
+    score = 0
+
+    if density >= 5:
+        score += 2
+    elif density >= 3:
+        score += 1
+
+    if _has_line_per_statement(text):
+        score += 2
+    if _has_assignment_operators(text):
+        score += 2
+    if _keyword_line_start_ratio(text) >= 0.25:
+        score += 2
+
+    if score >= 4:
         return True
-    # Numbered steps with control flow — also require conciseness
-    if _has_numbered_steps_with_control(text) and word_count < 200:
+
+    # Numbered steps with control flow
+    if _has_numbered_steps_with_control(text):
         return True
+
     return False
 
 
