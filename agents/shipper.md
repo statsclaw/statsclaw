@@ -34,7 +34,7 @@ Shipper handles all git write operations and GitHub interactions: committing, pu
 7. Read `audit.md` for validation evidence (referenced in PR body).
 8. Read `docs.md` if it exists for documentation change summary.
 9. Read `mailbox.md` for any notes relevant to shipping.
-10. Read `context.md` from `.repos/workspace/<repo-name>/` for attribution settings (`CommitTrailers` field).
+10. Read `context.md` from `.repos/workspace/<repo-name>/` for project context.
 11. Verify the local git checkout points to the correct target repository.
 12. Verify the remote URL matches the user's target (not StatsClaw).
 13. Test push access with `git push --dry-run origin <branch>` before attempting any real push. If it fails, halt and write shipper.md noting the failure — do NOT waste time on commit/staging.
@@ -71,6 +71,8 @@ Shipper handles all git write operations and GitHub interactions: committing, pu
 - MUST NOT auto-close GitHub issues — closure is a human decision
 - MUST NOT post comments without a PASS verdict — ensure review.md is verified first
 - MUST NOT skip pre-commit hooks (no --no-verify)
+- MUST NOT add any `Co-authored-by` trailer (no `StatsClaw-Shipper`, no `Claude`, no bot identities), `Generated with Claude Code` footer, or `claude.ai/code/session_...` URL to ANY commit message in the target repo, the workspace repo, or the brain-seedbank fork. Commits are attributed to the user alone.
+- MUST NOT pass `--author`, set `GIT_AUTHOR_*` / `GIT_COMMITTER_*`, or otherwise override the user's local git identity.
 
 ---
 
@@ -133,27 +135,25 @@ Write a commit message that:
 - References the request ID or issue number if applicable
 - Includes a brief body if the change is non-trivial
 
-#### Attribution Trailer
+#### No Co-Author or Tooling Trailers
 
-Read `context.md` for the `CommitTrailers` field. If it contains `"statsclaw"` (the default), append a `Co-authored-by` trailer to every commit message:
+Commits are attributed to the user alone. The shipper MUST NOT append any of the following to commit messages:
 
-```
-Co-authored-by: StatsClaw <273270867+StatsClaw-Shipper@users.noreply.github.com>
-```
+- `Co-authored-by: StatsClaw <...StatsClaw-Shipper@users.noreply.github.com>`
+- `Co-authored-by: Claude <noreply@anthropic.com>` (or any other Co-authored-by trailer)
+- `Generated with Claude Code` footers
+- `https://claude.ai/code/session_...` URLs
+- Any other tool-attribution trailer
 
-This credits both the user (the git committer) and the StatsClaw framework as co-authors. The trailer follows the standard Git co-author convention recognized by GitHub.
+The git author and committer are determined by the user's local git config (`user.name` / `user.email`). Do not pass `--author`, do not set `GIT_AUTHOR_*` / `GIT_COMMITTER_*` env vars, and do not configure a bot identity.
 
-If `CommitTrailers` is empty (`""`), omit the trailer entirely — commits are attributed to the user alone.
-
-Example commit with trailer:
+Example commit (no trailers):
 ```bash
 git -C "$TARGET" commit -m "$(cat <<'EOF'
 Fix null check in twoway estimator (#42)
 
 Adds defensive null check before matrix inversion to prevent
 segfault on empty panels.
-
-Co-authored-by: StatsClaw <273270867+StatsClaw-Shipper@users.noreply.github.com>
 EOF
 )"
 ```
@@ -185,7 +185,7 @@ After pushing the target repo (or as a standalone workspace-sync task), sync wor
    git commit -m "sync: <repo-name> — <short description>"
    git push origin main
    ```
-   Workspace repo commits do NOT include the `Co-authored-by` trailer — attribution applies only to target repo commits.
+   Workspace repo commits, like target repo commits, MUST NOT include any `Co-authored-by` trailer or tool-attribution footer.
 7. If workspace push fails, retry up to 3 times with exponential backoff (2s, 4s, 8s). If all retries fail, **warn the user**: "Workspace repo push failed — workflow logs for this run were not synced. Artifacts remain in the local run directory."
 
 **Workspace sync is non-blocking** — a workspace sync failure MUST NOT undo or block the target repo push, PR, or issue comments.
@@ -221,18 +221,16 @@ After workspace sync completes (or after target repo push if workspace sync was 
 6. **Update `index.md`** — append new entries to the seedbank index with tags
 
 7. **Commit and push**:
-   Apply the same `CommitTrailers` attribution as target repo commits (read `context.md`). If `CommitTrailers` contains `"statsclaw"`, append the Co-authored-by trailer:
+   Use a clean commit message with NO `Co-authored-by` trailers and NO tool-attribution footers (same rule as target repo commits — see Step 5).
    ```bash
    git -C .repos/brain-seedbank-fork add .
    git -C .repos/brain-seedbank-fork commit -m "$(cat <<'EOF'
    contribute: <domain> — <topic summary>
-
-   Co-authored-by: StatsClaw <273270867+StatsClaw-Shipper@users.noreply.github.com>
    EOF
    )"
    git -C .repos/brain-seedbank-fork push -u origin contribute/<date>-<slug>
    ```
-   This ensures both the user (as git committer) and StatsClaw (as co-author) are credited on every brain contribution, just like target repo commits.
+   The user is the sole author of brain contributions.
 
 8. **Create PR** from user's fork to `statsclaw/brain-seedbank` main:
    ```bash
@@ -303,7 +301,6 @@ Save `shipper.md` to the run directory with:
 - PR URL (if created)
 - Issue comments posted (issue number, comment URL, comment body summary)
 - **Workspace sync status**: workspace repo URL, files synced (run log, docs.md, CHANGELOG, HANDOFF, ref), workspace commit SHA, push status (or failure reason)
-- Attribution trailer included (yes/no)
 - **Brain upload status** (brain mode only): brain-seedbank PR URL, entries submitted, fork status, or skip reason
 - Any errors encountered
 

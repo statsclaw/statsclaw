@@ -1,57 +1,45 @@
 ---
 name: attribution
-description: "Commit co-author trailer management"
+description: "Commit authorship policy — no co-author trailers, user is sole author"
 user-invocable: false
 disable-model-invocation: true
 ---
-# Shared Skill: Attribution — Commit Co-Author Trailers
+# Shared Skill: Attribution — Commit Authorship Policy
 
-Commits pushed by the shipper agent include a `Co-authored-by` trailer that credits both the user and StatsClaw. This follows the standard Git trailer convention recognized by GitHub, which displays co-authors on the commit page.
-
----
-
-## Default Behavior
-
-Every commit to the **target repository** includes:
-
-```
-Co-authored-by: StatsClaw <273270867+StatsClaw-Shipper@users.noreply.github.com>
-```
-
-The user remains the primary author (determined by git config `user.name` / `user.email`). The trailer is appended after the commit body, separated by a blank line.
-
-Workspace repo commits (sync operations) do NOT include this trailer.
+StatsClaw commits are attributed to the **user alone**. Shipper MUST NOT append any co-author trailer, tooling footer, or bot attribution to commit messages.
 
 ---
 
-## Configuration
+## Policy
 
-The `CommitTrailers` field in `context.md` controls attribution:
+Every commit produced by shipper — in the target repo, the workspace repo, or any brain-seedbank fork — uses a clean message with **no** trailers of the following forms:
 
-```yaml
-CommitTrailers: "statsclaw"   # co-author trailers appended to commits; set to "" to disable
-```
+- `Co-authored-by: StatsClaw <...StatsClaw-Shipper@users.noreply.github.com>`
+- `Co-authored-by: Claude <noreply@anthropic.com>` (or any other `Co-authored-by:` line)
+- `Generated with Claude Code` footer
+- `https://claude.ai/code/session_...` URL
+- Any other tool-attribution line
 
-| Value | Behavior |
-| --- | --- |
-| `"statsclaw"` (default) | Append `Co-authored-by: StatsClaw <273270867+StatsClaw-Shipper@users.noreply.github.com>` |
-| `""` | No trailer — commits attributed to user only |
+The git author and committer are the user, as determined by their local `user.name` / `user.email` config. Shipper does NOT pass `--author`, set `GIT_AUTHOR_*` / `GIT_COMMITTER_*`, or configure a bot identity.
 
-To disable, edit `context.md` in the workspace repo and set `CommitTrailers: ""`.
+---
+
+## Rationale
+
+- The user is the only person responsible for the change.
+- GitHub's contributor list is driven by commit author/committer + `Co-authored-by` trailers. Adding bot trailers pollutes the contributor graph (e.g., `StatsClaw-Shipper`, `Claude`).
+- Tooling footers leak session identifiers and add noise to `git log`.
 
 ---
 
 ## Scope
 
-- **Applies to**: target repo commits made by shipper (code changes, ARCHITECTURE.md, user-facing docs)
-- **Does not apply to**: workspace repo sync commits, workspace CHANGELOG/HANDOFF updates
-- **Does not apply to**: PR descriptions, issue comments, or any non-commit artifact
+- **Applies to**: every commit shipper creates — target repo, workspace repo, brain-seedbank fork.
+- **Applies to**: every commit any other agent makes locally inside its worktree (builder, scriber, simulator) — these commits are squashed/merged back, but their messages should also be clean.
+- **Does not apply to**: PR titles or bodies, issue comments, or any non-commit artifact (those may reference StatsClaw or the workflow when useful).
 
 ---
 
-## Implementation Notes
+## Enforcement
 
-- Shipper reads `context.md` during startup (step 10 of startup checklist)
-- If `context.md` is missing or `CommitTrailers` field is absent, default to `"statsclaw"` (include trailer)
-- The trailer is placed after the commit body, following a blank line, per Git convention
-- GitHub automatically parses `Co-authored-by` trailers and shows co-authors on the commit page
+If shipper (or any other agent) emits a commit with a forbidden trailer, reviewer flags it as a STOP. The fix is to amend or reword the commit before pushing.
