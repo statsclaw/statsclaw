@@ -525,7 +525,7 @@ All runtime state lives inside the workspace repo, organized per target reposito
 ├── brain-seedbank/                   # statsclaw/brain-seedbank clone (brain mode only)
 └── workspace/                        # workspace repo (GitHub, git-ignored)
     └── <repo-name>/                  # per-target-repo runtime + logs
-        ├── context.md                # active project context (includes CommitTrailers setting)
+        ├── context.md                # active project context
         ├── CHANGELOG.md              # timeline index of all runs (pushed)
         ├── HANDOFF.md                # active handoff (pushed)
         ├── ref/                      # reference docs for future work (pushed)
