@@ -193,7 +193,7 @@ Good contributions earn a virtual Badge!
 2. **Create branch** on user's fork: `contribute/<date>-<short-slug>`
 3. **Write knowledge entry files** to correct directories based on each entry's domain and subdomain metadata
 4. **Update `index.md`** on the branch: append new entries to the index with tags
-5. **Commit and push** to user's fork — apply the same `CommitTrailers` attribution as target repo commits. If enabled, the commit includes `Co-authored-by: StatsClaw <273270867+StatsClaw-Shipper@users.noreply.github.com>` so both the user and StatsClaw are credited.
+5. **Commit and push** to user's fork — commit message MUST NOT include any `Co-authored-by` trailer or tool-attribution footer (see `skills/attribution/SKILL.md`). The user is the sole author of brain contributions.
 6. **Create PR** from user's fork to `statsclaw/brain-seedbank` main:
    - Title: `contribute: [domain] — [topic summary]`
    - Body includes: contributor username, entry summaries, privacy checklist
