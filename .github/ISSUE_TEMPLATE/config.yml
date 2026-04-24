@@ -2,10 +2,16 @@ blank_issues_enabled: true
 contact_links:
   - name: Discussions - Ideas & Brainstorm
     url: https://github.com/statsclaw/statsclaw/discussions/categories/ideas
-    about: "Share and discuss ideas for StatsClaw's future"
+    about: "Share and discuss ideas for StatsClaw's future (shared across both runtime distributions)"
   - name: Discussions - Q&A
     url: https://github.com/statsclaw/statsclaw/discussions/categories/q-a
-    about: "Ask questions about using StatsClaw"
+    about: "Ask questions about using StatsClaw (shared across both runtime distributions)"
+  - name: Other distribution - StatsClaw on Claude Code
+    url: https://github.com/statsclaw/statsclaw
+    about: "The Claude Code distribution of StatsClaw"
+  - name: Other distribution - StatsClaw on Codex CLI
+    url: https://github.com/statsclaw/statsclaw-codex
+    about: "The OpenAI Codex CLI distribution of StatsClaw"
   - name: StatsClaw Website
     url: https://statsclaw.ai
     about: "Visit the StatsClaw website"

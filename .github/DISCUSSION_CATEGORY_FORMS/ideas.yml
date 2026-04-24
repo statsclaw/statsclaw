@@ -9,6 +9,9 @@ body:
         discuss use cases, and help shape the roadmap.
 
         All ideas are welcome — from small improvements to ambitious new capabilities.
+        Discussions are shared across both runtime distributions
+        (`statsclaw/statsclaw` for Claude Code and `statsclaw/statsclaw-codex` for Codex CLI),
+        so a single thread reaches users of both.
 
   - type: textarea
     id: idea

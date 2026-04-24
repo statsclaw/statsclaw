@@ -2,6 +2,8 @@
 
 StatsClaw's Brain system enables knowledge sharing across all users. Techniques, methods, and patterns discovered during workflows are extracted, privacy-scrubbed, and contributed to a shared knowledge repository — making every agent smarter over time.
 
+The Brain is **shared across both runtime distributions** of StatsClaw — `statsclaw/statsclaw` (Claude Code) and `statsclaw/statsclaw-codex` (OpenAI Codex CLI). A contribution from one runtime benefits users of the other.
+
 Everything is **public and transparent** on GitHub.
 
 ---
@@ -23,7 +25,7 @@ The Brain system uses two public repos:
 
 ### Opting In
 
-At the start of your first session with a target repo, StatsClaw asks:
+At the start of your first session with a target repo, StatsClaw asks (on Claude Code via the `AskUserQuestion` tool, on Codex CLI via a numbered-options markdown question from the leader):
 
 > Enable Brain mode?
 > 1. Yes — connect to Brain (read + contribute with consent)
@@ -78,7 +80,7 @@ A: Yes. Say "turn off brain" at any time. Your `BrainMode` will be set to `"isol
 A: Open an issue on `statsclaw/brain-seedbank` requesting removal. Admin will handle it.
 
 **Q: How do I contribute knowledge manually?**
-A: Use the `/contribute` command at any time during a session. It summarizes what you learned — what worked, what required manual intervention, and what domain-specific patterns emerged — and offers to submit a structured report to `statsclaw/brain-seedbank`. You always review and approve before anything is shared. See `skills/contribute/SKILL.md`.
+A: Use the `/contribute` command at any time during a session. On Claude Code it's a built-in slash command; on Codex CLI it's a prompt file at `~/.codex/prompts/contribute.md` (installed by `install.sh`). Either way, it summarizes what you learned — what worked, what required manual intervention, and what domain-specific patterns emerged — and offers to submit a structured report to `statsclaw/brain-seedbank`. You always review and approve before anything is shared. See `skills/contribute/SKILL.md`.
 
 **Q: Does Brain mode slow down my workflow?**
 A: Minimally. Reading adds a few seconds (brain repo pull). Contributing happens at the end of the workflow and only when noteworthy knowledge was produced.
@@ -88,6 +90,9 @@ A: Warning only — your workflow proceeds normally without brain features.
 
 **Q: Will my private code end up in the brain?**
 A: No. The distiller agent applies strict privacy scrubbing (see `skills/privacy-scrub/SKILL.md`), the reviewer verifies compliance, and CI on brain-seedbank scans for PII patterns. You also review everything before it's submitted.
+
+**Q: Is the Brain specific to one runtime?**
+A: No. Both `statsclaw/statsclaw` (Claude Code) and `statsclaw/statsclaw-codex` (Codex CLI) read from and write to the same brain repos. Contributions and reads are bidirectional.
 
 ---
 
@@ -126,7 +131,7 @@ When updating CONTRIBUTORS.md:
 
 ### Distiller Agent
 
-The distiller (`agents/distiller.md`) is a new agent that runs after scriber:
+The distiller (`agents/distiller.md`) runs after scriber:
 
 ```
 ... → scriber → distiller (brain mode only) → ASK USER → reviewer → shipper
@@ -161,6 +166,8 @@ Distiller is NOT dispatched on every workflow. Leader evaluates:
 
 Users can invoke `/contribute` at any time to explicitly trigger knowledge extraction and contribution. This is the **user-invocable entry point** for brain contributions — it bypasses the automatic frequency heuristic (since the user has explicitly signaled intent to share) but applies the same quality gate, privacy scrub, and mandatory user consent.
 
+On Claude Code, `/contribute` is a built-in slash command. On Codex CLI, it's a prompt file at `~/.codex/prompts/contribute.md` installed by `install.sh` — invoking it tells the leader to load the corresponding skill.
+
 **Flow**: `/contribute` → leader gathers session artifacts → distiller extracts knowledge → leader presents to user → user approves → shipper creates PR to brain-seedbank
 
 **Trigger phrases**: `/contribute`, `"contribute"`, `"share what I learned"`, `"submit lessons"`, `"add to brain"`
@@ -193,7 +200,7 @@ Verified by: distiller (applies), reviewer (verifies), CI (scans for patterns).
 
 ### Repository Layout
 
-Both repos use the same directory structure:
+Both brain repos use the same directory structure:
 
 ```
 ├── planner/
@@ -249,3 +256,5 @@ Each entry follows the `templates/brain-entry.md` template with metadata comment
 | `templates/brain-repo/` | Scaffolding for statsclaw/brain |
 | `templates/brain-seedbank-repo/` | Scaffolding for statsclaw/brain-seedbank |
 | `skills/contribute/SKILL.md` | User-invocable `/contribute` command |
+| `prompts/contribute.md` | Codex slash command entry point for `/contribute` (Codex distribution only) |
+| `prompts/brain.md` | Codex slash command entry point for `/brain` (Codex distribution only) |

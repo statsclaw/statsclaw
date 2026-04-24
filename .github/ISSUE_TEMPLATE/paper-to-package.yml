@@ -8,7 +8,7 @@ body:
       value: |
         Have a statistical method described in a paper? Submit it here and we'll work on turning it into an installable package.
 
-        This is a core goal of StatsClaw: **paper in, package out**.
+        This is a core goal of StatsClaw: **paper in, package out**. Requests filed on either the Claude Code repo (`statsclaw/statsclaw`) or the Codex CLI repo (`statsclaw/statsclaw-codex`) are triaged jointly — the resulting package will run on whichever distribution you prefer.
 
   - type: textarea
     id: paper
