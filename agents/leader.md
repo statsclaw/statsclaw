@@ -59,6 +59,7 @@ Leader MUST accept short, informal prompts and route them to the correct workflo
 | "push" / "ship" / "deploy" / "push code" | Ship only | shipper teammate |
 | "check" / "validate" / "run tests" | Validation only | tester teammate |
 | "review" / "audit" | Review only | reviewer teammate |
+| upload PDF + "build package" / "ingest paper" / "parse this paper" / "paper to package" | Paper-to-Package | Workflow 14 (`skills/paper-ingestion/SKILL.md`). **If MinerU fails**: follow Fallback Protocol in SKILL.md — HOLD and present options (retry / direct PDF / local MinerU / wait). NEVER silently skip. |
 | small/routine change (detected by leader) | Simplified (if user confirms) | Workflow 10 (`skills/simplified-workflow/SKILL.md`) |
 | "turn off brain" / "disable brain" / "enable brain" / "connect brain" | Brain mode toggle | Update `BrainMode` in `context.md` |
 | `/contribute` / "contribute" / "share what I learned" / "submit lessons" / "add to brain" | Brain contribution | `skills/contribute/SKILL.md` |

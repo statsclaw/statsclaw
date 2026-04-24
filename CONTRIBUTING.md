@@ -96,7 +96,22 @@ StatsClaw supports multiple languages through profiles. To add a new one:
 3. Open a PR with example usage
 4. **Open a paired PR on the other distribution** so the profile lands on both `statsclaw/statsclaw` and `statsclaw/statsclaw-codex`
 
-### 4. Share Use Cases
+### 4. Submit a Paper for Paper-to-Package
+
+Have a published paper with a statistical method you'd like turned into a package? Submit it:
+
+1. [Open a Paper-to-Package request](../../issues/new?template=paper-to-package.yml)
+2. Attach or link the PDF (arXiv, author homepage, or journal — public access only)
+3. Note which estimator(s) you'd like implemented
+4. Note the target language (R, Python, Julia, etc.)
+
+StatsClaw will parse the PDF via MinerU API, extract equations/algorithms/simulation designs, and generate implementation specs. A domain expert should review the extracted content before code generation.
+
+**What works best**: Papers with clearly defined estimators, explicit algorithm steps, and Monte Carlo simulation sections. The parser handles arXiv, NBER, and standard journal formats (Econometrica, JASA, AER, etc.).
+
+**Current limitations**: Scanned PDFs have lower extraction quality. Papers with algorithms described only in prose (no "Algorithm N" blocks) rely on the planner agent's semantic understanding.
+
+### 5. Share Use Cases
 
 Tried StatsClaw on your research? We'd love to hear about it:
 
@@ -105,7 +120,7 @@ Tried StatsClaw on your research? We'd love to hear about it:
 - Mention which runtime you used (Claude Code or Codex CLI)
 - This directly influences our [Roadmap](ROADMAP.md)
 
-### 5. Contribute Knowledge to the Brain
+### 6. Contribute Knowledge to the Brain
 
 StatsClaw has a shared knowledge system where techniques, methods, and patterns discovered during workflows are extracted and shared with all users. The brain is **shared across both distributions** — a contribution from a Codex session benefits Claude Code users and vice-versa.
 
