@@ -8,6 +8,8 @@ body:
       value: |
         Thanks for suggesting an improvement! Your ideas help shape the [Roadmap](../../ROADMAP.md).
 
+        StatsClaw ships in two runtime distributions (`statsclaw/statsclaw` for Claude Code and `statsclaw/statsclaw-codex` for OpenAI Codex CLI). Roadmaps are coordinated across both — feel free to file on whichever repo matches the runtime you use.
+
   - type: textarea
     id: description
     attributes:
@@ -38,10 +40,23 @@ body:
         - Simulation workflows
         - Documentation & tutorials
         - Brain system & knowledge sharing
+        - Codex-specific (dispatch.sh, prompts/, codex-config.example.toml, install.sh)
         - CI/CD & packaging
         - Other
     validations:
       required: true
+
+  - type: dropdown
+    id: applies-to
+    attributes:
+      label: Which distribution(s) should this land in?
+      options:
+        - "Both — protocol/agent/skill/profile change that applies to both runtimes"
+        - "Claude Code only (`statsclaw/statsclaw`)"
+        - "Codex CLI only (`statsclaw/statsclaw-codex`)"
+        - "Not sure"
+    validations:
+      required: false
 
   - type: textarea
     id: additional
