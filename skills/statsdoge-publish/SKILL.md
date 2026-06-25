@@ -1,3 +1,8 @@
+---
+name: statsdoge-publish
+description: How StatsClaw publishes a finished package to StatsDoge as a card — produce statsdoge.md, validate it, and import it via the JSON API. Use when a run requests publishing to StatsDoge.
+---
+
 # StatsDoge Publish — the StatsClaw → StatsDoge bridge
 
 This skill defines how a finished StatsClaw package becomes a **card** on
@@ -65,7 +70,7 @@ final validator. A document is valid iff ALL hold:
 7. `## AI Notes`: exhaustive free markdown — everything a future AI should learn.
    Never shown on the card.
 8. Body math uses `$…$` / `$$…$$`. Write real Unicode (×, –, α) — never literal
-   `\uXXXX`. Do not put raw `## ` headings inside section bodies (use `###`+ or bold).
+   `\uXXXX`. Do not put raw `##` headings inside section bodies (use `###`+ or bold).
 
 Start from `templates/statsdoge-card.md` (a valid skeleton). Card-facing sections
 (Summary, Description, Results, Inputs, Steps…) are concise and human-readable;

@@ -42,12 +42,12 @@ Steps:
      When `is_yours` is true, lead with: "This is one of your own cards
      (`<slug>`); modify it instead of creating a duplicate."
    - **200** → success. Report clearly:
-       * "Created a new draft card."
-       * Three labelled links:
+       - "Created a new draft card."
+       - Three labelled links:
            Card preview → `card_url`
            My imports (chat-refine & publish) → `session_url`
            Knowledge doc (web editor, version history) → `doc_url`
-       * If `is_draft` is true (it should be), remind: the card goes to the
+       - If `is_draft` is true (it should be), remind: the card goes to the
          public feed only after pressing **Publish** on the My-imports session
          page.
 

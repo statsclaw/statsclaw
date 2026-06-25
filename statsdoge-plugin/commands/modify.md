@@ -45,9 +45,9 @@ Steps:
    - 404 → the slug is no longer yours (deleted? regenerated?); refresh the
      list and ask again.
    - 200 → success. Report:
-       * "Updated `<title>` — saved as knowledge-doc version N+1."
-       * Links: Card preview, My imports session, Knowledge doc.
-       * If `is_draft` is true, mention how to publish from My imports.
+       - "Updated `<title>` — saved as knowledge-doc version N+1."
+       - Links: Card preview, My imports session, Knowledge doc.
+       - If `is_draft` is true, mention how to publish from My imports.
 
 7. Offer to overwrite the local `statsdoge.md` with the server's canonical
    regenerated markdown (`markdown` field of the response), so local stays in

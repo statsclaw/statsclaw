@@ -36,7 +36,7 @@ grammar below is strict, and the server is the final validator
 7. `## AI Notes`: free markdown, as long as useful. Never shown on the card.
 8. Math in prose uses `$…$` / `$$…$$` (the site renders KaTeX). Write real
    Unicode characters (×, –, α) — never literal `\uXXXX` escapes.
-9. Markdown bodies must not contain raw `## ` headings (use `###`+ or bold);
+9. Markdown bodies must not contain raw `##` headings (use `###`+ or bold);
    level-2 headings are reserved for the section grammar.
 
 ## Worked example
