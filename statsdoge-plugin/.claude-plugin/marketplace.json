@@ -1,0 +1,11 @@
+{
+  "name": "statsdoge",
+  "owner": { "name": "StatsDoge" },
+  "plugins": [
+    {
+      "name": "statsdoge",
+      "source": "./",
+      "description": "Turn a code repository (or one tutorial inside it) into a StatsDoge card: analyze, validate, publish, update, list and delete — all from Claude Code."
+    }
+  ]
+}

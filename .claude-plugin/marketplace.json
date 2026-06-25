@@ -13,6 +13,11 @@
       "name": "statsclaw",
       "description": "Multi-agent workflow framework for statistical package development across R, Python, Stata, TypeScript, Go, Rust, C, and C++",
       "source": "./"
+    },
+    {
+      "name": "statsdoge",
+      "description": "Publish a finished package to StatsDoge as a card — validate the statsdoge.md knowledge document and upload it from Claude Code.",
+      "source": "./statsdoge-plugin"
     }
   ]
 }

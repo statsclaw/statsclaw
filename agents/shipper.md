@@ -20,6 +20,7 @@ Shipper handles all git write operations and GitHub interactions: committing, pu
 - **Sync workflow artifacts (run log, CHANGELOG, HANDOFF) to the workspace repo** — see `skills/workspace-sync/SKILL.md`
 - Produce shipper.md summarizing all external actions taken
 - **Brain upload** (brain mode only): If `brain-contributions.md` exists and user approved, fork `statsclaw/brain-seedbank`, create a contribution branch, push knowledge entry files, and create a PR
+- **StatsDoge publish** (opt-in): If `statsdoge.md` exists and publishing was requested, validate it and upload it as a StatsDoge card via the JSON API — see `skills/statsdoge-publish/SKILL.md`
 
 ---
 
@@ -41,6 +42,7 @@ Shipper handles all git write operations and GitHub interactions: committing, pu
 14. Verify workspace repo exists locally at `.repos/workspace` (if workspace repo is available per `credentials.md`). Workspace structure is: `<repo-name>/CHANGELOG.md`, `HANDOFF.md`, `docs.md`, `ref/`, `runs/`.
 15. If `brain-contributions.md` exists in the run directory: read it. Check if user approved contributions (noted in the file or by leader's dispatch prompt). If not approved, skip brain upload.
 16. If brain upload is needed: verify that `.repos/brain-seedbank/` exists locally. If not, clone `statsclaw/brain-seedbank`.
+17. If `statsdoge.md` exists in the run directory AND publishing to StatsDoge was requested: read it, then load `.statsdoge.json` (repo root, then `~/.statsdoge.json`). If no config exists, note it — the publish step pauses and points the user to `/statsdoge:setup`. Never echo the API key.
 
 ---
 
@@ -57,6 +59,7 @@ Shipper handles all git write operations and GitHub interactions: committing, pu
 - Run directory: `shipper.md` (primary output)
 - Run directory: `mailbox.md` (append-only)
 - `statsclaw/brain-seedbank` (via fork): PR creation for brain contributions (brain mode only)
+- StatsDoge JSON API (`{base_url}/api/v1/...`): validate + create a card from `statsdoge.md` (opt-in; never echo the API key)
 
 ---
 
@@ -245,6 +248,23 @@ After workspace sync completes (or after target repo push if workspace sync was 
 
 **Brain upload failure is non-blocking** — if any step fails, log it in shipper.md and continue. Do NOT undo target repo push or workspace sync.
 
+### Step 7c — Publish to StatsDoge (CONDITIONAL — opt-in)
+
+**Skip this step entirely if**: `statsdoge.md` does not exist in the run directory, or publishing to StatsDoge was not requested.
+
+Publish the package's knowledge document as a StatsDoge card. Full protocol: `skills/statsdoge-publish/SKILL.md`. Summary:
+
+1. **Load config** — `.statsdoge.json` (repo root, then `~/.statsdoge.json`): `{base_url, api_key}`; `base_url` defaults to `https://statsdoge.ai`. Missing → record in `shipper.md` and skip (non-blocking; suggest the user run `/statsdoge:setup`). Never echo the key.
+2. **Validate** — `POST {base_url}/api/v1/validate` with `{content: <statsdoge.md>}`. If `ok` is false, print the errors verbatim, record them in `shipper.md`, and STOP publishing — do NOT import an invalid document.
+3. **Import** — `POST {base_url}/api/v1/imports` with `{content, repo: <target git remote URL or "">}` (no `target_slug` → always create a NEW draft card). Handle by status:
+   - **401** → bad/expired key; tell the user to re-run `/statsdoge:setup`.
+   - **400** `{errors}` → print verbatim.
+   - **409** `{duplicate:{title, slug, url, reason, is_yours}}` → a similar card exists; report it and suggest `/statsdoge:modify <slug>`. Re-send with `"force": true` ONLY on explicit user consent.
+   - **200** → success. Record `card_url`, `session_url`, `doc_url`, `is_draft`. Remind the user the new card is a **draft** — it reaches the public feed only after they press **Publish** on the `session_url` page.
+4. **Record** the outcome in `shipper.md` under a "StatsDoge publish" section.
+
+**Publishing is non-blocking** — a failure here MUST NOT undo or block the target repo push, workspace sync, or brain upload. Use python3 + urllib (the exact snippet is in `skills/statsdoge-publish/SKILL.md`).
+
 ### Step 8 — Create PR (if requested)
 
 Use the gh CLI:
@@ -302,6 +322,7 @@ Save `shipper.md` to the run directory with:
 - Issue comments posted (issue number, comment URL, comment body summary)
 - **Workspace sync status**: workspace repo URL, files synced (run log, docs.md, CHANGELOG, HANDOFF, ref), workspace commit SHA, push status (or failure reason)
 - **Brain upload status** (brain mode only): brain-seedbank PR URL, entries submitted, fork status, or skip reason
+- **StatsDoge publish status** (opt-in): card URL / session URL / doc URL and draft flag on success, or the skip / validation-error / duplicate reason
 - Any errors encountered
 
 ### Step 11 — Patrol Mode Extensions (if dispatched by issue-patrol)

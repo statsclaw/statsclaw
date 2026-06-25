@@ -27,6 +27,7 @@ Scriber is the **single owner** of all documentation, recording, logging, and pr
 - Ensure all examples are self-contained and runnable
 - Maintain consistency between docs and the algorithm spec
 - Produce docs.md summarizing documentation changes
+- **Conditional: Produce `statsdoge.md`** — the StatsDoge knowledge document — ONLY when the run requests publishing to StatsDoge. See `skills/statsdoge-publish/SKILL.md`.
 
 ---
 
@@ -62,6 +63,7 @@ Scriber is the **single owner** of all documentation, recording, logging, and pr
 - Target repo root: `ARCHITECTURE.md` (mandatory — also copied to run directory for reviewer verification)
 - Run directory: `log-entry.md` (mandatory — the shipper agent syncs this to the workspace repo as `runs/<YYYY-MM-DD>-<slug>.md`)
 - Run directory: `docs.md` (primary output — the shipper agent syncs this to the workspace repo as `<repo-name>/docs.md`)
+- Run directory: `statsdoge.md` (CONDITIONAL — only when publishing to StatsDoge is requested; see `skills/statsdoge-publish/SKILL.md`)
 - Run directory: `mailbox.md` (append-only)
 
 **IMPORTANT**: `ARCHITECTURE.md` is written to BOTH the target repo root AND the run directory (run directory copy is for reviewer verification). `log-entry.md` and `docs.md` go to the run directory; the shipper agent syncs them to the workspace repo. See `skills/workspace-sync/SKILL.md`.
@@ -159,6 +161,17 @@ Key formatting rules (from the template):
 - Node labels max ~25 chars. Every diagram has a companion reference table.
 
 **Quality bar**: A reader who has never seen the codebase should be able to understand the overall structure, find any function, and trace how a request flows through the system just from this diagram.
+
+---
+
+### Step 1e — StatsDoge Card (CONDITIONAL — only when publishing to StatsDoge is requested)
+
+**Skip this step entirely** unless the run requests publishing to StatsDoge (the user said "publish to statsdoge" / "发布成卡片" / "make a StatsDoge card", or the dispatch prompt sets a StatsDoge-publish flag). When requested:
+
+1. Read `skills/statsdoge-publish/SKILL.md` for the card grammar and producer rules.
+2. Copy `templates/statsdoge-card.md` and write the filled document to **`<RUN_DIR>/statsdoge.md`** — the run directory, NOT the target repo root (keep the target repo clean; the run directory is an absolute path outside your worktree, so it persists independently of the worktree merge-back).
+3. Fill every section from the package and run artifacts (`comprehension.md`, `spec.md`, `implementation.md`, `audit.md`, `ARCHITECTURE.md`, and the package's own README / docs / public API). Use real function names, parameters, and outputs — never invent APIs. Card-facing sections (Summary, Description, Results, Inputs, Steps) stay concise; `## AI Notes` is exhaustive.
+4. Do NOT upload — shipper validates (`POST /api/v1/validate`) and publishes (`POST /api/v1/imports`) `statsdoge.md` after review. You only produce the file.
 
 ---
 
@@ -290,6 +303,7 @@ Append to `mailbox.md` if contradictions with spec or implementation were found.
 
 - **`ARCHITECTURE.md` exists in BOTH target repo root and run directory and is non-empty** — this is a hard requirement, not optional
 - **`log-entry.md` exists in run directory and is non-empty** — this is a hard requirement, not optional
+- **If StatsDoge publishing was requested**: `statsdoge.md` exists in the run directory and follows the card grammar (`skills/statsdoge-publish/SKILL.md`); shipper validates it server-side before upload
 - **`log-entry.md` contains a `<!-- filename: ... -->` header** for the shipper agent to use during workspace sync
 - Architecture diagram contains at least: module structure (Mermaid), function call graph (Mermaid), reference table
 - Log entry contains at least: What Changed, Files Changed table, Process Record (with Proposal, Implementation Notes, Validation Results, Problems and Resolutions, Review Summary), Design Decisions, Handoff Notes
@@ -313,6 +327,7 @@ Primary artifacts:
 - `ARCHITECTURE.md` in the target repo root AND the run directory (MANDATORY — system architecture diagram with Mermaid graphs; target repo copy is user-facing, run directory copy is for reviewer)
 - `log-entry.md` in the run directory (MANDATORY — process record with handoff doc and design notes; synced to workspace `runs/` by shipper)
 - `docs.md` in the run directory (documentation change summary)
+- `statsdoge.md` in the run directory (CONDITIONAL — the StatsDoge knowledge document; produced only when publishing is requested; shipper validates and publishes it)
 
 Secondary: append to `mailbox.md` with any contradictions found.
 Target repo: modified/created user-facing doc files within the assigned write surface, plus `ARCHITECTURE.md` in the target repo root.
