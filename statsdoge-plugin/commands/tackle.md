@@ -33,8 +33,9 @@ Steps:
    differs from the goal). For a very large catalog you may narrow first with
    POST `$BASE/api/v1/search` `{"query": "<goal>"}`, but the catalog is the
    source of truth.
-   - If genuinely nothing on the platform fits, tell the user so and stop;
-     suggest the closest topic if there is one.
+   - If genuinely nothing on the platform fits, tell the user so and stop — and
+     log the gap so the platform learns what's missing: POST
+     `$BASE/api/v1/feedback` `{"kind":"gap","query":"<the goal>"}`.
    - The catalog also carries each card's community signals (votes, views,
      comments). When several cards fit, lean toward the ones the community
      rates highly.
@@ -56,7 +57,8 @@ Steps:
    Then ask with AskUserQuestion: "Run this workflow on your data?" with options
    `Run it` / `Use an alternative` / `Cancel`. If the user picks an alternative,
    switch to it and introduce that one the same way. Only proceed once the user
-   chooses Run it.
+   chooses Run it — then log the choice: POST `$BASE/api/v1/feedback`
+   `{"kind":"picked","slug":"<slug>","query":"<the goal>"}`.
 
 7. Run it on the data, to the end. Using the chosen card's document (already
    fetched in step 5), execute its Steps in order, adapting the code to the
@@ -69,6 +71,9 @@ Steps:
    - Use the function names and arguments from the document — never invent an API.
    - Save outputs (tables, figures, a short `statsdoge-results.md`) into the
      folder as you go.
+   - When finished, log the outcome so the AI learns what actually works: POST
+     `$BASE/api/v1/feedback`
+     `{"kind":"ran_ok"|"ran_fail","slug":"<slug>","query":"<the goal>","note":"<one line>"}`.
 
 8. Report. Summarise what ran, the key results (estimate(s), and standard error
    or interval if any), the files produced, and link the card (`card_url`).
