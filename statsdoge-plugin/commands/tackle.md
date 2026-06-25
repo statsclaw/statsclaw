@@ -35,12 +35,17 @@ Steps:
    source of truth.
    - If genuinely nothing on the platform fits, tell the user so and stop;
      suggest the closest topic if there is one.
+   - The catalog also carries each card's community signals (votes, views,
+     comments). When several cards fit, lean toward the ones the community
+     rates highly.
 
 5. Open their notes and judge. For each shortlisted slug, GET
    `$BASE/api/v1/cards/<slug>/doc` → the card's FULL markdown: Steps (with code),
    Inputs, Input example, and the `## AI Notes` section. These documents ARE your
-   notes — read them directly. Narrow to the single best workflow, keeping one or
-   two alternatives in mind.
+   notes — read them directly. Each doc also ends with a `## Community signals`
+   section (votes, views, and recent discussion verbatim) — weigh it and note any
+   caveats users raised. Narrow to the single best workflow, keeping one or two
+   alternatives in mind.
 
 6. Introduce it, then CONFIRM — mandatory; do not run anything before it.
    Present, in plain language:
