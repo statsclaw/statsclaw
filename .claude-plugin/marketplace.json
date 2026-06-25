@@ -16,7 +16,7 @@
     },
     {
       "name": "statsdoge",
-      "description": "Publish a finished package to StatsDoge as a card, or apply a published StatsDoge workflow to your local data (/statsdoge:apply).",
+      "description": "Publish a finished package to StatsDoge as a card, or run a published StatsDoge workflow on your local data (/statsdoge:tackle).",
       "source": "./statsdoge-plugin"
     }
   ]

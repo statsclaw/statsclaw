@@ -5,7 +5,7 @@
     {
       "name": "statsdoge",
       "source": "./",
-      "description": "Publish a repo (or one tutorial) to StatsDoge as a card, or apply a published StatsDoge workflow to your local data — analyze, publish, modify, list, delete, apply — all from Claude Code."
+      "description": "Publish a repo (or one tutorial) to StatsDoge as a card, or run a published StatsDoge workflow on your local data — analyze, publish, modify, list, delete, tackle — all from Claude Code."
     }
   ]
 }
