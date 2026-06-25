@@ -1,7 +1,8 @@
 # StatsDoge Claude Code plugin
 
 Turn any code repository — or a single tutorial inside it — into a StatsDoge
-card without leaving Claude Code. The plugin drives the whole loop:
+card, or apply a published workflow to your own data — all without leaving
+Claude Code. The plugin drives the whole loop:
 
 ```
 /statsdoge:setup     save your personal API key (once)
@@ -11,6 +12,8 @@ card without leaving Claude Code. The plugin drives the whole loop:
 /statsdoge:modify    pick one of your cards → overwrite it with statsdoge.md
 /statsdoge:list      every card under your account
 /statsdoge:delete    permanently remove one of your cards
+
+/statsdoge:apply     find the workflow that fits your goal → run it on your data
 ```
 
 ## Install

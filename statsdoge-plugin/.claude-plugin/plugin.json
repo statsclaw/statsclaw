@@ -1,7 +1,7 @@
 {
   "name": "statsdoge",
-  "description": "Analyze a repo (or one tutorial in it) and publish it as a StatsDoge card; validate/update the statsdoge.md knowledge document; list and delete your cards.",
-  "version": "0.2.0",
+  "description": "Publish your work to StatsDoge as a card (analyze, validate, publish, modify, list, delete) — or apply a published workflow to your local data with /statsdoge:apply.",
+  "version": "0.3.0",
   "author": {
     "name": "StatsDoge"
   }

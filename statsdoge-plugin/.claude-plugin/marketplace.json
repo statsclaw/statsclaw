@@ -5,7 +5,7 @@
     {
       "name": "statsdoge",
       "source": "./",
-      "description": "Turn a code repository (or one tutorial inside it) into a StatsDoge card: analyze, validate, publish, update, list and delete — all from Claude Code."
+      "description": "Publish a repo (or one tutorial) to StatsDoge as a card, or apply a published StatsDoge workflow to your local data — analyze, publish, modify, list, delete, apply — all from Claude Code."
     }
   ]
 }

@@ -16,7 +16,7 @@
     },
     {
       "name": "statsdoge",
-      "description": "Publish a finished package to StatsDoge as a card — validate the statsdoge.md knowledge document and upload it from Claude Code.",
+      "description": "Publish a finished package to StatsDoge as a card, or apply a published StatsDoge workflow to your local data (/statsdoge:apply).",
       "source": "./statsdoge-plugin"
     }
   ]
