@@ -169,9 +169,9 @@ Key formatting rules (from the template):
 **Skip this step entirely** unless the run requests publishing to StatsDoge (the user said "publish to statsdoge" / "发布成卡片" / "make a StatsDoge card", or the dispatch prompt sets a StatsDoge-publish flag). When requested:
 
 1. Read `skills/statsdoge-publish/SKILL.md` for the card grammar and producer rules.
-2. Copy `templates/statsdoge-card.md` and write the filled document to **`<RUN_DIR>/statsdoge.md`** — the run directory, NOT the target repo root (keep the target repo clean; the run directory is an absolute path outside your worktree, so it persists independently of the worktree merge-back).
+2. Copy `templates/statsdoge-card.md` and write the filled document to **`statsdoge.md` at the target repo root** — that is exactly where the StatsDoge plugin's `/statsdoge:publish` reads it, so the user can publish it directly after the run. (`statsdoge.md` is the card's source document, not a secret — it is fine for it to live at the repo root, like `ARCHITECTURE.md`.)
 3. Fill every section from the package and run artifacts (`comprehension.md`, `spec.md`, `implementation.md`, `audit.md`, `ARCHITECTURE.md`, and the package's own README / docs / public API). Use real function names, parameters, and outputs — never invent APIs. Card-facing sections (Summary, Description, Results, Inputs, Steps) stay concise; `## AI Notes` is exhaustive.
-4. Do NOT upload — shipper validates (`POST /api/v1/validate`) and publishes (`POST /api/v1/imports`) `statsdoge.md` after review. You only produce the file.
+4. Do NOT upload — StatsClaw holds no StatsDoge API key. You only produce the file; after the run the user publishes it with the StatsDoge plugin (`/statsdoge:setup` once, then `/statsdoge:publish`). shipper reports this hand-off — it never calls the StatsDoge API.
 
 ---
 
@@ -303,7 +303,7 @@ Append to `mailbox.md` if contradictions with spec or implementation were found.
 
 - **`ARCHITECTURE.md` exists in BOTH target repo root and run directory and is non-empty** — this is a hard requirement, not optional
 - **`log-entry.md` exists in run directory and is non-empty** — this is a hard requirement, not optional
-- **If StatsDoge publishing was requested**: `statsdoge.md` exists in the run directory and follows the card grammar (`skills/statsdoge-publish/SKILL.md`); shipper validates it server-side before upload
+- **If StatsDoge publishing was requested**: `statsdoge.md` exists at the target repo root and follows the card grammar (`skills/statsdoge-publish/SKILL.md`); the user publishes it with the StatsDoge plugin after the run (StatsClaw does not upload)
 - **`log-entry.md` contains a `<!-- filename: ... -->` header** for the shipper agent to use during workspace sync
 - Architecture diagram contains at least: module structure (Mermaid), function call graph (Mermaid), reference table
 - Log entry contains at least: What Changed, Files Changed table, Process Record (with Proposal, Implementation Notes, Validation Results, Problems and Resolutions, Review Summary), Design Decisions, Handoff Notes
@@ -317,7 +317,7 @@ Append to `mailbox.md` if contradictions with spec or implementation were found.
 - Code chunks produce deterministic output
 - References cite original sources with DOI or publication info
 - No internal/unexported items are marked as public
-- **ARCHITECTURE.md is the only workflow artifact written to target repo root** — log-entry.md and docs.md go to run dir (shipper syncs to workspace)
+- **`ARCHITECTURE.md` is written to the target repo root** (and `statsdoge.md` too, but only when StatsDoge publishing was requested) — log-entry.md and docs.md go to run dir (shipper syncs to workspace)
 
 ---
 
@@ -327,7 +327,7 @@ Primary artifacts:
 - `ARCHITECTURE.md` in the target repo root AND the run directory (MANDATORY — system architecture diagram with Mermaid graphs; target repo copy is user-facing, run directory copy is for reviewer)
 - `log-entry.md` in the run directory (MANDATORY — process record with handoff doc and design notes; synced to workspace `runs/` by shipper)
 - `docs.md` in the run directory (documentation change summary)
-- `statsdoge.md` in the run directory (CONDITIONAL — the StatsDoge knowledge document; produced only when publishing is requested; shipper validates and publishes it)
+- `statsdoge.md` at the target repo root (CONDITIONAL — the StatsDoge knowledge document; produced only when publishing is requested; the user publishes it with the StatsDoge plugin — StatsClaw does not upload)
 
 Secondary: append to `mailbox.md` with any contradictions found.
 Target repo: modified/created user-facing doc files within the assigned write surface, plus `ARCHITECTURE.md` in the target repo root.

@@ -1,56 +1,43 @@
 ---
 name: statsdoge-publish
-description: How StatsClaw publishes a finished package to StatsDoge as a card — produce statsdoge.md, validate it, and import it via the JSON API. Use when a run requests publishing to StatsDoge.
+description: How StatsClaw turns a finished package into a StatsDoge card — scriber PRODUCES statsdoge.md (at the target repo root) following the card grammar. StatsClaw never uploads and holds no API key; the user publishes with the StatsDoge plugin. Use when a run requests publishing to StatsDoge.
 ---
 
 # StatsDoge Publish — the StatsClaw → StatsDoge bridge
 
 This skill defines how a finished StatsClaw package becomes a **card** on
-[StatsDoge](https://statsdoge.ai). It is the single source of truth for two
-teammates:
+[StatsDoge](https://statsdoge.ai).
 
-- **scriber** *produces* the knowledge document `statsdoge.md` (run directory),
-  following the card grammar below.
-- **shipper** *publishes* it: validate → import against the StatsDoge JSON API.
+**StatsClaw only PRODUCES the card document — it never uploads.** StatsClaw holds
+no StatsDoge API key: the personal `sd_…` key belongs to the user and is stored
+by the **StatsDoge plugin** (`/statsdoge:setup`), not by StatsClaw. StatsClaw also
+runs inside worktrees / the workspace repo, where that key isn't available anyway.
+So the bridge is a clean two-step hand-off:
 
-It is **opt-in**. It runs only when the user asks to publish to StatsDoge
-("publish to statsdoge", "发布成卡片", "make a StatsDoge card", "ship + publish")
-AND a StatsDoge API key is configured (see Config). When publishing is not
-requested, scriber does NOT emit `statsdoge.md` and shipper skips the publish
-step entirely.
+- **scriber** *produces* `statsdoge.md` at the **target repo root**, following the
+  card grammar below.
+- **the user** *uploads* it with the **StatsDoge plugin** — `/statsdoge:setup`
+  once, then `/statsdoge:publish` (or `/statsdoge:modify <slug>` to update an
+  existing card). shipper does NOT call any StatsDoge API or read any key; it just
+  points the user at those commands.
 
-The same publishing client also ships as a standalone Claude Code plugin under
-`statsdoge-plugin/` (commands `/statsdoge:setup|analyze|publish|modify|list|delete`)
-for users who want to publish a repository without running a full StatsClaw
-workflow. The grammar and API below are identical for both paths.
+It is **opt-in**: it runs only when the user asks to publish to StatsDoge
+("publish to statsdoge", "发布成卡片", "make a StatsDoge card", "ship + publish").
+When publishing is not requested, scriber does NOT emit `statsdoge.md`.
 
----
-
-## Config (`.statsdoge.json`)
-
-Auth + endpoint live in `.statsdoge.json` — repo root first, then `~/.statsdoge.json`:
-
-```json
-{"base_url": "https://statsdoge.ai", "api_key": "sd_…"}
-```
-
-- `base_url` is configurable (default `https://statsdoge.ai`) for local / self-hosted
-  servers — never hard-code the host.
-- `api_key` is a personal key from **StatsDoge → Settings → API keys → + New key**.
-  **Never echo the full key**; refer to it as `sd_…<last4>`.
-- If neither config exists, publishing cannot proceed: tell the user to run
-  `/statsdoge:setup sd_…` (the plugin) or create `.statsdoge.json` by hand, then
-  continue. This is a HOLD-style pause, not a hard failure of the run.
-
-`.statsdoge.json` MUST be gitignored — it holds a secret. The plugin's
-`/statsdoge:setup` adds the gitignore entry automatically.
+The StatsDoge plugin (`statsdoge-plugin/`, commands
+`/statsdoge:setup|analyze|publish|modify|list|delete|tackle`) is the only side
+that holds the key and talks to the server. Its `/statsdoge:publish` reads
+`statsdoge.md` from the repo root — exactly where scriber writes it — so the
+hand-off is seamless.
 
 ---
 
 ## Card grammar (the server contract)
 
 The server (`workflows/knowledge.py` → `parse_markdown` / `KNOWN_SECTIONS`) is the
-final validator. A document is valid iff ALL hold:
+final validator — it runs when the plugin uploads. A document is valid iff ALL
+hold:
 
 1. Exactly one H1 `# <title>` before any `##` section. No prose may appear before
    the first `##` section (it parses as "content before the first section" = error).
@@ -81,8 +68,8 @@ Start from `templates/statsdoge-card.md` (a valid skeleton). Card-facing section
 ## Producer (scriber)
 
 When the run requests StatsDoge publishing, scriber writes **`statsdoge.md` to the
-run directory** (NOT the target repo root — keep the target repo clean), built from
-the package it just documented:
+target repo root** — so the StatsDoge plugin's `/statsdoge:publish` picks it up
+directly — built from the package it just documented:
 
 - Copy `templates/statsdoge-card.md` and fill every section from `comprehension.md`,
   `spec.md`, `implementation.md`, `audit.md`, `ARCHITECTURE.md`, and the package's
@@ -95,78 +82,32 @@ the package it just documented:
 - `## Figures`: only real hot-linkable image URLs (e.g. from the package's docs
   site). When in doubt, `- none`.
 
-scriber does NOT upload — it only produces the file. shipper publishes it.
+scriber does NOT upload and needs NO API key — it only produces the file, following
+the card grammar above so the document publishes cleanly when the user uploads it.
 
 ---
 
-## Publisher (shipper)
+## Publishing — hand off to the StatsDoge plugin
 
-After workspace sync / brain upload, if `statsdoge.md` exists in the run directory
-and publishing was requested:
+StatsClaw does not upload. After `statsdoge.md` is written, shipper records the
+hand-off in `shipper.md`, and the run summary tells the user how to publish:
 
-1. **Load config** (`.statsdoge.json`, repo root then `~`). Missing → record in
-   `shipper.md` and skip (non-blocking).
-2. **Validate** — `POST {base_url}/api/v1/validate` with `{content}`.
-   Errors → print them verbatim, record in `shipper.md`, and STOP publishing
-   (do NOT import an invalid document). This is non-blocking for the rest of the run.
-3. **Import** — `POST {base_url}/api/v1/imports` with
-   `{content, repo: <target git remote URL or "">}` (no `target_slug` → the server
-   always CREATES a new draft card). Handle by status:
-   - **401** → bad/expired key; tell the user to re-run `/statsdoge:setup`.
-   - **400** `{errors}` → print verbatim.
-   - **409** `{duplicate:{title, slug, url, reason, is_yours}}` → a similar card
-     exists. Report it; suggest `/statsdoge:modify <slug>` to update it instead, or
-     re-send with `"force": true` only on explicit user consent.
-   - **200** → success. Record `card_url`, `session_url`, `doc_url`, and `is_draft`.
-     Remind the user a new card is a **draft** — it reaches the public feed only after
-     they press **Publish** on the `session_url` page.
-4. **Record** all of the above in `shipper.md` under a "StatsDoge publish" section.
+> `statsdoge.md` is ready at the repo root. To publish it as a StatsDoge card:
+> 1. `/statsdoge:setup sd_…` — once, to store your StatsDoge API key (from
+>    StatsDoge → Settings → API keys → + New key). Skip if already set up.
+> 2. `/statsdoge:publish` — uploads it as a new **draft** card. (Or
+>    `/statsdoge:modify <slug>` to overwrite one of your existing cards.)
+>
+> The plugin validates against the server and reports the card URL; a new card
+> stays a draft until you press **Publish** on its page.
 
-Publishing is **non-blocking**: a publish failure MUST NOT undo or block the target
-repo push, workspace sync, or brain upload.
+**shipper MUST NOT** read `.statsdoge.json`, call any `/api/v1/*` endpoint, or
+echo a key — none of that lives on the StatsClaw side. The publish hand-off is
+non-blocking: it never affects the target repo push, workspace sync, or brain
+upload.
 
-Use python3 + urllib (no curl/jq quoting pitfalls). Reads `statsdoge.md` from the
-run directory:
-
-```bash
-python3 - "$RUN_DIR/statsdoge.md" "$TARGET_REMOTE_URL" <<'PY'
-import json, pathlib, sys, urllib.request, urllib.error
-md_path, repo = sys.argv[1], (sys.argv[2] if len(sys.argv) > 2 else "")
-cfg_path = next((p for p in (pathlib.Path(".statsdoge.json"),
-                             pathlib.Path.home()/".statsdoge.json") if p.exists()), None)
-assert cfg_path, "No .statsdoge.json — run /statsdoge:setup first."
-cfg = json.loads(cfg_path.read_text())
-content = pathlib.Path(md_path).read_text()
-def call(path, payload):
-    req = urllib.request.Request(cfg["base_url"] + path,
-        data=json.dumps(payload).encode(),
-        headers={"Authorization": "Bearer " + cfg["api_key"],
-                 "Content-Type": "application/json"}, method="POST")
-    try:
-        return 200, urllib.request.urlopen(req).read().decode()
-    except urllib.error.HTTPError as e:
-        return e.code, e.read().decode()
-code, body = call("/api/v1/validate", {"content": content})
-print("validate", code, body)
-v = json.loads(body) if code == 200 else {}
-if v.get("ok"):
-    code, body = call("/api/v1/imports", {"content": content, "repo": repo})
-    print("import", code, body)
-PY
-```
-
----
-
-## JSON API reference
-
-| Endpoint | Body / params | Success | Errors |
-|---|---|---|---|
-| `POST /api/v1/validate` | `{content}` | `{ok, errors[], title}` | 401 bad key |
-| `POST /api/v1/imports` | `{content, repo?, target_slug?, force?}` | `{ok, action: created\|updated, card_url, session_url, doc_url, is_draft, markdown}` | 400 `{errors}` · 404 (target not yours) · 409 `{duplicate}` · 401 |
-| `GET /api/v1/cards` | — | `{ok, count, cards:[…]}` | 401 |
-| `DELETE /api/v1/cards/<slug>` | — | `{ok, deleted}` | 404 not yours · 401 |
-
-The publish flow never sends `target_slug` (always create). The modify flow
-(`/statsdoge:modify`) sends `target_slug` to update a card in place. The success
-`markdown` is the canonical regenerated document. See `statsdoge-plugin/skills/
-statsdoge-template/SKILL.md` for the full plugin-side reference.
+The full client-side reference (the JSON API, the duplicate/409 flow, the
+`/statsdoge:modify` update path) lives with the plugin in
+`statsdoge-plugin/skills/statsdoge-template/SKILL.md`. The card grammar above is
+the same contract the plugin validates against, so a well-formed `statsdoge.md`
+from scriber publishes without edits.

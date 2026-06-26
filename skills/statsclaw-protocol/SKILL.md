@@ -34,7 +34,7 @@ This keeps target repos clean (code + `ARCHITECTURE.md` + essential user-facing 
 | `"enable brain"` | Enables Brain mode — agents read shared knowledge, noteworthy discoveries are offered for contribution |
 | `"turn off brain"` | Disables Brain mode — isolated mode, no shared knowledge |
 | `/contribute` | Summarizes lessons learned during the session, extracts reusable knowledge, and submits to the shared brain (with user consent) |
-| `"publish to StatsDoge"` / `"发布成卡片"` | Builds the StatsDoge knowledge doc (`statsdoge.md`) and publishes the finished package as a card — `skills/statsdoge-publish/SKILL.md` |
+| `"publish to StatsDoge"` / `"发布成卡片"` | Builds the StatsDoge knowledge doc (`statsdoge.md`) at the repo root; you then upload it with the StatsDoge plugin (`/statsdoge:setup` then `/statsdoge:publish`) — StatsClaw itself does not upload. `skills/statsdoge-publish/SKILL.md` |
 
 ### How It Works
 
@@ -378,7 +378,7 @@ Route semantically from intent. Do **not** require the user to learn trigger phr
 | simulation study on existing estimator | 12 (simulation only — simulator → tester, no builder) |
 | small routine change (typo, config, bump, lint fix) | 10 (simplified — ask user to confirm) |
 | `/contribute` / "contribute" / "share what I learned" / "submit lessons" / "add to brain" | 13 (contribute — `skills/contribute/SKILL.md`) |
-| "publish to statsdoge" / "发布成卡片" / "make a StatsDoge card" | Publish add-on — scriber emits `statsdoge.md`, shipper Step 7c uploads it (rides on ship workflows 2/5/7); see `skills/statsdoge-publish/SKILL.md` |
+| "publish to statsdoge" / "发布成卡片" / "make a StatsDoge card" | Publish add-on — scriber writes `statsdoge.md` to the repo root; shipper hands off to the StatsDoge plugin (StatsClaw does NOT upload). Rides on any workflow that includes scriber; see `skills/statsdoge-publish/SKILL.md` |
 
 **Routing rule — simplified vs full**: Before committing to workflow 1–5, leader evaluates smallness criteria (see `skills/simplified-workflow/SKILL.md`). If ALL criteria are met, leader asks the user via `AskUserQuestion` to choose simplified or full. If the user declines or leader is uncertain, use the standard workflow. Leader MUST NOT silently downgrade to simplified.
 
@@ -386,7 +386,7 @@ Route semantically from intent. Do **not** require the user to learn trigger phr
 
 **Routing rule — simulation**: If the user's intent includes Monte Carlo simulation, finite-sample evaluation, DGP design, or any phrase indicating simulation study (see `skills/simulation-study/SKILL.md`), use workflow 11 (if new estimator code is also needed) or workflow 12 (if the estimator already exists). If the request is purely code implementation without simulation, use workflow 1 or 2. Simulation workflows ALWAYS include planner, simulator, tester, scriber, and reviewer.
 
-**Routing rule — StatsDoge publish**: "publish to statsdoge" / "发布成卡片" / "make a StatsDoge card" is an opt-in publish *add-on*, not a separate workflow. Leader sets a StatsDoge-publish flag when dispatching scriber (so it emits `statsdoge.md`) and ensures shipper runs Step 7c (validate → import). It rides on any workflow that already includes scriber + shipper (2, 5, 7). It requires `.statsdoge.json` (a personal `sd_…` key from StatsDoge → Settings → API keys); if absent, pause and point the user to `/statsdoge:setup`. New cards are created as drafts. See `skills/statsdoge-publish/SKILL.md`.
+**Routing rule — StatsDoge publish**: "publish to statsdoge" / "发布成卡片" / "make a StatsDoge card" is an opt-in *add-on*, not a separate workflow. Leader sets a StatsDoge-publish flag when dispatching scriber, which writes `statsdoge.md` to the **target repo root**. StatsClaw does NOT upload — it holds no StatsDoge API key. The run then tells the user to publish it with the **StatsDoge plugin** (`/statsdoge:setup` once, then `/statsdoge:publish`); shipper records this hand-off in its Step 7c when it runs, otherwise leader surfaces it in the final summary. It rides on any workflow that includes scriber. No `.statsdoge.json` or key is needed on the StatsClaw side. See `skills/statsdoge-publish/SKILL.md`.
 
 Routing is semantic. Leader interprets intent from natural language in any language.
 
