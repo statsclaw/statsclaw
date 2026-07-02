@@ -57,7 +57,7 @@ Leader MUST accept short, informal prompts and route them to the correct workflo
 | "monitor [repo]" / "watch issues" / "keep checking" | Recurring patrol | Issue patrol with loop |
 | "loop" / "every Xm" / "scheduled" / "recurring" / "continuously" / "repeatedly" | Scheduled loop | Invoke `/loop` skill via `Skill` tool |
 | "push" / "ship" / "deploy" / "push code" | Ship only | shipper teammate |
-| "publish to statsdoge" / "发布成卡片" / "make a StatsDoge card" | Publish add-on | scriber writes `statsdoge.md` to the repo root; shipper hands off to the StatsDoge plugin (StatsClaw does NOT upload) — `skills/statsdoge-publish/SKILL.md` |
+| "publish to statsotter" / "发布成卡片" / "make a StatsOtter card" | Publish add-on | scriber writes `statsotter.md` to the repo root; shipper hands off to the StatsOtter plugin (StatsClaw does NOT upload) — `skills/statsotter-publish/SKILL.md` |
 | "check" / "validate" / "run tests" | Validation only | tester teammate |
 | "review" / "audit" | Review only | reviewer teammate |
 | small/routine change (detected by leader) | Simplified (if user confirms) | Workflow 10 (`skills/simplified-workflow/SKILL.md`) |

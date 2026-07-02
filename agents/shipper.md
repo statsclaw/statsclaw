@@ -20,7 +20,7 @@ Shipper handles all git write operations and GitHub interactions: committing, pu
 - **Sync workflow artifacts (run log, CHANGELOG, HANDOFF) to the workspace repo** — see `skills/workspace-sync/SKILL.md`
 - Produce shipper.md summarizing all external actions taken
 - **Brain upload** (brain mode only): If `brain-contributions.md` exists and user approved, fork `statsclaw/brain-seedbank`, create a contribution branch, push knowledge entry files, and create a PR
-- **StatsDoge hand-off** (opt-in): If `statsdoge.md` exists at the repo root and publishing was requested, tell the user how to publish it with the StatsDoge plugin — StatsClaw does NOT upload (it holds no API key). See `skills/statsdoge-publish/SKILL.md`
+- **StatsOtter hand-off** (opt-in): If `statsotter.md` exists at the repo root and publishing was requested, tell the user how to publish it with the StatsOtter plugin — StatsClaw does NOT upload (it holds no API key). See `skills/statsotter-publish/SKILL.md`
 
 ---
 
@@ -42,7 +42,7 @@ Shipper handles all git write operations and GitHub interactions: committing, pu
 14. Verify workspace repo exists locally at `.repos/workspace` (if workspace repo is available per `credentials.md`). Workspace structure is: `<repo-name>/CHANGELOG.md`, `HANDOFF.md`, `docs.md`, `ref/`, `runs/`.
 15. If `brain-contributions.md` exists in the run directory: read it. Check if user approved contributions (noted in the file or by leader's dispatch prompt). If not approved, skip brain upload.
 16. If brain upload is needed: verify that `.repos/brain-seedbank/` exists locally. If not, clone `statsclaw/brain-seedbank`.
-17. If `statsdoge.md` exists at the target repo root AND publishing to StatsDoge was requested: you only surface the hand-off (Step 7c) — do NOT read `.statsdoge.json` or call any StatsDoge API. StatsClaw never uploads; the user publishes with the StatsDoge plugin.
+17. If `statsotter.md` exists at the target repo root AND publishing to StatsOtter was requested: you only surface the hand-off (Step 7c) — do NOT read `.statsotter.json` or call any StatsOtter API. StatsClaw never uploads; the user publishes with the StatsOtter plugin.
 
 ---
 
@@ -59,7 +59,7 @@ Shipper handles all git write operations and GitHub interactions: committing, pu
 - Run directory: `shipper.md` (primary output)
 - Run directory: `mailbox.md` (append-only)
 - `statsclaw/brain-seedbank` (via fork): PR creation for brain contributions (brain mode only)
-(StatsClaw does NOT write to the StatsDoge API — publishing is the user's job via the StatsDoge plugin. shipper only writes the hand-off note into `shipper.md`.)
+(StatsClaw does NOT write to the StatsOtter API — publishing is the user's job via the StatsOtter plugin. shipper only writes the hand-off note into `shipper.md`.)
 
 ---
 
@@ -248,23 +248,23 @@ After workspace sync completes (or after target repo push if workspace sync was 
 
 **Brain upload failure is non-blocking** — if any step fails, log it in shipper.md and continue. Do NOT undo target repo push or workspace sync.
 
-### Step 7c — StatsDoge hand-off (CONDITIONAL — opt-in, NO upload)
+### Step 7c — StatsOtter hand-off (CONDITIONAL — opt-in, NO upload)
 
-**Skip this step entirely if**: `statsdoge.md` does not exist at the target repo root, or publishing to StatsDoge was not requested.
+**Skip this step entirely if**: `statsotter.md` does not exist at the target repo root, or publishing to StatsOtter was not requested.
 
-StatsClaw does NOT upload to StatsDoge — it holds no API key, and it runs where the user's `.statsdoge.json` isn't available. scriber has already written `statsdoge.md` to the target repo root. Your only job here is to tell the user how to publish it with the StatsDoge plugin.
+StatsClaw does NOT upload to StatsOtter — it holds no API key, and it runs where the user's `.statsotter.json` isn't available. scriber has already written `statsotter.md` to the target repo root. Your only job here is to tell the user how to publish it with the StatsOtter plugin.
 
-1. **Confirm** `statsdoge.md` exists at the repo root (scriber's Step 1e output). If missing, note it in `shipper.md` and skip.
-2. **Do NOT** read `.statsdoge.json`, call any `/api/v1/*` endpoint, or echo a key. There is no validate/import step on the StatsClaw side.
-3. **Record the hand-off** in `shipper.md` under a "StatsDoge hand-off" section, and surface it verbatim in the run summary:
+1. **Confirm** `statsotter.md` exists at the repo root (scriber's Step 1e output). If missing, note it in `shipper.md` and skip.
+2. **Do NOT** read `.statsotter.json`, call any `/api/v1/*` endpoint, or echo a key. There is no validate/import step on the StatsClaw side.
+3. **Record the hand-off** in `shipper.md` under a "StatsOtter hand-off" section, and surface it verbatim in the run summary:
 
-   > `statsdoge.md` is ready at the repo root. To publish it as a StatsDoge card:
-   > - `/statsdoge:setup sd_…` — once, to store your StatsDoge API key (StatsDoge → Settings → API keys → + New key). Skip if already set up.
-   > - `/statsdoge:publish` — uploads it as a new draft card (or `/statsdoge:modify <slug>` to overwrite an existing one).
+   > `statsotter.md` is ready at the repo root. To publish it as a StatsOtter card:
+   > - Install the StatsOtter plugin once: `/plugin marketplace add TianzhuQin/statsotter-plugin` then `/plugin install statsotter@statsotter`.
+   > - Then just tell Claude Code in plain language: **"publish this repo to StatsOtter"** — the plugin has no slash commands; it asks for your API key on first use (StatsOtter → Settings → API keys → + New key), validates `statsotter.md`, uploads it as a draft card, and can publish it to the public feed right there.
    >
-   > The plugin validates server-side and reports the card URL; a new card stays a draft until you press Publish on its page.
+   > The plugin validates server-side and reports the card URL; a new card starts as a draft, and you can publish it to the public feed in the same conversation (no website visit needed).
 
-**The hand-off is non-blocking** — it never undoes or blocks the target repo push, workspace sync, or brain upload. See `skills/statsdoge-publish/SKILL.md`.
+**The hand-off is non-blocking** — it never undoes or blocks the target repo push, workspace sync, or brain upload. See `skills/statsotter-publish/SKILL.md`.
 
 ### Step 8 — Create PR (if requested)
 
@@ -323,7 +323,7 @@ Save `shipper.md` to the run directory with:
 - Issue comments posted (issue number, comment URL, comment body summary)
 - **Workspace sync status**: workspace repo URL, files synced (run log, docs.md, CHANGELOG, HANDOFF, ref), workspace commit SHA, push status (or failure reason)
 - **Brain upload status** (brain mode only): brain-seedbank PR URL, entries submitted, fork status, or skip reason
-- **StatsDoge publish status** (opt-in): card URL / session URL / doc URL and draft flag on success, or the skip / validation-error / duplicate reason
+- **StatsOtter publish status** (opt-in): card URL / session URL / doc URL and draft flag on success, or the skip / validation-error / duplicate reason
 - Any errors encountered
 
 ### Step 11 — Patrol Mode Extensions (if dispatched by issue-patrol)

@@ -15,9 +15,12 @@
       "source": "./"
     },
     {
-      "name": "statsdoge",
-      "description": "Publish a finished package to StatsDoge as a card, or run a published StatsDoge workflow on your local data (/statsdoge:tackle).",
-      "source": "./statsdoge-plugin"
+      "name": "statsotter",
+      "description": "Talk to StatsOtter in plain language: publish a finished package as a card, edit cards and the site's left sidebar, or run a published workflow on your local data — no slash commands.",
+      "source": {
+        "source": "github",
+        "repo": "TianzhuQin/statsotter-plugin"
+      }
     }
   ]
 }
