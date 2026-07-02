@@ -34,7 +34,7 @@ This keeps target repos clean (code + `ARCHITECTURE.md` + essential user-facing 
 | `"enable brain"` | Enables Brain mode — agents read shared knowledge, noteworthy discoveries are offered for contribution |
 | `"turn off brain"` | Disables Brain mode — isolated mode, no shared knowledge |
 | `/contribute` | Summarizes lessons learned during the session, extracts reusable knowledge, and submits to the shared brain (with user consent) |
-| `"publish to StatsOtter"` / `"发布成卡片"` | Builds the StatsOtter knowledge doc (`statsotter.md`) at the repo root; you then upload it with the StatsOtter plugin by saying "publish this repo to StatsOtter" (the plugin is natural-language only — no slash commands) — StatsClaw itself does not upload. `skills/statsotter-publish/SKILL.md` |
+| `"publish to StatsOtter"` / `"make a StatsOtter card"` | Builds the StatsOtter knowledge doc (`statsotter.md`) at the repo root; you then upload it with the StatsOtter plugin by saying "publish this repo to StatsOtter" (the plugin is natural-language only — no slash commands) — StatsClaw itself does not upload. `skills/statsotter-publish/SKILL.md` |
 
 ### How It Works
 
@@ -378,7 +378,7 @@ Route semantically from intent. Do **not** require the user to learn trigger phr
 | simulation study on existing estimator | 12 (simulation only — simulator → tester, no builder) |
 | small routine change (typo, config, bump, lint fix) | 10 (simplified — ask user to confirm) |
 | `/contribute` / "contribute" / "share what I learned" / "submit lessons" / "add to brain" | 13 (contribute — `skills/contribute/SKILL.md`) |
-| "publish to statsotter" / "发布成卡片" / "make a StatsOtter card" | Publish add-on — scriber writes `statsotter.md` to the repo root; shipper hands off to the StatsOtter plugin (StatsClaw does NOT upload). Rides on any workflow that includes scriber; see `skills/statsotter-publish/SKILL.md` |
+| "publish to statsotter" / "make a StatsOtter card" | Publish add-on — scriber writes `statsotter.md` to the repo root; shipper hands off to the StatsOtter plugin (StatsClaw does NOT upload). Rides on any workflow that includes scriber; see `skills/statsotter-publish/SKILL.md` |
 
 **Routing rule — simplified vs full**: Before committing to workflow 1–5, leader evaluates smallness criteria (see `skills/simplified-workflow/SKILL.md`). If ALL criteria are met, leader asks the user via `AskUserQuestion` to choose simplified or full. If the user declines or leader is uncertain, use the standard workflow. Leader MUST NOT silently downgrade to simplified.
 
@@ -386,7 +386,7 @@ Route semantically from intent. Do **not** require the user to learn trigger phr
 
 **Routing rule — simulation**: If the user's intent includes Monte Carlo simulation, finite-sample evaluation, DGP design, or any phrase indicating simulation study (see `skills/simulation-study/SKILL.md`), use workflow 11 (if new estimator code is also needed) or workflow 12 (if the estimator already exists). If the request is purely code implementation without simulation, use workflow 1 or 2. Simulation workflows ALWAYS include planner, simulator, tester, scriber, and reviewer.
 
-**Routing rule — StatsOtter publish**: "publish to statsotter" / "发布成卡片" / "make a StatsOtter card" is an opt-in *add-on*, not a separate workflow. Leader sets a StatsOtter-publish flag when dispatching scriber, which writes `statsotter.md` to the **target repo root**. StatsClaw does NOT upload — it holds no StatsOtter API key. The run then tells the user to publish it with the **StatsOtter plugin** (natural-language only — install it and say "publish this repo to StatsOtter"); shipper records this hand-off in its Step 7c when it runs, otherwise leader surfaces it in the final summary. It rides on any workflow that includes scriber. No `.statsotter.json` or key is needed on the StatsClaw side. See `skills/statsotter-publish/SKILL.md`.
+**Routing rule — StatsOtter publish**: "publish to statsotter" / "make a StatsOtter card" is an opt-in *add-on*, not a separate workflow. Leader sets a StatsOtter-publish flag when dispatching scriber, which writes `statsotter.md` to the **target repo root**. StatsClaw does NOT upload — it holds no StatsOtter API key. The run then tells the user to publish it with the **StatsOtter plugin** (natural-language only — install it and say "publish this repo to StatsOtter"); shipper records this hand-off in its Step 7c when it runs, otherwise leader surfaces it in the final summary. It rides on any workflow that includes scriber. No `.statsotter.json` or key is needed on the StatsClaw side. See `skills/statsotter-publish/SKILL.md`.
 
 Routing is semantic. Leader interprets intent from natural language in any language.
 

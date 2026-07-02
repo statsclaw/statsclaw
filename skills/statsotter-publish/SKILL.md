@@ -22,7 +22,7 @@ bridge is a clean two-step hand-off:
   read any key; it just points the user at that sentence.
 
 It is **opt-in**: it runs only when the user asks to publish to StatsOtter
-("publish to statsotter", "发布成卡片", "make a StatsOtter card", "ship + publish").
+("publish to statsotter", "make a StatsOtter card", "ship + publish").
 When publishing is not requested, scriber does NOT emit `statsotter.md`.
 
 The StatsOtter plugin (distribution repo `TianzhuQin/statsotter-plugin`; source

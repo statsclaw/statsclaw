@@ -166,7 +166,7 @@ Key formatting rules (from the template):
 
 ### Step 1e — StatsOtter Card (CONDITIONAL — only when publishing to StatsOtter is requested)
 
-**Skip this step entirely** unless the run requests publishing to StatsOtter (the user said "publish to statsotter" / "发布成卡片" / "make a StatsOtter card", or the dispatch prompt sets a StatsOtter-publish flag). When requested:
+**Skip this step entirely** unless the run requests publishing to StatsOtter (the user said "publish to statsotter" / "make a StatsOtter card" (in any language), or the dispatch prompt sets a StatsOtter-publish flag). When requested:
 
 1. Read `skills/statsotter-publish/SKILL.md` for the card grammar and producer rules.
 2. Copy `templates/statsotter-card.md` and write the filled document to **`statsotter.md` at the target repo root** — that is exactly where the StatsOtter plugin looks when the user says "publish this repo to StatsOtter", so the card can be published directly after the run. (`statsotter.md` is the card's source document, not a secret — it is fine for it to live at the repo root, like `ARCHITECTURE.md`.)
