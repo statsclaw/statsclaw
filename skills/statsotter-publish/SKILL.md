@@ -77,8 +77,21 @@ it — built from the package it just documented:
   never invent APIs.
 - The `## Description` opens with a one-line attribution; adapt it to the package
   (e.g. for a community showcase of someone else's method, credit the authors).
-- `## AI Notes` is exhaustive: parameter tables, defaults, edge cases, benchmarks,
-  numerical-stability notes, design decisions.
+- `## AI Notes` is where the depth goes — it is the corpus StatsOtter's AI
+  learns from, so it must still be useful if every link in the document died
+  tonight. `templates/statsotter-card.md` ships the `###` outline to fill:
+  method identity, when to use / when not to, assumptions (each with how to
+  check it and what breaks), estimand and estimator, API reference (every
+  argument with type, default and meaning; the returned object's fields), data
+  requirements, worked example with its real output, interpreting the output,
+  diagnostics, failure modes and fixes (error strings verbatim), alternatives,
+  performance and scale, provenance (every source read, with what was taken and
+  when), and open questions. A serious AI Notes section runs 6-18 KB — you have
+  `comprehension.md`, `spec.md`, `implementation.md`, `audit.md` and the real
+  source in hand, so this is the one card author that should never be thin.
+  Two hard rules: a URL may only ACCOMPANY knowledge, never replace it; and
+  never invent an API, argument, default, number or citation — anything
+  unverified is omitted or marked under Open questions.
 - `## Figures`: only real hot-linkable image URLs (e.g. from the package's docs
   site). When in doubt, `- none`.
 
@@ -109,6 +122,10 @@ upload.
 
 The full client-side reference (the JSON API, the duplicate/409 flow, editing an
 existing card, the sidebar/taxonomy surface) lives with the plugin in the
-statsotter repo under `statsotter-plugin/skills/`. The card grammar above is the
+statsotter repo under `statsotter-plugin/skills/`. Its
+`skills/manage/references/knowledge-doc.md` is the authoritative depth contract
+and `references/exemplar-doc.md` a worked gold standard; the server also scores
+every upload 0-100 and returns non-blocking `warnings` naming the knowledge a
+document is still missing. The card grammar above is the
 same contract the plugin validates against, so a well-formed `statsotter.md` from
 scriber publishes without edits.
