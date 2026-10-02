@@ -222,7 +222,7 @@ After each teammate returns, leader MUST:
 
 ### After Tester Completes (Code/Simulation Workflows):
 - Read `implementation.md` (if builder was dispatched), `simulation.md` (if simulator was dispatched), and `audit.md`
-- Check for BLOCK from tester (if so, respawn builder or simulator with failure details based on routing)
+- Check for BLOCK from tester (if so, respawn builder or simulator with the failing behavior based on routing, never the target values; see BLOCK below)
 - If all succeeded, dispatch scriber for recording with ALL artifacts. After scriber completes, dispatch reviewer.
 
 ---
@@ -246,7 +246,8 @@ Three signals, three owners, three responses. They never overlap.
 
 1. Leader reads `audit.md` to identify the failure and routing (builder, planner, or scriber).
 2. **Leader respawns the responsible upstream teammate via `Agent` tool** with the failure description from `audit.md`.
-   - **Pipeline isolation**: leader may share the failure description (e.g., "function returns wrong value for input X") but MUST NOT share `test-spec.md` itself.
+   - **Pipeline isolation**: leader may share the failure description but MUST NOT share `test-spec.md` itself.
+   - **No answers in the failure description**: when respawning builder or simulator, the description MUST NOT contain expected or target values, true parameter values, tolerances or thresholds, relative errors, or test inputs, beyond what that teammate's own spec (`spec.md` for builder, `sim-spec.md` for simulator) already defines. Describe the failing behavior only: which function, which property or criterion failed, and the observed output if needed. Allowed: "`fit()` standard errors fail the coverage criterion; observed coverage 0.81." Forbidden: "observed coverage 0.81, target [0.93, 0.97]" or "β̂ = 0.43, true β = 0.5, atol = 0.01". Reason: with the target in hand, the teammate can tune code to the answer, which defeats the isolation as surely as passing `test-spec.md`.
    - **NO DIRECT FIXES**: Leader MUST NOT use Edit, Write, sed, or any tool to modify target repo files — even for seemingly trivial fixes. Always respawn the teammate. Reason: leader cannot run validation and may introduce new bugs.
 3. After the teammate fix, leader re-dispatches tester to re-validate.
 4. Max 3 BLOCK→respawn cycles. After 3, escalate to HOLD and ask user.
@@ -257,6 +258,7 @@ Three signals, three owners, three responses. They never overlap.
 
 1. Leader reads `review.md` to identify the concern and routing.
 2. Leader respawns the teammate reviewer identifies.
+   - **No answers in the respawn prompt**: same rule as BLOCK. Reviewer sees `test-spec.md`, so a builder or simulator respawn gets the failing behavior only, never the target values, true parameters, tolerances, or test inputs from `review.md`.
 3. After the fix, leader re-runs from the appropriate stage:
    - Builder respawned → re-run tester → re-run reviewer
    - Planner respawned → re-run both pipelines from scratch
@@ -268,6 +270,7 @@ Three signals, three owners, three responses. They never overlap.
 ## Anti-Patterns
 
 - **Cross-pipeline leakage**: Leader passes `test-spec.md` to builder or `spec.md` to tester. This breaks the adversarial verification model.
+- **Answer leakage in BLOCK feedback**: Leader respawns builder or simulator with numbers copied from `audit.md` or `test-spec.md` (e.g., "Expected 0.500, Actual 0.43, atol 0.01"), or tester writes them into `mailbox.md`, which builder and simulator read. Same damage as passing `test-spec.md`. Pass the failing behavior only.
 - **Re-discovery**: A downstream teammate re-reads the entire codebase instead of using the upstream artifact. This wastes tokens and risks inconsistency.
 - **Artifact skipping**: Leader dispatches a teammate without pointing it to required upstream artifacts. The teammate then works from incomplete information.
 - **Direct handoff**: Two teammates communicate without leader mediation (e.g., builder writes instructions for tester inside a code comment). All coordination goes through artifacts and mailbox.
