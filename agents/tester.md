@@ -71,6 +71,7 @@ This isolation ensures that validation is driven purely by expected behavioral o
 - MUST NOT mark a check as passed without actually running it
 - MUST NOT summarize output — include exact evidence (full check output, test results)
 - MUST NOT skip validation steps even if "it looks clean"
+- MUST NOT write Expected/Target values, true parameter values, tolerances, errors against the target (bias, absolute or relative), or test inputs into `mailbox.md` — builder and simulator read the mailbox. Those numbers stay in `audit.md`.
 
 ### Tolerance Integrity (ABSOLUTE)
 
@@ -291,7 +292,7 @@ Save `audit.md` to the run directory with:
 - Failure routing table (if any failures)
 - Environment info (language version, OS, key tool versions)
 
-Append to `mailbox.md` with failure routing if BLOCK is raised.
+Append to `mailbox.md` with failure routing if BLOCK is raised: for each failure, the function, the property or criterion that failed, the observed output if needed, and the teammate it routes to. No `test-spec.md` values or errors against the target (see Must-Not Rules).
 
 ---
 

@@ -202,6 +202,7 @@ Write your artifact to: [STATSCLAW_PATH]/.repos/workspace/[REPO_NAME]/runs/[REQU
 - Only modify files within your assigned write surface
 - Do NOT modify status.md — leader will update it
 - Append to mailbox.md if you encounter blockers or interface changes
+- Never write expected or target values, true parameter values, tolerances, errors against the target (bias, absolute or relative), or test inputs into mailbox.md, whatever file they come from — every teammate reads it, builder and simulator included
 - **For writing teammates (builder, simulator, scriber): you MUST `git add` and `git commit` all your changes locally within the worktree BEFORE your agent completes. If you do not commit, the worktree cleanup will permanently discard all your work. Do NOT push — only commit locally. See the "Before Completing" step in your agent definition.**
 - For shipper teammate: read credentials.md first — do NOT attempt push without PASS
 - For shipper teammate: after target repo push, sync run log + CHANGELOG + HANDOFF to workspace repo per skills/workspace-sync/SKILL.md
@@ -445,7 +446,7 @@ STOP:   reviewer → leader → respawn per routing table → re-run pipeline(s)
 When tester issues BLOCK, leader MUST follow this exact sequence:
 
 1. **Read `audit.md`** — identify every failing check and the routing (which upstream teammate to respawn).
-2. **Respawn the upstream teammate via `Agent` tool** — pass the failure details from `audit.md` as context. Typically respawn builder; route to planner if the spec itself is wrong.
+2. **Respawn the upstream teammate via `Agent` tool** — pass the failing behavior from `audit.md` as context (which function, which property or criterion failed, observed output if needed). For builder or simulator, NEVER pass expected/target values, true parameter values, tolerances, errors against the target (bias, absolute or relative), or test inputs beyond that teammate's own spec — see `skills/handoff/SKILL.md` § BLOCK. Typically respawn builder; route to planner if the spec itself is wrong.
 3. **NEVER fix directly** — even if the fix seems trivial (a typo, a syntax error, a missed pattern). Leader MUST NOT use `Edit`, `Write`, `sed`, or any tool to modify target repo files. This rule has NO exceptions. The reason: leader lacks the full context of what builder changed and may introduce new bugs.
 4. **After the respawned teammate completes**, re-dispatch tester to re-validate.
 5. **If tester blocks again**, repeat from step 1 (max 3 cycles).

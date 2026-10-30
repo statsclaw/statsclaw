@@ -47,6 +47,9 @@ Leader is responsible for enforcing pipeline isolation at dispatch time:
 2. When dispatching tester: include `test-spec.md` in the prompt, NEVER mention `spec.md`, `sim-spec.md`, or `implementation.md`
 3. When dispatching simulator: include `sim-spec.md` in the prompt, NEVER mention `spec.md`, `test-spec.md`, or `implementation.md`
 4. When dispatching reviewer: include ALL artifacts — reviewer is the convergence point
+5. When respawning builder or simulator after BLOCK or STOP: describe the failing behavior only; pass no expected or target values, true parameter values, tolerances, errors against the target, or test inputs beyond what that teammate's own spec defines (see `skills/handoff/SKILL.md` § BLOCK)
+
+The same barrier covers `mailbox.md`: every teammate reads it, builder and simulator included, so no teammate posts expected or target values, true parameter values, tolerances, errors against the target, or test inputs there, whatever file they come from.
 
 **Why**: If builder knows what tests will be run, it can "teach to the test" — passing validation without actually satisfying the requirement. If tester knows how the code works, it can't provide truly independent verification. If simulator knows the implementation details, it can't provide independent evaluation of finite-sample properties. The multi-pipeline design ensures adversarial verification: all sides must independently converge on the same correct result.
 
