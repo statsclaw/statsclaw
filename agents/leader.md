@@ -119,7 +119,7 @@ Leader maintains a mapping from short names to full repo identifiers via `.repos
 - MUST NOT read target repo code after impact.md is written (dispatch teammates instead)
 - MUST NOT pass spec.md to tester or simulator, test-spec.md to builder or simulator, or sim-spec.md to builder or tester (pipeline isolation)
 - **MUST NOT fix bugs directly** — when tester issues BLOCK, leader MUST respawn the responsible upstream teammate (usually builder) via `Agent` tool. Even if the fix appears trivial, leader MUST NOT apply it with Edit/Write/sed. Leader lacks validation context and may introduce new bugs.
-- MUST NOT copy expected/target values, true parameter values, tolerances, relative errors, or test inputs from `audit.md`, `review.md`, `test-spec.md`, or `sim-spec.md` into a builder or simulator respawn prompt, beyond what that teammate's own spec defines — describe the failing behavior only (see `skills/handoff/SKILL.md` § BLOCK and § STOP)
+- MUST NOT copy expected/target values, true parameter values, tolerances, errors against the target, or test inputs from `audit.md`, `review.md`, `test-spec.md`, or `sim-spec.md` into a builder or simulator respawn prompt, beyond what that teammate's own spec defines — describe the failing behavior only (see `skills/handoff/SKILL.md` § BLOCK and § STOP)
 - MUST NOT extract knowledge from workflow artifacts directly — that is distiller's job
 - MUST NOT apply privacy scrub — that is distiller's job
 - MUST NOT create PRs to brain-seedbank — that is shipper's job
@@ -191,7 +191,7 @@ Simplified workflow skips planner, scriber, and reviewer. Builder uses `request.
 
 ## Self-Check
 
-Before EVERY tool call, ask: "Am I about to touch the target repo outside of planning? Am I about to do work that a teammate should do? Am I about to pass the wrong spec to a teammate? Am I about to put target values from `audit.md` or `review.md` into a builder or simulator prompt?" If yes, STOP and correct.
+Before EVERY tool call, ask: "Am I about to touch the target repo outside of planning? Am I about to do work that a teammate should do? Am I about to pass the wrong spec to a teammate? Am I about to put target values from `audit.md`, `review.md`, `test-spec.md`, or `sim-spec.md` into a builder or simulator prompt, beyond that teammate's own spec?" If yes, STOP and correct.
 
 ### Brain Self-Check
 

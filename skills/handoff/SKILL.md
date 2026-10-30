@@ -247,7 +247,7 @@ Three signals, three owners, three responses. They never overlap.
 1. Leader reads `audit.md` to identify the failure and routing (builder, planner, or scriber).
 2. **Leader respawns the responsible upstream teammate via `Agent` tool** with the failure description from `audit.md`.
    - **Pipeline isolation**: leader may share the failure description but MUST NOT share `test-spec.md` itself.
-   - **No answers in the failure description**: when respawning builder or simulator, the description MUST NOT contain expected or target values, true parameter values, tolerances or thresholds, relative errors, or test inputs, beyond what that teammate's own spec (`spec.md` for builder, `sim-spec.md` for simulator) already defines. Describe the failing behavior only: which function, which property or criterion failed, and the observed output if needed. Allowed: "`fit()` standard errors fail the coverage criterion; observed coverage 0.81." Forbidden: "observed coverage 0.81, target [0.93, 0.97]" or "β̂ = 0.43, true β = 0.5, atol = 0.01". Reason: with the target in hand, the teammate can tune code to the answer, which defeats the isolation as surely as passing `test-spec.md`.
+   - **No answers in the failure description**: when respawning builder or simulator, the description MUST NOT contain expected or target values, true parameter values, tolerances or thresholds, errors against the target (bias, absolute or relative), or test inputs, beyond what that teammate's own spec (`spec.md` for builder, `sim-spec.md` for simulator) already defines. Describe the failing behavior only: which function, which property or criterion failed, and the observed output if needed. Allowed: "`fit()` standard errors fail the coverage criterion; observed coverage 0.81." or "`fit()` estimates are biased downward, and the bias does not shrink as n grows." Forbidden: "observed coverage 0.81, target [0.93, 0.97]", "β̂ = 0.43, true β = 0.5, atol = 0.01", or "β̂ = 0.43, bias −0.07" (the estimate and its bias give the true β back). Reason: with the target in hand, the teammate can tune code to the answer, which defeats the isolation as surely as passing `test-spec.md`.
    - **NO DIRECT FIXES**: Leader MUST NOT use Edit, Write, sed, or any tool to modify target repo files — even for seemingly trivial fixes. Always respawn the teammate. Reason: leader cannot run validation and may introduce new bugs.
 3. After the teammate fix, leader re-dispatches tester to re-validate.
 4. Max 3 BLOCK→respawn cycles. After 3, escalate to HOLD and ask user.
@@ -258,7 +258,7 @@ Three signals, three owners, three responses. They never overlap.
 
 1. Leader reads `review.md` to identify the concern and routing.
 2. Leader respawns the teammate reviewer identifies.
-   - **No answers in the respawn prompt**: same rule as BLOCK. Reviewer sees `test-spec.md`, so a builder or simulator respawn gets the failing behavior only, never the target values, true parameters, tolerances, relative errors, or test inputs from `review.md`.
+   - **No answers in the respawn prompt**: same rule as BLOCK. Reviewer sees `test-spec.md`, so a builder or simulator respawn gets the failing behavior only, never the target values, true parameters, tolerances, errors against the target, or test inputs from `review.md`.
 3. After the fix, leader re-runs from the appropriate stage:
    - Builder respawned → re-run tester → re-run reviewer
    - Planner respawned → re-run both pipelines from scratch

@@ -88,7 +88,7 @@ Teammates SHOULD NOT use the mailbox for:
 - Communicating directly with the user (only leader talks to the user)
 - Delivering BLOCK or STOP verdicts (those go in audit.md and review.md)
 
-Teammates MUST NOT write into the mailbox any value from `test-spec.md`, `sim-spec.md`, or `audit.md`: expected or target values, true parameter values, tolerances or thresholds, relative errors, or test inputs. Every teammate reads the mailbox, builder and simulator included, so anything posted here crosses the pipeline wall. A tester failure note names the function, the failed property or criterion, and the route; the numbers stay in `audit.md`.
+Teammates MUST NOT write into the mailbox any value from `test-spec.md`, `sim-spec.md`, `audit.md`, or `simulation.md`: expected or target values, true parameter values, tolerances or thresholds, errors against the target (bias, absolute or relative), or test inputs. Every teammate reads the mailbox, builder and simulator included, so anything posted here crosses the pipeline wall. A tester failure note names the function, the failed property or criterion, and the route; the numbers stay in `audit.md`.
 
 ---
 

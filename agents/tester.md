@@ -71,7 +71,7 @@ This isolation ensures that validation is driven purely by expected behavioral o
 - MUST NOT mark a check as passed without actually running it
 - MUST NOT summarize output — include exact evidence (full check output, test results)
 - MUST NOT skip validation steps even if "it looks clean"
-- MUST NOT write Expected/Target values, true parameter values, tolerances, relative errors, or test inputs into `mailbox.md` — builder and simulator read the mailbox. Those numbers stay in `audit.md`.
+- MUST NOT write Expected/Target values, true parameter values, tolerances, errors against the target (bias, absolute or relative), or test inputs into `mailbox.md` — builder and simulator read the mailbox. Those numbers stay in `audit.md`.
 
 ### Tolerance Integrity (ABSOLUTE)
 
