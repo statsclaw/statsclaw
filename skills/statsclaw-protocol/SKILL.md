@@ -202,7 +202,7 @@ Write your artifact to: [STATSCLAW_PATH]/.repos/workspace/[REPO_NAME]/runs/[REQU
 - Only modify files within your assigned write surface
 - Do NOT modify status.md — leader will update it
 - Append to mailbox.md if you encounter blockers or interface changes
-- Never write values from test-spec.md, sim-spec.md, or audit.md (expected or target values, true parameters, tolerances, test inputs) into mailbox.md — builder and simulator read it
+- Never write values from test-spec.md, sim-spec.md, or audit.md (expected or target values, true parameters, tolerances, relative errors, test inputs) into mailbox.md — builder and simulator read it
 - **For writing teammates (builder, simulator, scriber): you MUST `git add` and `git commit` all your changes locally within the worktree BEFORE your agent completes. If you do not commit, the worktree cleanup will permanently discard all your work. Do NOT push — only commit locally. See the "Before Completing" step in your agent definition.**
 - For shipper teammate: read credentials.md first — do NOT attempt push without PASS
 - For shipper teammate: after target repo push, sync run log + CHANGELOG + HANDOFF to workspace repo per skills/workspace-sync/SKILL.md

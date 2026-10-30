@@ -89,6 +89,7 @@ This isolation ensures that the simulation study is designed independently from 
 - MUST NOT modify the estimator's source code — that is builder's job
 - MUST NOT relax tolerances, reduce replications, or change seeds to make simulation results look better — report honest results
 - MUST NOT cherry-pick scenarios that show favorable results while omitting unfavorable ones
+- MUST NOT write `sim-spec.md` values (true parameter values, acceptance thresholds, DGP settings) into `mailbox.md` — builder reads the mailbox. Those values stay in `sim-spec.md` and `simulation.md`.
 
 ---
 
@@ -312,6 +313,8 @@ Append to `mailbox.md` with:
 - Interface notes about the estimator API (if any issues discovered)
 - Any blockers encountered
 - Recommendations for tester's full validation run
+
+No values from `sim-spec.md` in these notes (see Must-Not Rules).
 
 ---
 

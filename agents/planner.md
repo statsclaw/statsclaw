@@ -86,6 +86,7 @@ No pipeline sees another's specification. This ensures:
 - MUST NOT produce a spec for a problem that cannot be fully specified — raise HOLD instead
 - MUST NOT leak implementation details into test-spec.md (no "test that the code uses algorithm X")
 - MUST NOT leak test scenarios into spec.md (no "make sure this passes test Y")
+- MUST NOT copy values from test-spec.md or sim-spec.md (expected or target values, true parameter values, tolerances, test inputs) into mailbox.md — builder and simulator read the mailbox. The values stay in the specs.
 - **MUST NOT produce specs when comprehension is incomplete** — raise HOLD and ask questions first
 - **MUST NOT guess or assume the meaning of undefined symbols, methods, or concepts** — ask the user
 
@@ -360,7 +361,7 @@ Save all artifacts to the run directory:
 - `test-spec.md` — for the test pipeline (tester)
 - `sim-spec.md` — for the simulation pipeline (simulator) — **simulation workflows (11, 12) only**
 
-Append a handoff summary to mailbox.md: one paragraph per downstream agent — what builder needs to implement (referencing spec.md sections), what tester needs to verify (referencing test-spec.md sections), and for simulation workflows, what simulator needs to implement (referencing sim-spec.md sections).
+Append a handoff summary to mailbox.md: one paragraph per downstream agent — what builder needs to implement (referencing spec.md sections), what tester needs to verify (referencing test-spec.md sections), and for simulation workflows, what simulator needs to implement (referencing sim-spec.md sections). No paragraph copies values from test-spec.md or sim-spec.md (see Must-Not Rules).
 
 ---
 

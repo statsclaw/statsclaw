@@ -258,7 +258,7 @@ Three signals, three owners, three responses. They never overlap.
 
 1. Leader reads `review.md` to identify the concern and routing.
 2. Leader respawns the teammate reviewer identifies.
-   - **No answers in the respawn prompt**: same rule as BLOCK. Reviewer sees `test-spec.md`, so a builder or simulator respawn gets the failing behavior only, never the target values, true parameters, tolerances, or test inputs from `review.md`.
+   - **No answers in the respawn prompt**: same rule as BLOCK. Reviewer sees `test-spec.md`, so a builder or simulator respawn gets the failing behavior only, never the target values, true parameters, tolerances, relative errors, or test inputs from `review.md`.
 3. After the fix, leader re-runs from the appropriate stage:
    - Builder respawned → re-run tester → re-run reviewer
    - Planner respawned → re-run both pipelines from scratch
@@ -270,7 +270,7 @@ Three signals, three owners, three responses. They never overlap.
 ## Anti-Patterns
 
 - **Cross-pipeline leakage**: Leader passes `test-spec.md` to builder or `spec.md` to tester. This breaks the adversarial verification model.
-- **Answer leakage in BLOCK feedback**: Leader respawns builder or simulator with numbers copied from `audit.md` or `test-spec.md` (e.g., "Expected 0.500, Actual 0.43, atol 0.01"), or tester writes them into `mailbox.md`, which builder and simulator read. Same damage as passing `test-spec.md`. Pass the failing behavior only.
+- **Answer leakage in BLOCK feedback**: Leader respawns builder or simulator with numbers copied from `audit.md`, `review.md`, or `test-spec.md` (e.g., "Expected 0.500, Actual 0.43, atol 0.01"), or a teammate writes them into `mailbox.md`, which builder and simulator read. Same damage as passing `test-spec.md`. Pass the failing behavior only.
 - **Re-discovery**: A downstream teammate re-reads the entire codebase instead of using the upstream artifact. This wastes tokens and risks inconsistency.
 - **Artifact skipping**: Leader dispatches a teammate without pointing it to required upstream artifacts. The teammate then works from incomplete information.
 - **Direct handoff**: Two teammates communicate without leader mediation (e.g., builder writes instructions for tester inside a code comment). All coordination goes through artifacts and mailbox.
