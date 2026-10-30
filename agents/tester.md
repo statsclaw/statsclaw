@@ -292,7 +292,7 @@ Save `audit.md` to the run directory with:
 - Failure routing table (if any failures)
 - Environment info (language version, OS, key tool versions)
 
-Append to `mailbox.md` with failure routing if BLOCK is raised: for each failure, the function, the property or criterion that failed, the observed output if needed, and the teammate it routes to. No values from `test-spec.md` (see Must-Not Rules).
+Append to `mailbox.md` with failure routing if BLOCK is raised: for each failure, the function, the property or criterion that failed, the observed output if needed, and the teammate it routes to. No `test-spec.md` values or errors against the target (see Must-Not Rules).
 
 ---
 
